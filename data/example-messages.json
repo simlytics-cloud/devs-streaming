@@ -1,0 +1,84 @@
+[
+{
+  "devsType" : "devs.msg.InitSim",
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  }
+},
+{
+  "devsType" : "devs.msg.ExecuteTransition",
+  "modelInputsOption" : {
+    "portValueList" : [ {
+      "value" : 1,
+      "portIdentifier" : "INPUT",
+      "portType" : "java.lang.Integer"
+    } ]
+  },
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  }
+},
+{
+  "devsType" : "devs.msg.ModelDone",
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  },
+  "sender" : "generator"
+},
+{
+  "devsType" : "devs.msg.ModelOutputMessage",
+  "modelOutput" : {
+    "portValueList" : [ {
+      "value" : "S1",
+      "portIdentifier" : "OUTPUT",
+      "portType" : "example.storage.StorageStateEnum"
+    } ]
+  },
+  "nextTime" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  },
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 1
+  },
+  "sender" : "generator"
+},
+{
+  "devsType" : "devs.msg.NextTime",
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 1
+  },
+  "sender" : "generator"
+},
+{
+  "devsType" : "devs.msg.SendOutput",
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  }
+},
+{
+  "devsType" : "devs.msg.SimulationDone",
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  }
+},
+{
+  "devsType" : "devs.msg.TransitionDone",
+  "nextTime" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 1
+  },
+  "time" : {
+    "timeType" : "devs.msg.time.LongSimTime",
+    "t" : 0
+  },
+  "sender" : "generator"
+}
+]

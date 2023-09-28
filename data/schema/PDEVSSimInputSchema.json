@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "description": "Schema for simulator input messages used in DEVS Streaming Framework",
+  "type": "object",
+  "properties": {
+    "eventType": {
+      "type": "string",
+      "enum": [
+        "Init",
+        "ComputeOutput",
+        "InputEvent",
+        "ExecuteTransition",
+        "SendOutputs"
+      ]
+    },
+    "time": {"type": "number"}
+  },
+  "additionalProperties": false,
+  "required": [
+    "eventType",
+    "time"
+  ]
+}

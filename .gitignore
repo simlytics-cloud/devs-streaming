@@ -1,0 +1,9 @@
+*.class
+.idea
+target/
+.bsp
+lib/
+*.jar
+*key.txt
+project/project/
+project/target/
