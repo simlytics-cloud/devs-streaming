@@ -17,9 +17,9 @@
 
 package example;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.*;
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.*;
 import devs.*;
 import devs.msg.DevsMessage;
 import devs.msg.InitSim;
@@ -43,8 +43,8 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
 
     public static void main(String[] args) {
         //akka.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
-        akka.actor.typed.ActorSystem<GenStoreApp> system =
-                akka.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
+        org.apache.pekko.actor.typed.ActorSystem<GenStoreApp> system =
+                org.apache.pekko.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
         system.tell(new GenStoreStart());
     }
 

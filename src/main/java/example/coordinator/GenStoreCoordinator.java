@@ -17,8 +17,8 @@
 
 package example.coordinator;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.msg.DevsMessage;
