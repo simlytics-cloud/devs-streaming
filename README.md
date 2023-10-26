@@ -14,10 +14,10 @@ simulator to consume DEVS-SF messages from an event stream, execute its
 associated atomic or coupled model, and publish events back to an event
 stream. DEVS-SF also enables the development of DEVS wrappers around
 non-modular simulation architectures, such as High Level Architecture
-(HLA) of the US Army's Bifrost[^1] server, so they may execute as models
-in a DEVS simulation. Simlytics.cloud's Java implementation of DEVS-SF
-is available as open-source software.
+(HLA) of the US Army's [Bifrost server](https://www.peostri.army.mil/onesaf), so they may execute as models
+in a DEVS simulation. 
 
-[^1]: US Army Program Executive Office -- Simulation, Training, and
-    Instrumentation (PEO-STRI), One Semi-Automated Forces (OneSAF),
-    available at <https://www.peostri.army.mil/onesaf>.
+See [DEVS-SF Overview](docs/import/DEVS%20Streaming%20Framework%20Introduction.md) for more information.
+
+
+
