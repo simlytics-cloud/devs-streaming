@@ -17,10 +17,10 @@
 
 package devs.msg;
 
-import akka.actor.typed.javadsl.Behaviors;
-import akka.serialization.Serialization;
-import akka.serialization.SerializationExtension;
-import akka.serialization.Serializers;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.serialization.Serialization;
+import org.apache.pekko.serialization.SerializationExtension;
+import org.apache.pekko.serialization.Serializers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import devs.msg.time.LongSimTime;
 import devs.msg.time.SimTime;
@@ -39,8 +39,8 @@ public class DevsMessageTest {
     LongSimTime zero = LongSimTime.builder().t(0L).build();
     LongSimTime one = LongSimTime.builder().t(1L).build();
 
-    akka.actor.typed.ActorSystem<Void> system =
-            akka.actor.typed.ActorSystem.create(Behaviors.empty(), "example");
+    org.apache.pekko.actor.typed.ActorSystem<Void> system =
+            org.apache.pekko.actor.typed.ActorSystem.create(Behaviors.empty(), "example");
 
     // Get the Serialization Extension
     Serialization serialization = SerializationExtension.get(system);

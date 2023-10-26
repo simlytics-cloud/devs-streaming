@@ -17,7 +17,7 @@
 
 package devs.msg;
 
-import akka.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.ActorRef;
 import devs.msg.time.SimTime;
 
 public class InitSimMessage<T extends SimTime> implements DevsMessage {
