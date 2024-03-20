@@ -19,6 +19,8 @@ package devs;
 
 import devs.msg.Bag;
 import devs.msg.PortValue;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -44,4 +46,15 @@ public abstract class InputCouplingHandler {
 
   public abstract void handlePortValue(PortValue<?> portValue, Map<String,
       List<PortValue<?>>> receiverMap);
+
+  protected void addInputPortValue(PortValue<?> portValue, String receiver, Map<String,
+          List<PortValue<?>>> receiverMap) {
+    if (receiverMap.containsKey(receiver)) {
+      receiverMap.get(receiver).add(portValue);
+    } else {
+      List<PortValue<?>> portValues = new ArrayList<>();
+      portValues.add(portValue);
+      receiverMap.put(receiver, portValues);
+    }
+  }
 }

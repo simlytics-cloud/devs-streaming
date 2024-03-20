@@ -88,6 +88,10 @@ public class PDevsCoordinator<T extends SimTime>
     this.couplings = couplings;
   }
 
+  public String getModelIdentifier() {
+    return modelIdentifier;
+  }
+
   @Override
   public Receive<DevsMessage> createReceive() {
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();

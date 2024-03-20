@@ -18,6 +18,7 @@
 package devs;
 
 import devs.msg.Bag;
+import devs.msg.PortValue;
 import devs.msg.time.SimTime;
 
 public abstract class PDEVSModel<T extends SimTime, S> {
