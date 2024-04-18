@@ -43,7 +43,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * schedule internal transition that occurs with the passage of time
    * @param currentTime the current time of the transition
    */
-  protected abstract void internalStateTransitionFunction(T currentTime);
+  public abstract void internalStateTransitionFunction(T currentTime);
 
   /**
    * The DEVS external state transition function.  This function is called when an external event arrives at
@@ -54,7 +54,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * @param currentTime the current time of the transition
    * @param bag the bag of inputs that has arrived at the current time
    */
-  protected abstract void externalSateTransitionFunction(T currentTime, Bag bag);
+  public abstract void externalStateTransitionFunction(T currentTime, Bag bag);
 
   /**
    * The parallel DEVS (PDEVS) confluent transition function.  This function is called if an external event
@@ -64,7 +64,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * @param currentTime the current time of the transition
    * @param bag the bag of inputs that has arrived at the current time
    */
-  protected abstract void confluentStateTransitionFunction(T currentTime, Bag bag);
+  public abstract void confluentStateTransitionFunction(T currentTime, Bag bag);
 
   /**
    * This is the DEVS time advance function.  The DEVS simulator calls this method to determine the time of
@@ -72,14 +72,14 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * @param currentTime the simulator's current time
    * @return the time of the next scheduled internal state transition
    */
-  protected abstract T timeAdvanceFunction(T currentTime);
+  public abstract T timeAdvanceFunction(T currentTime);
 
   /**
    * The DEVS output function.  The simulator calls this function immediately prior to an internal state transition.
    * Its implementation adds any outputs from this model to the {@link devs.msg.Bag Bag}.
    * @return the {@link devs.msg.Bag Bag} of outputs
    */
-  protected abstract Bag outputFunction();
+  public abstract Bag outputFunction();
 
   public String getModelIdentifier() {
     return modelIdentifier;

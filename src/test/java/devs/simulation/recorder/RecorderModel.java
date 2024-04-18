@@ -36,27 +36,27 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
     }
 
     @Override
-    protected void internalStateTransitionFunction(LongSimTime currentTime) {
+    public void internalStateTransitionFunction(LongSimTime currentTime) {
 
     }
 
     @Override
-    protected void externalSateTransitionFunction(LongSimTime currentTime, Bag input) {
+    public void externalStateTransitionFunction(LongSimTime currentTime, Bag input) {
 
     }
 
     @Override
-    protected void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
+    public void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
 
     }
 
     @Override
-    protected LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+    public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
         return LongSimTime.builder().t(Long.MAX_VALUE).build();
     }
 
     @Override
-    protected Bag outputFunction() {
+    public Bag outputFunction() {
         return Bag.builder().build();
     }
 }

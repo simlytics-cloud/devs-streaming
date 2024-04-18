@@ -139,7 +139,7 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
   protected Behavior<DevsMessage> externalStateTransition(T time, Bag input) {
-    devsModel.externalSateTransitionFunction(time, input);
+    devsModel.externalStateTransitionFunction(time, input);
     transitionDome(time);
     return this;
   }

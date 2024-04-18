@@ -35,7 +35,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
     }
 
     @Override
-    protected void internalStateTransitionFunction(LongSimTime currentTime) {
+    public void internalStateTransitionFunction(LongSimTime currentTime) {
         if (modelState == 0) {
             this.modelState = 1;
         } else {
@@ -45,17 +45,17 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
     }
 
     @Override
-    protected void externalSateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+    public void externalStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
 
     }
 
     @Override
-    protected void confluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+    public void confluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
 
     }
 
     @Override
-    protected LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+    public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
         if (modelState == 1) {
             return currentTime;
         } else {
@@ -64,7 +64,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
     }
 
     @Override
-    protected Bag outputFunction() {
+    public Bag outputFunction() {
         return Bag.builder().addPortValueList(generatorOutputPort.createPortValue(modelState)).build();
     }
 }

@@ -17,8 +17,6 @@
 
 package example.storage;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import devs.PDEVSModel;
 import devs.Port;
 import devs.msg.Bag;
@@ -36,12 +34,12 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
     }
 
     @Override
-    protected void internalStateTransitionFunction(LongSimTime currentTime) {
+    public void internalStateTransitionFunction(LongSimTime currentTime) {
         this.modelState = new StorageState(modelState.getStateValue(), false);
     }
 
     @Override
-    protected void externalSateTransitionFunction(LongSimTime currentTime, Bag storageInput) {
+    public void externalStateTransitionFunction(LongSimTime currentTime, Bag storageInput) {
         int storageValue = getInputValue(storageInput);
 
         // This line below is more concise than the getInputValue method, but may lead to errors that are hard to
@@ -79,12 +77,12 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
     }
 
     @Override
-    protected void confluentStateTransitionFunction(LongSimTime currentTime, Bag storageInputs) {
-        this.externalSateTransitionFunction(currentTime, storageInputs);
+    public void confluentStateTransitionFunction(LongSimTime currentTime, Bag storageInputs) {
+        this.externalStateTransitionFunction(currentTime, storageInputs);
     }
 
     @Override
-    protected LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+    public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
         if (modelState.getHasOutput()) {
             return currentTime;
         } else {
@@ -93,7 +91,7 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
     }
 
     @Override
-    protected Bag outputFunction() {
+    public Bag outputFunction() {
         return Bag.builder().addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue())).build();
     }
 }

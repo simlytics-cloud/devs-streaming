@@ -18,7 +18,6 @@
 package example.storage;
 
 import devs.msg.Bag;
-import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -62,7 +61,7 @@ public class StorageModelTest {
         // External state transition function changes state value to match input
         // and time advance will yield current time
 
-        storageModel.externalSateTransitionFunction(LongSimTime.builder().t(2L).build(),
+        storageModel.externalStateTransitionFunction(LongSimTime.builder().t(2L).build(),
                 Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(0)).build());
         assert(storageModel.timeAdvanceFunction(LongSimTime.builder().t(2L).build()).getT() == 2L);
         assert(storageModel.outputFunction().getPortValueList().get(0).getValue() == StorageStateEnum.S0);
@@ -71,7 +70,7 @@ public class StorageModelTest {
         storageModel.internalStateTransitionFunction(LongSimTime.builder().t(3L).build());
         assert(storageModel.timeAdvanceFunction(LongSimTime.builder().t(3L).build()).getT() == Long.MAX_VALUE);
 
-        storageModel.externalSateTransitionFunction(LongSimTime.builder().t(3L).build(),
+        storageModel.externalStateTransitionFunction(LongSimTime.builder().t(3L).build(),
                 Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(1)).build());
         Bag storageOutput = storageModel.outputFunction();
         assert(storageOutput.getPortValueList().get(0).getValue() == StorageStateEnum.S1);
