@@ -19,20 +19,17 @@ package devs.utils;
 
 import devs.msg.time.SimTime;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
-public class Schedule<T extends SimTime> extends TreeMap<T, Object> {
+public class Schedule<T extends SimTime> extends TreeMap<T, List<Object>> {
     public Schedule() {
     }
 
-    public Schedule(Map<? extends T, ?> m) {
+    public Schedule(Map<? extends T, List<Object>> m) {
         super(m);
     }
 
-    public Schedule(SortedMap<T, ?> m) {
+    public Schedule(SortedMap<T, List<Object>> m) {
         super(m);
     }
 }
