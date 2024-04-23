@@ -19,6 +19,7 @@ package devs;
 
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.ChildFailed;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -104,6 +105,7 @@ public class PDevsCoordinator<T extends SimTime>
     builder.onMessage(TransitionDone.class, this::onTransitionDone);
     builder.onMessage(SimulationDone.class, this::onSimulationDone);
     builder.onMessage(ModelDone.class, this::onModelDone);
+    builder.onSignal(ChildFailed.class, this::onChildFailed);
 
     return builder.build();
   }
@@ -266,6 +268,11 @@ public class PDevsCoordinator<T extends SimTime>
       return Behaviors.stopped();
     }
     return this;
+  }
+  
+  protected Behavior<DevsMessage> onChildFailed(ChildFailed childFailed) {
+	  getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
+	  return this;
   }
 }
 
