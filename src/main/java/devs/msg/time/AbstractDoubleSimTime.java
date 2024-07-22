@@ -17,6 +17,7 @@
 
 package devs.msg.time;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.Objects;
@@ -31,7 +32,16 @@ import org.jetbrains.annotations.NotNull;
 @JsonDeserialize(as = DoubleSimTime.class)
 public abstract class AbstractDoubleSimTime extends SimTime {
 
+  public static DoubleSimTime maxValue = DoubleSimTime.builder().t(Double.MAX_VALUE).build();
+  public static DoubleSimTime create(double t) {
+	  return DoubleSimTime.builder().t(t).build();
+  }
   public abstract Double getT();
+  
+  @Override
+  public String toString() {
+	  return "DoubleSimTime: " + getT();
+  }
 
   @Override
   public AbstractDoubleSimTime plus(SimTime operand) {
@@ -42,8 +52,16 @@ public abstract class AbstractDoubleSimTime extends SimTime {
   public AbstractDoubleSimTime minus(SimTime operand) {
     return DoubleSimTime.builder().t(getT() - ((AbstractDoubleSimTime) operand).getT()).build();
   }
+  
+  
 
-  @Override
+  	@Override
+  	@JsonIgnore
+	public AbstractDoubleSimTime getMaxValue() {
+		return DoubleSimTime.builder().t(Double.MAX_VALUE).build();
+	}
+
+@Override
   public int compareTo(@NotNull SimTime operand) {
     return getT().compareTo(((AbstractDoubleSimTime) operand).getT());
   }

@@ -17,6 +17,9 @@
 
 package devs;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import devs.msg.Bag;
 import devs.msg.PortValue;
 import devs.msg.time.SimTime;
@@ -29,6 +32,7 @@ import devs.msg.time.SimTime;
 public abstract class PDEVSModel<T extends SimTime, S> {
 
   protected S modelState;
+  protected Logger logger;
 
   protected PDevsSimulator<T, S, ?> simulator;
   final protected String modelIdentifier;
@@ -36,6 +40,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   public PDEVSModel(S modelState, String modelIdentifier) {
     this.modelState = modelState;
     this.modelIdentifier = modelIdentifier;
+    this.logger = LoggerFactory.getLogger(getClass());
   }
 
   /**

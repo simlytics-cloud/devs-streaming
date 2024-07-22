@@ -34,6 +34,7 @@ import devs.msg.NextTime;
 import devs.msg.SendOutput;
 import devs.msg.SimulationDone;
 import devs.msg.TransitionDone;
+import devs.msg.time.LongSimTime;
 import devs.msg.time.SimTime;
 
 public class PDevsSimulator<T extends SimTime, S,
@@ -44,10 +45,10 @@ public class PDevsSimulator<T extends SimTime, S,
   protected ActorRef<DevsMessage> parent;
 
   protected final M devsModel;
+  
 
-  public static <TT extends SimTime, SS,
-      MM extends PDEVSModel<TT, SS>> Behavior<DevsMessage>
-  create(MM aDevsModel, TT initialTime) {
+  public static <TT extends SimTime> Behavior<DevsMessage>
+  create(PDEVSModel<TT, ?> aDevsModel, TT initialTime) {
     return Behaviors.setup(context -> new PDevsSimulator(aDevsModel, initialTime, context));
   }
 
@@ -70,11 +71,19 @@ public class PDevsSimulator<T extends SimTime, S,
 
     return builder.build();
   }
+  
+  protected T timeAdvance(T currentTime) {
+	  T time = devsModel.timeAdvanceFunction(currentTime);
+	  if (time.compareTo(currentTime) < 0) {
+		  throw new RuntimeException(devsModel.modelIdentifier + " generated a negative time advance.");
+	  }
+	  //System.out.println("Time advance for " + devsModel.modelIdentifier + " is " + time);
+	  return time;
+  }
 
   protected Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
     this.parent = initSimMessage.getParent();
-    timeNext = (T) timeLast.plus(
-        devsModel.timeAdvanceFunction(initSimMessage.getInitSim().getTime()));
+    timeNext = timeAdvance(initSimMessage.getInitSim().getTime());
     parent.tell(NextTime.builder().time(timeNext).sender(devsModel.getModelIdentifier()).build());
     return this;
   }
@@ -99,7 +108,7 @@ public class PDevsSimulator<T extends SimTime, S,
     if (executeTransition.getTime().compareTo(timeLast) < 0 ||
         executeTransition.getTime().compareTo(timeNext) > 0) {
       throw new RuntimeException(
-          "Bad synchronization.  Received ExecuteTransitionMessage where time " +
+          "Bad synchronization.  " + devsModel.modelIdentifier + " received ExecuteTransitionMessage where time " +
               executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
               + "inclusive");
     }
@@ -111,14 +120,18 @@ public class PDevsSimulator<T extends SimTime, S,
             executeTransition.getModelInputsOption().get());
       }
     } else {
-      return externalStateTransition(executeTransition.getTime(),
-          executeTransition.getModelInputsOption().get());
+    	if (executeTransition.getModelInputsOption().isEmpty()) {
+    		throw new IllegalArgumentException("External transition for model " + devsModel.getModelIdentifier() + 
+    				" is empty.  Transition time is " + executeTransition.getTime() + ".  Next time is " + timeNext);
+    	} else {
+    		return externalStateTransition(executeTransition.getTime(), executeTransition.getModelInputsOption().get());
+    	}
     }
   }
 
   protected void transitionDome(T time) {
     timeLast = time;
-    timeNext = devsModel.timeAdvanceFunction(time);
+    timeNext = timeAdvance(time);
     parent.tell(TransitionDone.builder()
         .nextTime(timeNext)
         .time(time)
@@ -150,4 +163,7 @@ public class PDevsSimulator<T extends SimTime, S,
             .build());
     return Behaviors.stopped();
   }
+
+
+
 }

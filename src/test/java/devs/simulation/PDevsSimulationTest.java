@@ -54,7 +54,7 @@ public class PDevsSimulationTest {
     }
 
     @Test
-    @DisplayName("Test PDEVS Simulation with RootCoordinator, PDEVSCoordinator, and PDEVSSimulators working together")
+    @DisplayName("Test PDEVS Simulation with RootCoordinator, PDEVSCoordinator, CoupledModelFactory, and PDEVSSimulators working together")
     void pDevsSimulationTest() throws InterruptedException {
 
         ActorRef<DevsMessage> generatorSim = testKit.spawn(Behaviors.setup(context ->
@@ -143,7 +143,7 @@ public class PDevsSimulationTest {
         // Expect execute external transition message with no generator output and a storage output
         // of StorageStateEnum.S1
         DevsMessage messag4 = toRecorderProbe.receiveMessage();
-        assert (messag2 instanceof ExecuteTransition<?>);
+        assert (messag4 instanceof ExecuteTransition<?>);
         ExecuteTransition<LongSimTime> executeExternalTransition3 =
                 (ExecuteTransition<LongSimTime>) messag4;
         assert (executeExternalTransition3.getModelInputsOption().isPresent());

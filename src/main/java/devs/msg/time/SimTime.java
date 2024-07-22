@@ -35,6 +35,8 @@ public abstract class SimTime implements Comparable<SimTime> {
   public abstract SimTime minus(SimTime operand);
 
   public abstract int compareTo(@NotNull SimTime operand);
+  
+  public abstract SimTime getMaxValue();
 
   @Override
   public abstract int hashCode();

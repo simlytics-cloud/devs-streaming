@@ -78,7 +78,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   }
 
   private Behavior<DevsMessage> onModelOutputMessage(ModelOutputMessage<T> modelOutputMessage) {
-    if (modelOutputMessage.getNextTime().compareTo(endTime) < 0) {
+    if (modelOutputMessage.getNextTime().compareTo(endTime) <= 0) {
       time = modelOutputMessage.getNextTime();
       child.tell(SendOutput.builder().time(time).build());
     } else {
