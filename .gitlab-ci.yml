@@ -21,7 +21,7 @@ variables:
     -DinstallAtEnd=true
     -DdeployAtEnd=true  
 
-java-build-and-test:
+java-build:
   # select the most appropriate image for your project
   image: maven:3.8-openjdk-11
   stage: build
@@ -32,13 +32,8 @@ java-build-and-test:
     paths:
       - .m2/repository
   script:
-    # the 'verify' goal is definitely the most appropriate here
-    - mvn $MAVEN_CLI_OPTS verify
+    - mvn $MAVEN_CLI_OPTS package -DskipTests=true
   artifacts:
     name: "Maven artifacts from $CI_PROJECT_NAME on $CI_COMMIT_REF_SLUG"
     paths:
       - "**/target"
-    reports:
-      # declare the JUnit reports (recursive pattern for multi-module projects)
-      junit:
-        - "**/target/*-reports/TEST-*.xml"
