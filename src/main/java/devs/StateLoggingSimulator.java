@@ -24,10 +24,15 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.serialization.Serialization;
 import org.apache.pekko.serialization.SerializationExtension;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+
+import devs.msg.Bag;
 import devs.msg.DevsMessage;
 import devs.msg.ExecuteTransition;
+import devs.msg.InitSimMessage;
+import devs.msg.ModelOutputMessage;
+import devs.msg.SendOutput;
 import devs.msg.log.DevsLogMessage;
+import devs.msg.log.DevsModelLogMessage;
 import devs.msg.log.StateMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
@@ -42,33 +47,75 @@ public class StateLoggingSimulator<T extends SimTime, S,
 
   public static <TT extends SimTime, SS,
       MM extends PDEVSModel<TT, SS>> Behavior<DevsMessage>
-  create(MM aDevsModel, TT initialTime, String name, ActorRef<DevsLogMessage> loggingActor) {
+  create(MM aDevsModel, TT initialTime, ActorRef<DevsLogMessage> loggingActor) {
     return Behaviors.setup(
-        context -> new StateLoggingSimulator<>(aDevsModel, initialTime, context, name,
+        context -> new StateLoggingSimulator<>(aDevsModel, initialTime, context,
             loggingActor));
   }
 
   public StateLoggingSimulator(M devsModel, T initialTime, ActorContext<DevsMessage> context,
-      String name, ActorRef<DevsLogMessage> loggingActor) {
+      ActorRef<DevsLogMessage> loggingActor) {
     super(devsModel, initialTime, context);
     this.loggingActor = loggingActor;
     this.serialization = SerializationExtension.get(context.getSystem());
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
-    ;
-    objectMapper.registerModule(new Jdk8Module());
   }
 
   String serialize(DevsMessage devsMessage) {
     return new String(serialization.serialize(devsMessage).get(), StandardCharsets.UTF_8);
   }
 
+  protected void logState(T simTime) {
+    StateMessage<?, ?> stateMessage = StateMessage.builder()
+        .modelId(devsModel.getModelIdentifier())
+        .modelState(devsModel.getModelState())
+        .time(simTime)
+        .build();
+    loggingActor.tell(stateMessage);
+  }
+
   @Override
   protected Behavior<DevsMessage> onExecuteTransitionMessage(
       ExecuteTransition<T> executeTransition) {
     Behavior<DevsMessage> behavior = super.onExecuteTransitionMessage(executeTransition);
-    loggingActor.tell(StateMessage.builder().modelState(devsModel.getModelState())
-        .time(executeTransition.getTime()).build());
+    DevsModelLogMessage<?> devsModelLogMessage = DevsModelLogMessage.builder()
+        .time(executeTransition.getTime())
+        .modelId(devsModel.getModelIdentifier())
+        .devsMessage(executeTransition)
+        .build();
+    loggingActor.tell(devsModelLogMessage);
+    logState(executeTransition.getTime());
     return behavior;
+  }
+
+  @Override
+  protected Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
+    Behavior<DevsMessage> behavior = super.onInitSimMessage(initSimMessage);
+    logState(initSimMessage.getInitSim().getTime());
+    return behavior;
+  }
+
+  @Override
+  protected Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
+    if (sendOutput.getTime().compareTo(timeNext) != 0) {
+      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time " +
+          sendOutput.getTime() + " did not equal " + timeNext);
+    }
+    Bag modelOutput = devsModel.outputFunction();
+    ModelOutputMessage<?> modelOutputMessage = ModelOutputMessage.builder()
+      .modelOutput(modelOutput)
+      .nextTime(timeNext)
+      .time(sendOutput.getTime())
+      .sender(devsModel.getModelIdentifier())
+      .build();
+    parent.tell(modelOutputMessage);
+      DevsModelLogMessage<?> devsModelLogMessage = DevsModelLogMessage.builder()
+        .time(sendOutput.getTime())
+        .modelId(devsModel.getModelIdentifier())
+        .devsMessage(modelOutputMessage)
+        .build();
+    loggingActor.tell(devsModelLogMessage);
+    return this;
   }
 
 

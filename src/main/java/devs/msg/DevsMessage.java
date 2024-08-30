@@ -17,9 +17,13 @@
 
 package devs.msg;
 
-import devs.msg.log.DevsLogMessage;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 
-public interface DevsMessage extends DevsLogMessage {
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.CLASS,
+    property = "devsType"
+)
+public interface DevsMessage {
 
 }

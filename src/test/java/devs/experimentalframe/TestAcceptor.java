@@ -7,10 +7,10 @@ import devs.msg.Bag;
 import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
 
-public class TestAcceptor extends Acceptor<LongSimTime, Void> {
+public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
 	
 	public TestAcceptor() {
-		super(null);
+		super(0);
 	}
 
 	public static Port<Integer> acceptNumber = new Port<Integer>("acceptNumber");

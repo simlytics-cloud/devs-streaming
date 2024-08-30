@@ -26,7 +26,9 @@ import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+
 import devs.msg.log.DevsLogMessage;
+import devs.msg.log.RunIdMessage;
 import devs.utils.DevsObjectMapper;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -35,17 +37,35 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
 
   private final PrintStream printStream;
   private final ObjectMapper objectMapper;
+  private final String runId;
 
-  public static Behavior<DevsLogMessage> create(OutputStream outputStream) {
-    return Behaviors.setup(context -> new DevsLoggingActor(context, outputStream));
+  public static class DevsLoggingActorFactory implements DevsLoggerFactory {
+
+    protected final OutputStream outputStream;
+    protected final String runId;
+
+    public DevsLoggingActorFactory(OutputStream outputStream, String runId) {
+      this.outputStream = outputStream;
+      this.runId = runId;
+    }
+
+    @Override
+    public Behavior<DevsLogMessage> createDevsLogMessageBehaior() {
+      return DevsLoggingActor.create(outputStream, runId);
+    }
+
+  }
+
+  public static Behavior<DevsLogMessage> create(OutputStream outputStream, String runId) {
+    return Behaviors.setup(context -> new DevsLoggingActor(context, outputStream, runId));
   }
 
 
-  public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream) {
+  public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream, String runId) {
     super(context);
     this.printStream = new PrintStream(outputStream);
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
-    ;
+    this.runId = runId;
     objectMapper.registerModule(new Jdk8Module());
   }
 
@@ -58,7 +78,8 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
 
   protected Behavior<DevsLogMessage> onDevsLogMessage(DevsLogMessage devsLogMessage)
       throws JsonProcessingException {
-    String output = objectMapper.writeValueAsString(devsLogMessage);
+    RunIdMessage runIdMessage = RunIdMessage.builder().runId(runId).devsLogMessage(devsLogMessage).build();
+    String output = objectMapper.writeValueAsString(runIdMessage);
     printStream.println(output);
     return Behaviors.same();
   }

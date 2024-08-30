@@ -17,28 +17,27 @@
 
 package devs.msg.log;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import devs.msg.time.SimTime;
-import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
-/**
- * Interface used to mark messages to be logged by a StateLoggingSimulator.
- */
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import devs.msg.DevsMessage;
+import devs.msg.time.SimTime;
+import devs.msg.time.TimedDevsMessage;
+
+
 @Value.Immutable
-@JsonSerialize(as = StateMessage.class)
-@JsonDeserialize(as = StateMessage.class)
-public abstract class AbstractStateMessage<T extends SimTime, S> implements TimedDevsMessage<T>, DevsLogMessage {
+@JsonSerialize(as = DevsModelLogMessage.class)
+@JsonDeserialize(as = DevsModelLogMessage.class)
+public abstract class AbstractDevsModelLogMessage<T extends SimTime> implements DevsLogMessage, TimedDevsMessage<T> {
+    @Override
+    @Value.Parameter
+    public abstract T getTime();
 
-  @Value.Parameter
-  public abstract String getModelId();
+    @Value.Parameter
+    public abstract String getModelId();
 
-  @Value.Parameter
-  public abstract S getModelState();
-
-  @Value.Parameter
-  @Override
-  public abstract T getTime();
-
+    @Value.Parameter
+    public abstract DevsMessage getDevsMessage();
 }

@@ -22,10 +22,19 @@ import org.apache.pekko.serialization.Serialization;
 import org.apache.pekko.serialization.SerializationExtension;
 import org.apache.pekko.serialization.Serializers;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import devs.msg.log.DevsLogMessage;
+import devs.msg.log.DevsModelLogMessage;
+import devs.msg.log.RunIdMessage;
+import devs.msg.log.StateMessage;
 import devs.msg.time.LongSimTime;
 import devs.msg.time.SimTime;
+import devs.utils.DevsObjectMapper;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
+import example.storage.StorageState;
 import example.storage.StorageStateEnum;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +53,7 @@ public class DevsMessageTest {
 
     // Get the Serialization Extension
     Serialization serialization = SerializationExtension.get(system);
+    ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
     //@BeforeAll
     //static void registerObjectMapper() {
@@ -82,13 +92,13 @@ public class DevsMessageTest {
     @Test
     @DisplayName("Serialize deserialize ExecuteTransition")
     void serdeExecuteTransitionMessage() throws JsonProcessingException {
-        ExecuteTransition<SimTime> executeTransition =
+        ExecuteTransition<?> executeTransition =
                 ExecuteTransition.builder().time(zero).modelInputsOption(
                         Optional.of(Bag.builder()
                                 .addPortValueList(StorageModel.storageInputPort.createPortValue(1))
                                 .build())).build();
         DevsMessage devsMessage = executeTransition;
-        //String json = objectMapper.writeValueAsString(devsMessage);
+        String json = objectMapper.writeValueAsString(devsMessage);
         byte[] bytes = serialization.serialize(devsMessage).get();
         DevsMessage deserialized = deserialize(devsMessage, bytes);
         //DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
@@ -200,6 +210,54 @@ public class DevsMessageTest {
         assert(desTransitionDone.getTime().getT() == 0L);
         assert(desTransitionDone.getNextTime().getT() == 1L);
         assert(desTransitionDone.getSender().compareTo(GeneratorModel.identifier) == 0);
+    }
+
+    @Test
+    @DisplayName("Serialize and deserialize DevsRunIdMessage")
+    void serdeDevsRunIdMessage() throws JsonProcessingException {
+        StorageState storageState = new StorageState(StorageStateEnum.S1);
+        StateMessage<SimTime, Object> stateMessage = StateMessage.builder()
+            .modelId("storage")
+            .modelState(storageState)
+            .time(LongSimTime.create(1))
+            .build();
+        RunIdMessage runIdMessage = RunIdMessage.builder()
+            .runId("testId")
+            .devsLogMessage(stateMessage)
+            .build();
+        
+        String json = objectMapper.writeValueAsString(runIdMessage);
+        RunIdMessage deserialized = objectMapper.readValue(json, RunIdMessage.class);
+        assert(deserialized.getDevsLogMessage() instanceof StateMessage<?, ?>);
+        StateMessage<?, ?> desStateMessage = (StateMessage)deserialized.getDevsLogMessage();
+        String stateMessageJson = objectMapper.writeValueAsString(desStateMessage.getModelState());
+
+        StorageState desState = objectMapper.readValue(stateMessageJson, StorageState.class);
+        assert desState.getStateValue().equals(StorageStateEnum.S1);
+
+        ExecuteTransition<?> executeTransition =
+        ExecuteTransition.builder().time(zero).modelInputsOption(
+                Optional.of(Bag.builder()
+                        .addPortValueList(StorageModel.storageInputPort.createPortValue(1))
+                        .build())).build();
+        DevsModelLogMessage<?> devsModelLogMessage = DevsModelLogMessage.builder()
+            .time(executeTransition.getTime())
+            .modelId("storage")
+            .devsMessage(executeTransition)
+            .build();
+        RunIdMessage runIdMessage2 = RunIdMessage.builder()
+            .runId("testId")
+            .devsLogMessage(devsModelLogMessage)
+            .build();
+        String json2 = objectMapper.writeValueAsString(runIdMessage2);
+        RunIdMessage deserialized2 = objectMapper.readValue(json2, RunIdMessage.class);
+        assert(deserialized2.getRunId().equals("testId"));
+        assert(deserialized2.getDevsLogMessage() instanceof DevsModelLogMessage);
+        DevsModelLogMessage desDevsModelLogMessage = (DevsModelLogMessage)deserialized2.getDevsLogMessage();
+        assert desDevsModelLogMessage.getDevsMessage() instanceof ExecuteTransition;
+        ExecuteTransition<LongSimTime> desExecuteTransition = (ExecuteTransition<LongSimTime>)desDevsModelLogMessage.getDevsMessage();
+        assert(desExecuteTransition.getTime().getT() == 0L);
+        assert ((Integer) desExecuteTransition.getModelInputsOption().get().getPortValueList().get(0).getValue() == 1);
     }
 
     @Test

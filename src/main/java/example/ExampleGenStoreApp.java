@@ -61,19 +61,17 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
 
     protected Behavior<GenStoreApp> onStart(GenStoreStart start) {
         ActorContext<GenStoreApp> context = this.getContext();
-        ActorRef<DevsLogMessage> loggingActor = context.spawn(DevsLoggingActor.create(System.out), "logger");
+        ActorRef<DevsLogMessage> loggingActor = context.spawn(DevsLoggingActor.create(System.out, java.util.UUID.randomUUID().toString()), "logger");
 
         ActorRef<DevsMessage> generator = context.spawn(StateLoggingSimulator.create(
                 new GeneratorModel(0),
                 LongSimTime.builder().t(0L).build(),
-                "generator",
                 loggingActor
         ), "generator");
 
         ActorRef<DevsMessage> storage = context.spawn(StateLoggingSimulator.create(
                 new StorageModel(new StorageState(StorageStateEnum.S0)),
                 LongSimTime.builder().t(0L).build(),
-                "storage",
                 loggingActor
         ), "storage");
 

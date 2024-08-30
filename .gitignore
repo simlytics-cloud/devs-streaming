@@ -7,3 +7,5 @@ lib/
 *key.txt
 project/project/
 project/target/
+.settings/
+.settings/org.eclipse.jdt.core.prefs
