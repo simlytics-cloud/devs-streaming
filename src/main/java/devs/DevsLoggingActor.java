@@ -39,7 +39,7 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
   private final ObjectMapper objectMapper;
   private final String runId;
 
-  public static class DevsLoggingActorFactory implements DevsLoggerFactory {
+  public static class DevsLoggingActorFactory {
 
     protected final OutputStream outputStream;
     protected final String runId;
@@ -49,7 +49,6 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
       this.runId = runId;
     }
 
-    @Override
     public Behavior<DevsLogMessage> createDevsLogMessageBehaior() {
       return DevsLoggingActor.create(outputStream, runId);
     }

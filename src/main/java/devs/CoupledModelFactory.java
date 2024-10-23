@@ -24,7 +24,7 @@ public class CoupledModelFactory<T extends SimTime> {
 	protected final List<CoupledModelFactory<T>> coupledModelFactories;
 	protected final PDevsCouplings couplings;
 	protected final List<String> loggingModels = new ArrayList<>();
-	protected Optional<DevsLoggerFactory> devsLoggerFactoryOption = Optional.empty();
+	protected Optional<ActorRef<DevsLogMessage>> devsLoggerOption = Optional.empty();
 	
 	public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels, 
 			List<CoupledModelFactory<T>> coupledModelFactories, PDevsCouplings couplings) {
@@ -34,8 +34,8 @@ public class CoupledModelFactory<T extends SimTime> {
 		this.couplings = couplings;
 	}
 
-	public void addDevsLoggerFactor(DevsLoggerFactory devsLoggerFactory) {
-		devsLoggerFactoryOption = Optional.of(devsLoggerFactory);
+	public void addDevsLogger(ActorRef<DevsLogMessage> devsLoggger) {
+		devsLoggerOption = Optional.of(devsLoggger);
 	}
 
 	public void addLoggingModels(List<String> modelIds) {
@@ -52,17 +52,13 @@ public class CoupledModelFactory<T extends SimTime> {
 	
     public Behavior<DevsMessage> create(String parentIdentifier, T initialTime) {
     	return Behaviors.setup(context -> {
-			ActorRef<DevsLogMessage> loggingActor = null;
-			if (devsLoggerFactoryOption.isPresent()) {
-				loggingActor = context.spawn(devsLoggerFactoryOption.get().createDevsLogMessageBehaior(), "loggingActor");
-			}
 	        Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
 			for (PDEVSModel<T, ?> devsModel: devsModels) {
 				ActorRef<DevsMessage> atomicModelRef;
 
-				if (devsLoggerFactoryOption.isPresent() && loggingActor != null && loggingModels.contains(devsModel.getModelIdentifier())) {
+				if (devsLoggerOption.isPresent() && loggingModels.contains(devsModel.getModelIdentifier())) {
 					atomicModelRef = context.spawn(StateLoggingSimulator.create(
-						devsModel, initialTime, loggingActor), ModelUtils.toLegalActorName(devsModel.getModelIdentifier()));
+						devsModel, initialTime, devsLoggerOption.get()), ModelUtils.toLegalActorName(devsModel.getModelIdentifier()));
 				} else {
 					atomicModelRef = context.spawn(PDevsSimulator.create(
 						devsModel, initialTime), ModelUtils.toLegalActorName(devsModel.getModelIdentifier()));
@@ -72,6 +68,10 @@ public class CoupledModelFactory<T extends SimTime> {
 			}
 	        
 	        for (CoupledModelFactory<T> factory: coupledModelFactories) {
+				if (devsLoggerOption.isPresent()) {
+					factory.addDevsLogger(devsLoggerOption.get());
+					factory.addLoggingModels(loggingModels);
+				}
 	        	ActorRef<DevsMessage> coupledModel = context.spawn(factory.create(modelIdentifier, initialTime), 
 	        			ModelUtils.toLegalActorName(factory.getModelIdentifier()));
 	        	context.watch(coupledModel);
