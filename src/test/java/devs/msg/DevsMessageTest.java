@@ -99,6 +99,7 @@ public class DevsMessageTest {
                                 .build())).build();
         DevsMessage devsMessage = executeTransition;
         String json = objectMapper.writeValueAsString(devsMessage);
+        DevsMessage m = objectMapper.readValue(json, DevsMessage.class);
         byte[] bytes = serialization.serialize(devsMessage).get();
         DevsMessage deserialized = deserialize(devsMessage, bytes);
         //DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);

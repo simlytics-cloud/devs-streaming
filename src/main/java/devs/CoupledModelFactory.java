@@ -15,6 +15,7 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import devs.msg.DevsMessage;
 import devs.msg.log.DevsLogMessage;
 import devs.msg.time.SimTime;
+import devs.proxy.KafkaLocalProxy;
 import devs.utils.ModelUtils;
 
 public class CoupledModelFactory<T extends SimTime> {
@@ -24,6 +25,7 @@ public class CoupledModelFactory<T extends SimTime> {
 	protected final List<CoupledModelFactory<T>> coupledModelFactories;
 	protected final PDevsCouplings couplings;
 	protected final List<String> loggingModels = new ArrayList<>();
+	protected List<KafkaLocalProxy.ProxyProperties> proxyModels = new ArrayList<>();
 	protected Optional<ActorRef<DevsLogMessage>> devsLoggerOption = Optional.empty();
 	
 	public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels, 
@@ -33,6 +35,15 @@ public class CoupledModelFactory<T extends SimTime> {
 		this.coupledModelFactories = coupledModelFactories;
 		this.couplings = couplings;
 	}
+
+	public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels, 
+	List<CoupledModelFactory<T>> coupledModelFactories, List<KafkaLocalProxy.ProxyProperties> proxyModels, PDevsCouplings couplings) {
+		this.modelIdentifier = modelIdentifier;
+		this.devsModels = devsModels;
+		this.coupledModelFactories = coupledModelFactories;
+		this.proxyModels = proxyModels;
+		this.couplings = couplings;
+}	
 
 	public void addDevsLogger(ActorRef<DevsLogMessage> devsLoggger) {
 		devsLoggerOption = Optional.of(devsLoggger);
@@ -65,6 +76,11 @@ public class CoupledModelFactory<T extends SimTime> {
 				}
 	           context.watch(atomicModelRef);
 	           modelSimulators.put(devsModel.getModelIdentifier(), atomicModelRef);
+			}
+
+			for (KafkaLocalProxy.ProxyProperties proxy: proxyModels) {
+				ActorRef<DevsMessage> kafkaLocalProxy = context.spawn(KafkaLocalProxy.create(proxy), ModelUtils.toLegalActorName(proxy.componentName()));
+				modelSimulators.put(proxy.componentName(), kafkaLocalProxy);
 			}
 	        
 	        for (CoupledModelFactory<T> factory: coupledModelFactories) {

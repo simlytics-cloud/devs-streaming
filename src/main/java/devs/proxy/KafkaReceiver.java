@@ -81,6 +81,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     //  The consumer's auto.offset.reset property is set to earliest so it always reads all data
     this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(consumerTopic))
         .map(record -> {
+          System.out.println("Kafka received record: " + record.value());
           processRecord(record);
           return NotUsed.notUsed();
         })
@@ -124,8 +125,8 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     try {
       devsMessage = objectMapper.readValue(record.value(), DevsMessage.class);
     } catch (JsonProcessingException e) {
-      getContext().getLog().error("Could not deserialize " + record.value() + " as DevsMessage");
-      throw new RuntimeException(e);
+      System.err.println("Could not deserialize JSON record " + record.value());
+      e.printStackTrace();
     }
     getContext().getSelf().tell(devsMessage);
   }
