@@ -19,7 +19,10 @@ package devs.utils;
 
 public class ModelUtils {
 
-    public static String toLegalActorName(String name) {
-        return name.replaceAll("[^a-zA-Z0-9-_.*$+:@&=,!~';]", "");
-    }
+  public static String toLegalActorName(String name) {
+    return name.replaceAll("[^a-zA-Z0-9-_.*$+:@&=,!~';]", "");
+  }
+
+  private ModelUtils() {
+  }
 }

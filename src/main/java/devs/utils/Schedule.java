@@ -22,37 +22,37 @@ import devs.msg.time.SimTime;
 import java.util.*;
 
 public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
-    public Schedule() {
-    }
+  public Schedule() {
+  }
 
-    public Schedule(Map<? extends T, ArrayList<Object>> m) {
-        super(m);
-    }
+  public Schedule(Map<? extends T, ArrayList<Object>> m) {
+    super(m);
+  }
 
-    public Schedule(SortedMap<T, ArrayList<Object>> m) {
-        super(m);
+  public Schedule(SortedMap<T, ArrayList<Object>> m) {
+    super(m);
+  }
+
+  public void add(T time, Object event) {
+    if (this.containsKey(time)) {
+      this.get(time).add(event);
+    } else {
+      ArrayList<Object> events = new ArrayList<>();
+      events.add(event);
+      this.put(time, events);
     }
-    
-    public void add(T time, Object event) {
-    	if (this.containsKey(time)) {
-    		this.get(time).add(event);
-    	} else {
-    		ArrayList<Object> events = new ArrayList<Object>();
-    		events.add(event);
-    		this.put(time, events);
-    	}
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder stringBuilder = new StringBuilder();
+    stringBuilder.append("Scheduled Events: \n");
+    for (T key: keySet()) {
+      stringBuilder.append("  Time:").append(key).append("\n");
+      for (Object event: get(key)) {
+        stringBuilder.append("    Event:").append(event).append("\n");
+      }
     }
-    
-    @Override
-    public String toString() {
-    	StringBuilder stringBuilder = new StringBuilder();
-    	stringBuilder.append("Scheduled Events: \n");
-    	for (T key: keySet()) {
-    		stringBuilder.append("  Time:" + key + "\n");
-    		for (Object event: get(key)) {
-    			stringBuilder.append("    Event:" + event + "\n");
-    		}
-    	}
-    	return stringBuilder.toString();
-    }
+    return stringBuilder.toString();
+  }
 }

@@ -32,9 +32,7 @@ public class Port<T> {
   }
 
   public PortValue<T> createPortValue(T value) {
-    PortValue<T> portValue = new PortValue<T>(value, portIdentifier);
-
-    return portValue;
+    return new PortValue<>(value, portIdentifier);
   }
 
   public String getPortIdentifier() {

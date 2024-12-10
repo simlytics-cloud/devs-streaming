@@ -17,34 +17,28 @@
 
 package devs.proxy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.typesafe.config.Config;
+import devs.msg.*;
+import devs.msg.time.SimTime;
+import devs.utils.DevsObjectMapper;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
 import org.apache.pekko.NotUsed;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.apache.pekko.actor.typed.javadsl.*;
 import org.apache.pekko.kafka.ConsumerSettings;
 import org.apache.pekko.kafka.Subscriptions;
 import org.apache.pekko.kafka.javadsl.Consumer;
 import org.apache.pekko.stream.ActorAttributes;
 import org.apache.pekko.stream.Supervision;
 import org.apache.pekko.stream.javadsl.Sink;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.typesafe.config.Config;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.SimulationDone;
-import devs.msg.time.SimTime;
-import devs.utils.DevsObjectMapper;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.serialization.StringDeserializer;
+
+import java.util.UUID;
 
 
 public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
@@ -71,8 +65,8 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     objectMapper.registerModule(new Jdk8Module());
     ConsumerSettings<String, String> consumerSettings =
         ConsumerSettings.create(akkaKafkaConsumerConfig, new StringDeserializer(),
-                new StringDeserializer())
-            .withGroupId(java.util.UUID.randomUUID().toString());
+            new StringDeserializer())
+            .withGroupId(UUID.randomUUID().toString());
 
     // Using a Kafka consumer from the Alpakka Kafka project because this consumer does a better job of managing
     //  threads.  For example, the Java Kafka consumer uses an infinite loop to poll for data
@@ -97,7 +91,6 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   }
 
   private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
-  ;
 
 
   @Override
@@ -132,4 +125,3 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   }
 
 }
-

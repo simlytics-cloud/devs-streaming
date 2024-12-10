@@ -17,8 +17,8 @@
 
 package devs.msg;
 
-import org.apache.pekko.actor.typed.ActorRef;
 import devs.msg.time.SimTime;
+import org.apache.pekko.actor.typed.ActorRef;
 
 public class InitSimMessage<T extends SimTime> implements DevsMessage {
 

@@ -21,7 +21,6 @@ import devs.OutputCouplingHandler;
 import devs.msg.PortValue;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
-import scala.Int;
 
 import java.util.List;
 import java.util.Map;
@@ -30,16 +29,16 @@ import java.util.Optional;
 public class GenStoreOutputCouplingHandler extends OutputCouplingHandler {
 
 
-    public GenStoreOutputCouplingHandler() {
-        super(Optional.empty(), Optional.of("generator"), Optional.empty());
-    }
+  public GenStoreOutputCouplingHandler() {
+    super(Optional.empty(), Optional.of("generator"), Optional.empty());
+  }
 
-    @Override
-    public void handlePortValue(String sender, PortValue<?> portValue,
-                                Map<String, List<PortValue<?>>> receiverMap,
-                                List<PortValue<?>> outputMessages) {
-        PortValue<Integer> inputPortValue =  StorageModel.storageInputPort.createPortValue(
-                GeneratorModel.generatorOutputPort.getValue(portValue));
-        addInputPortValue(inputPortValue, StorageModel.identifier, receiverMap);
-    }
+  @Override
+  public void handlePortValue(String sender, PortValue<?> portValue,
+      Map<String, List<PortValue<?>>> receiverMap,
+      List<PortValue<?>> outputMessages) {
+    PortValue<Integer> inputPortValue = StorageModel.storageInputPort.createPortValue(
+        GeneratorModel.generatorOutputPort.getValue(portValue));
+    addInputPortValue(inputPortValue, StorageModel.identifier, receiverMap);
+  }
 }

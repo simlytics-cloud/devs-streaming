@@ -1,9 +1,8 @@
 package devs.msg.log;
 
-import org.immutables.value.Value;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.immutables.value.Value;
 
 
 @Value.Immutable
@@ -11,7 +10,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonDeserialize(as = RunIdMessage.class)
 public abstract class AbstractRunIdMessage {
 
-    public abstract String getRunId();
-    public abstract DevsLogMessage getDevsLogMessage();
-    
+  public abstract String getRunId();
+
+  public abstract DevsLogMessage getDevsLogMessage();
+
 }

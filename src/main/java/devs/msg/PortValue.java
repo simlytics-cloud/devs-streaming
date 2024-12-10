@@ -55,9 +55,9 @@ public class PortValue<T> {
   public String getPortType() {
     return portType;
   }
-  
+
   @Override
   public String toString() {
-	  return "PortValue with Port ID " + portIdentifier + " and value " + value;
+    return "PortValue with Port ID " + portIdentifier + " and value " + value;
   }
 }

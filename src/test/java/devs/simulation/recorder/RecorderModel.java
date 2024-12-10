@@ -17,46 +17,43 @@
 
 package devs.simulation.recorder;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import devs.PDEVSModel;
 import devs.Port;
 import devs.msg.Bag;
-import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
 import example.storage.StorageStateEnum;
 
 public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
 
-    public static Port<StorageStateEnum> storageOutput = new Port<>("STORAGE_OUTPUT");
-    public static Port<Integer> generatorOutput = new Port<>("GENERATOR_OUTPUT");
+  public static Port<StorageStateEnum> storageOutput = new Port<>("STORAGE_OUTPUT");
+  public static Port<Integer> generatorOutput = new Port<>("GENERATOR_OUTPUT");
 
-    public RecorderModel(String sender) {
-        super(null, sender);
-    }
+  public RecorderModel(String sender) {
+    super(null, sender);
+  }
 
-    @Override
-    public void internalStateTransitionFunction(LongSimTime currentTime) {
+  @Override
+  public void internalStateTransitionFunction(LongSimTime currentTime) {
 
-    }
+  }
 
-    @Override
-    public void externalStateTransitionFunction(LongSimTime currentTime, Bag input) {
+  @Override
+  public void externalStateTransitionFunction(LongSimTime currentTime, Bag input) {
 
-    }
+  }
 
-    @Override
-    public void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
+  @Override
+  public void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
 
-    }
+  }
 
-    @Override
-    public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
-        return LongSimTime.builder().t(Long.MAX_VALUE).build();
-    }
+  @Override
+  public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+    return LongSimTime.builder().t(Long.MAX_VALUE).build();
+  }
 
-    @Override
-    public Bag outputFunction() {
-        return Bag.builder().build();
-    }
+  @Override
+  public Bag outputFunction() {
+    return Bag.builder().build();
+  }
 }

@@ -30,29 +30,29 @@ import java.util.Optional;
 public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler {
 
 
-    public GenStoreRecorderOutputCouplingHandler() {
-        super(Optional.empty(), Optional.empty(), Optional.empty());
+  public GenStoreRecorderOutputCouplingHandler() {
+    super(Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  @Override
+  public void handlePortValue(String sender, PortValue<?> portValue,
+      Map<String, List<PortValue<?>>> receiverMap,
+      List<PortValue<?>> outputMessages) {
+
+    if (sender.equals(GeneratorModel.identifier)) {
+      PortValue<Integer> recorderInputValue = RecorderModel.generatorOutput.createPortValue(
+          GeneratorModel.generatorOutputPort.getValue(portValue));
+      addInputPortValue(recorderInputValue, "recorder", receiverMap);
+    } else if (sender.equals(StorageModel.identifier)) {
+      PortValue<StorageStateEnum> recorderInputValue;
+      if (portValue.getValue() instanceof String) {
+        recorderInputValue = RecorderModel.storageOutput.createPortValue(StorageStateEnum.valueOf((String) portValue.getValue()));
+      } else {
+        recorderInputValue = RecorderModel.storageOutput.createPortValue(
+            StorageModel.storageOutputPort.getValue(portValue));
+      }
+      addInputPortValue(recorderInputValue, "recorder", receiverMap);
     }
 
-    @Override
-    public void handlePortValue(String sender, PortValue<?> portValue,
-                                Map<String, List<PortValue<?>>> receiverMap,
-                                List<PortValue<?>> outputMessages) {
-
-        if (sender.equals(GeneratorModel.identifier)) {
-            PortValue<Integer> recorderInputValue = RecorderModel.generatorOutput.createPortValue(
-                    GeneratorModel.generatorOutputPort.getValue(portValue));
-            addInputPortValue(recorderInputValue, "recorder", receiverMap);
-        } else if (sender.equals(StorageModel.identifier)) {
-            PortValue<StorageStateEnum> recorderInputValue;
-            if (portValue.getValue() instanceof String) {
-                recorderInputValue = RecorderModel.storageOutput.createPortValue(StorageStateEnum.valueOf((String)portValue.getValue()));
-            } else {
-                recorderInputValue = RecorderModel.storageOutput.createPortValue(
-                        StorageModel.storageOutputPort.getValue(portValue));
-            }
-            addInputPortValue(recorderInputValue, "recorder", receiverMap);
-        }
-
-    }
+  }
 }

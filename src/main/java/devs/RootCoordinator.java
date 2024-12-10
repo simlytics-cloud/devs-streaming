@@ -17,23 +17,12 @@
 
 package devs;
 
+import devs.msg.*;
+import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.time.SimTime;
+import org.apache.pekko.actor.typed.javadsl.*;
 
 public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
@@ -90,9 +79,9 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   private Behavior<DevsMessage> onModelDone(ModelDone<T> modelDone) {
     return Behaviors.stopped();
   }
-  
+
   protected Behavior<DevsMessage> onChildFailed(ChildFailed childFailed) {
-	  getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
-	  return this;
+    getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
+    return this;
   }
 }

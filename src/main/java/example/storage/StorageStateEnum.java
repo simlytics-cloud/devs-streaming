@@ -19,8 +19,8 @@ package example.storage;
 
 public enum StorageStateEnum {
 
-    S0(0d), S1(1d), S0_1(0.1);
+  S0(0d), S1(1d), S0_1(0.1);
 
-    StorageStateEnum(double value) {
-    }
+  StorageStateEnum(double value) {
+  }
 }

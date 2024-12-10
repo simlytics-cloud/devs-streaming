@@ -17,9 +17,6 @@
 
 package example;
 
-import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.*;
 import devs.*;
 import devs.msg.DevsMessage;
 import devs.msg.InitSim;
@@ -31,72 +28,80 @@ import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
 import example.storage.StorageStateEnum;
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.ActorSystem;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.*;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenStoreApp> {
 
-    public interface GenStoreApp{}
-    public static class GenStoreStart implements GenStoreApp{}
+  public interface GenStoreApp {
+  }
 
-    public static void main(String[] args) {
-        //akka.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
-        org.apache.pekko.actor.typed.ActorSystem<GenStoreApp> system =
-                org.apache.pekko.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
-        system.tell(new GenStoreStart());
-    }
+  public static class GenStoreStart implements GenStoreApp {
+  }
 
-    @Override
-    public Receive<GenStoreApp> createReceive() {
-        ReceiveBuilder<GenStoreApp> genStoreAppReceiveBuilder = newReceiveBuilder();
-        genStoreAppReceiveBuilder.onMessage(GenStoreStart.class, this::onStart);
-        return genStoreAppReceiveBuilder.build();
-    }
+  public static void main(String[] args) {
+    //akka.actor.typed.ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
+    ActorSystem<GenStoreApp> system =
+        ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
+    system.tell(new GenStoreStart());
+  }
 
-    private ExampleGenStoreApp(ActorContext<GenStoreApp> context) {
-        super(context);
-    }
+  @Override
+  public Receive<GenStoreApp> createReceive() {
+    ReceiveBuilder<GenStoreApp> genStoreAppReceiveBuilder = newReceiveBuilder();
+    genStoreAppReceiveBuilder.onMessage(GenStoreStart.class, this::onStart);
+    return genStoreAppReceiveBuilder.build();
+  }
 
-    protected Behavior<GenStoreApp> onStart(GenStoreStart start) {
-        ActorContext<GenStoreApp> context = this.getContext();
-        ActorRef<DevsLogMessage> loggingActor = context.spawn(DevsLoggingActor.create(System.out, java.util.UUID.randomUUID().toString()), "logger");
+  private ExampleGenStoreApp(ActorContext<GenStoreApp> context) {
+    super(context);
+  }
 
-        ActorRef<DevsMessage> generator = context.spawn(StateLoggingSimulator.create(
-                new GeneratorModel(0),
-                LongSimTime.builder().t(0L).build(),
-                loggingActor
-        ), "generator");
+  protected Behavior<GenStoreApp> onStart(GenStoreStart start) {
+    ActorContext<GenStoreApp> context = this.getContext();
+    ActorRef<DevsLogMessage> loggingActor = context.spawn(DevsLoggingActor.create(System.out, UUID.randomUUID().toString()), "logger");
 
-        ActorRef<DevsMessage> storage = context.spawn(StateLoggingSimulator.create(
-                new StorageModel(new StorageState(StorageStateEnum.S0)),
-                LongSimTime.builder().t(0L).build(),
-                loggingActor
-        ), "storage");
+    ActorRef<DevsMessage> generator = context.spawn(StateLoggingSimulator.create(
+        new GeneratorModel(0),
+        LongSimTime.builder().t(0L).build(),
+        loggingActor
+    ), "generator");
 
-        Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
-        modelSimulators.put("generator", generator);
-        modelSimulators.put("storage", storage);
+    ActorRef<DevsMessage> storage = context.spawn(StateLoggingSimulator.create(
+        new StorageModel(new StorageState(StorageStateEnum.S0)),
+        LongSimTime.builder().t(0L).build(),
+        loggingActor
+    ), "storage");
 
-        PDevsCouplings genStoreCoupling = new PDevsCouplings(
-                Collections.singletonList(new GenStoreInputCouplingHandler()),
-                Collections.singletonList(new GenStoreOutputCouplingHandler()));
-        ActorRef<DevsMessage> coordinator = context.spawn(PDevsCoordinator.create(
-                        "coupled", "root", modelSimulators, genStoreCoupling),
-                "coordinator");
+    Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
+    modelSimulators.put("generator", generator);
+    modelSimulators.put("storage", storage);
 
-        ActorRef<DevsMessage> rootCoordinator = context.spawn(RootCoordinator.create(
-                LongSimTime.builder().t(3L).build(), coordinator
-        ), "root");
+    PDevsCouplings genStoreCoupling = new PDevsCouplings(
+        Collections.singletonList(new GenStoreInputCouplingHandler()),
+        Collections.singletonList(new GenStoreOutputCouplingHandler()));
+    ActorRef<DevsMessage> coordinator = context.spawn(PDevsCoordinator.create(
+            "coupled", "root", modelSimulators, genStoreCoupling),
+        "coordinator");
 
-        rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+    ActorRef<DevsMessage> rootCoordinator = context.spawn(RootCoordinator.create(
+        LongSimTime.builder().t(3L).build(), coordinator
+    ), "root");
 
-        //context.watch(rootCoordinator);
-        return Behaviors.same();
-    }
+    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
 
-    public static Behavior<GenStoreApp> create() {
-        return Behaviors.setup(ExampleGenStoreApp::new);
-    }
+    //context.watch(rootCoordinator);
+    return Behaviors.same();
+  }
+
+  public static Behavior<GenStoreApp> create() {
+    return Behaviors.setup(ExampleGenStoreApp::new);
+  }
 }

@@ -19,11 +19,8 @@ package devs;
 
 import devs.msg.Bag;
 import devs.msg.PortValue;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+
+import java.util.*;
 
 public class PDevsCouplings {
 
@@ -41,13 +38,13 @@ public class PDevsCouplings {
     Map<String, List<PortValue<?>>> receiverMap = new HashMap<>();
     List<PortValue<?>> outputMessages = new ArrayList<>();
 
-    for (OutputCouplingHandler outputHandler : outputHandlers) {
+    for (OutputCouplingHandler outputHandler: outputHandlers) {
       outputHandler.handleOutputs(outputMap, receiverMap, outputMessages);
     }
 
     // Create input bags for all of the internal messages
     Map<String, Bag> internalMessages = new HashMap<>();
-    for (String key : receiverMap.keySet()) {
+    for (String key: receiverMap.keySet()) {
       List<PortValue<?>> portValues = receiverMap.get(key);
       internalMessages.put(key, Bag.builder().addAllPortValueList(portValues).build());
     }
@@ -60,13 +57,13 @@ public class PDevsCouplings {
   public Map<String, Bag> handleInputMessage(Bag modelInput) {
     Map<String, List<PortValue<?>>> receiverMap = new HashMap<>();
 
-    for (InputCouplingHandler inputHandler : inputHandlers) {
+    for (InputCouplingHandler inputHandler: inputHandlers) {
       inputHandler.handleInputs(modelInput, receiverMap);
     }
 
     // Create input bags for all of the internal messages
     Map<String, Bag> internalMessages = new HashMap<>();
-    for (String key : receiverMap.keySet()) {
+    for (String key: receiverMap.keySet()) {
       List<PortValue<?>> portValues = receiverMap.get(key);
       internalMessages.put(key, Bag.builder().addAllPortValueList(portValues).build());
     }

@@ -21,26 +21,26 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class StorageState {
-    private final StorageStateEnum stateValue;
-    private final boolean hasOutput;
+  private final StorageStateEnum stateValue;
+  private final boolean hasOutput;
 
-    @JsonCreator
-    public StorageState(@JsonProperty("stateValue")StorageStateEnum stateValue,
-                        @JsonProperty("hasOutput") boolean hasOutput) {
-        this.stateValue = stateValue;
-        this.hasOutput = hasOutput;
-    }
+  @JsonCreator
+  public StorageState(@JsonProperty("stateValue") StorageStateEnum stateValue,
+      @JsonProperty("hasOutput") boolean hasOutput) {
+    this.stateValue = stateValue;
+    this.hasOutput = hasOutput;
+  }
 
-    public StorageState(StorageStateEnum stateValue) {
-        this.stateValue = stateValue;
-        this.hasOutput = false;
-    }
+  public StorageState(StorageStateEnum stateValue) {
+    this.stateValue = stateValue;
+    this.hasOutput = false;
+  }
 
-    public StorageStateEnum getStateValue() {
-        return stateValue;
-    }
+  public StorageStateEnum getStateValue() {
+    return stateValue;
+  }
 
-    public boolean getHasOutput() {
-        return hasOutput;
-    }
+  public boolean getHasOutput() {
+    return hasOutput;
+  }
 }

@@ -17,25 +17,20 @@
 
 package devs;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import devs.msg.*;
+import devs.msg.log.DevsLogMessage;
+import devs.msg.log.DevsModelLogMessage;
+import devs.msg.log.StateMessage;
+import devs.msg.time.SimTime;
+import devs.utils.DevsObjectMapper;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.serialization.Serialization;
 import org.apache.pekko.serialization.SerializationExtension;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelOutputMessage;
-import devs.msg.SendOutput;
-import devs.msg.log.DevsLogMessage;
-import devs.msg.log.DevsModelLogMessage;
-import devs.msg.log.StateMessage;
-import devs.msg.time.SimTime;
-import devs.utils.DevsObjectMapper;
 import java.nio.charset.StandardCharsets;
 
 public class StateLoggingSimulator<T extends SimTime, S,
@@ -46,8 +41,7 @@ public class StateLoggingSimulator<T extends SimTime, S,
   final ObjectMapper objectMapper;
 
   public static <TT extends SimTime, SS,
-      MM extends PDEVSModel<TT, SS>> Behavior<DevsMessage>
-  create(MM aDevsModel, TT initialTime, ActorRef<DevsLogMessage> loggingActor) {
+      MM extends PDEVSModel<TT, SS>> Behavior<DevsMessage> create(MM aDevsModel, TT initialTime, ActorRef<DevsLogMessage> loggingActor) {
     return Behaviors.setup(
         context -> new StateLoggingSimulator<>(aDevsModel, initialTime, context,
             loggingActor));
@@ -98,18 +92,18 @@ public class StateLoggingSimulator<T extends SimTime, S,
   @Override
   protected Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
     if (sendOutput.getTime().compareTo(timeNext) != 0) {
-      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time " +
-          sendOutput.getTime() + " did not equal " + timeNext);
+      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
+          + sendOutput.getTime() + " did not equal " + timeNext);
     }
     Bag modelOutput = devsModel.outputFunction();
     ModelOutputMessage<?> modelOutputMessage = ModelOutputMessage.builder()
-      .modelOutput(modelOutput)
-      .nextTime(timeNext)
-      .time(sendOutput.getTime())
-      .sender(devsModel.getModelIdentifier())
-      .build();
+        .modelOutput(modelOutput)
+        .nextTime(timeNext)
+        .time(sendOutput.getTime())
+        .sender(devsModel.getModelIdentifier())
+        .build();
     parent.tell(modelOutputMessage);
-      DevsModelLogMessage<?> devsModelLogMessage = DevsModelLogMessage.builder()
+    DevsModelLogMessage<?> devsModelLogMessage = DevsModelLogMessage.builder()
         .time(sendOutput.getTime())
         .modelId(devsModel.getModelIdentifier())
         .devsMessage(modelOutputMessage)

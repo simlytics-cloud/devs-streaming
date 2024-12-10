@@ -17,25 +17,11 @@
 
 package devs;
 
+import devs.msg.*;
+import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.TransitionDone;
-import devs.msg.time.LongSimTime;
-import devs.msg.time.SimTime;
+import org.apache.pekko.actor.typed.javadsl.*;
 
 public class PDevsSimulator<T extends SimTime, S,
     M extends PDEVSModel<T, S>> extends AbstractBehavior<DevsMessage> {
@@ -45,10 +31,9 @@ public class PDevsSimulator<T extends SimTime, S,
   protected ActorRef<DevsMessage> parent;
 
   protected final M devsModel;
-  
 
-  public static <TT extends SimTime> Behavior<DevsMessage>
-  create(PDEVSModel<TT, ?> aDevsModel, TT initialTime) {
+
+  public static <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> aDevsModel, TT initialTime) {
     return Behaviors.setup(context -> new PDevsSimulator(aDevsModel, initialTime, context));
   }
 
@@ -71,14 +56,14 @@ public class PDevsSimulator<T extends SimTime, S,
 
     return builder.build();
   }
-  
+
   protected T timeAdvance(T currentTime) {
-	  T time = devsModel.timeAdvanceFunction(currentTime);
-	  if (time.compareTo(currentTime) < 0) {
-		  throw new RuntimeException(devsModel.modelIdentifier + " generated a negative time advance.");
-	  }
-	  //System.out.println("Time advance for " + devsModel.modelIdentifier + " is " + time);
-	  return time;
+    T time = devsModel.timeAdvanceFunction(currentTime);
+    if (time.compareTo(currentTime) < 0) {
+      throw new RuntimeException(devsModel.modelIdentifier + " generated a negative time advance.");
+    }
+    //System.out.println("Time advance for " + devsModel.modelIdentifier + " is " + time);
+    return time;
   }
 
   protected Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
@@ -90,8 +75,8 @@ public class PDevsSimulator<T extends SimTime, S,
 
   protected Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
     if (sendOutput.getTime().compareTo(timeNext) != 0) {
-      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time " +
-          sendOutput.getTime() + " did not equal " + timeNext);
+      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
+          + sendOutput.getTime() + " did not equal " + timeNext);
     }
     Bag modelOutput = devsModel.outputFunction();
     parent.tell(ModelOutputMessage.builder()
@@ -105,11 +90,11 @@ public class PDevsSimulator<T extends SimTime, S,
 
   protected Behavior<DevsMessage> onExecuteTransitionMessage(
       ExecuteTransition<T> executeTransition) {
-    if (executeTransition.getTime().compareTo(timeLast) < 0 ||
-        executeTransition.getTime().compareTo(timeNext) > 0) {
+    if (executeTransition.getTime().compareTo(timeLast) < 0
+        || executeTransition.getTime().compareTo(timeNext) > 0) {
       throw new RuntimeException(
-          "Bad synchronization.  " + devsModel.modelIdentifier + " received ExecuteTransitionMessage where time " +
-              executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
+          "Bad synchronization.  " + devsModel.modelIdentifier + " received ExecuteTransitionMessage where time "
+              + executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
               + "inclusive");
     }
     if (executeTransition.getTime().compareTo(timeNext) == 0) {
@@ -120,12 +105,12 @@ public class PDevsSimulator<T extends SimTime, S,
             executeTransition.getModelInputsOption().get());
       }
     } else {
-    	if (executeTransition.getModelInputsOption().isEmpty()) {
-    		throw new IllegalArgumentException("External transition for model " + devsModel.getModelIdentifier() + 
-    				" is empty.  Transition time is " + executeTransition.getTime() + ".  Next time is " + timeNext);
-    	} else {
-    		return externalStateTransition(executeTransition.getTime(), executeTransition.getModelInputsOption().get());
-    	}
+      if (executeTransition.getModelInputsOption().isEmpty()) {
+        throw new IllegalArgumentException("External transition for model " + devsModel.getModelIdentifier()
+            + " is empty.  Transition time is " + executeTransition.getTime() + ".  Next time is " + timeNext);
+      } else {
+        return externalStateTransition(executeTransition.getTime(), executeTransition.getModelInputsOption().get());
+      }
     }
   }
 
@@ -163,7 +148,6 @@ public class PDevsSimulator<T extends SimTime, S,
             .build());
     return Behaviors.stopped();
   }
-
 
 
 }

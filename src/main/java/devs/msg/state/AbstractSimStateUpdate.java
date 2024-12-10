@@ -45,5 +45,6 @@ public abstract class AbstractSimStateUpdate<T extends SimState<T>> implements S
 
    * @return the state object
    */
+  @Override
   public abstract T getStateUpdate();
 }

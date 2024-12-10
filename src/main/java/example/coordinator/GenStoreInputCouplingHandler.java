@@ -26,12 +26,12 @@ import java.util.Optional;
 
 public class GenStoreInputCouplingHandler extends InputCouplingHandler {
 
-    public GenStoreInputCouplingHandler() {
-        super(Optional.empty());
-    }
+  public GenStoreInputCouplingHandler() {
+    super(Optional.empty());
+  }
 
-    @Override
-    public void handlePortValue(PortValue<?> portValue, Map<String, List<PortValue<?>>> receiverMap) {
-        // GenStore coordinator gets no input
-    }
+  @Override
+  public void handlePortValue(PortValue<?> portValue, Map<String, List<PortValue<?>>> receiverMap) {
+    // GenStore coordinator gets no input
+  }
 }

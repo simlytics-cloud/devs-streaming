@@ -17,30 +17,19 @@
 
 package devs;
 
+import org.apache.kafka.clients.admin.*;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.errors.TopicExistsException;
+
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.CreateTopicsOptions;
-import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.DeleteTopicsResult;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
-import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.admin.NewTopic;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.errors.TopicExistsException;
 
 class TestProducer {
 
@@ -176,16 +165,16 @@ class TestProducer {
         "org.apache.kafka.common.serialization.StringDeserializer");
 
     KafkaConsumer<String, String> consumer =
-        new KafkaConsumer<String, String>(props);
+        new KafkaConsumer<>(props);
 
     consumer.subscribe(Collections.singletonList(topic));
     Duration timeout = Duration.ofMillis(1000);
     while (consuming) {
       ConsumerRecords<String, String> records =
           consumer.poll(timeout);
-      System.out.println(System.currentTimeMillis() +
-          "--  waiting for data...");
-      for (ConsumerRecord<String, String> record : records) {
+      System.out.println(System.currentTimeMillis()
+          + "--  waiting for data...");
+      for (ConsumerRecord<String, String> record: records) {
         System.out.printf("offset = %d, key = %s, value = %s\n",
             record.offset(), record.key(), record.value());
       }
@@ -209,7 +198,6 @@ class TestProducer {
     props.put("sasl.mechanism", "PLAIN");
     props.put("sasl.jaas.config", sasl_jaas_config);
     props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
-    AdminClient admin = AdminClient.create(props);
-    return admin;
+    return AdminClient.create(props);
   }
 }

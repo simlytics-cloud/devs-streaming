@@ -19,6 +19,7 @@ package devs;
 
 import devs.msg.Bag;
 import devs.msg.PortValue;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +42,11 @@ public abstract class OutputCouplingHandler {
 
   public void handleOutputs(Map<String, Optional<Bag>> modelOutputs, Map<String,
       List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
-    for (Map.Entry<String, Optional<Bag>> entry : modelOutputs.entrySet()) {
+    for (Map.Entry<String, Optional<Bag>> entry: modelOutputs.entrySet()) {
       if (entry.getValue().isPresent()) {
         String sender = entry.getKey();
         Bag bag = entry.getValue().get();
-        for (PortValue<?> portValue : bag.getPortValueList()) {
+        for (PortValue<?> portValue: bag.getPortValueList()) {
           if (filterEntry(sender, portValue)) {
             handlePortValue(sender, portValue, receiverMap, outputMessages);
           }
@@ -70,8 +71,8 @@ public abstract class OutputCouplingHandler {
     if (senderFilter.isPresent() && !senderIdentifier.equals(senderFilter.get())) {
       return false;
     }
-    if (portIdentifierFilter.isPresent() &&
-        !portValue.getPortIdentifier().equals(portIdentifierFilter.get())) {
+    if (portIdentifierFilter.isPresent()
+        && !portValue.getPortIdentifier().equals(portIdentifierFilter.get())) {
       return false;
     }
     if (classFilter.isPresent() && !classFilter.get().isInstance(portValue.getValue())) {

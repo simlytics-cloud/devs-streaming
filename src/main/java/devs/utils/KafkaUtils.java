@@ -17,26 +17,16 @@
 
 package devs.utils;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
-import org.apache.kafka.clients.admin.CreateTopicsOptions;
-import org.apache.kafka.clients.admin.CreateTopicsResult;
-import org.apache.kafka.clients.admin.DeleteTopicsResult;
-import org.apache.kafka.clients.admin.ListTopicsOptions;
-import org.apache.kafka.clients.admin.ListTopicsResult;
-import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.errors.TopicExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class KafkaUtils {
 
@@ -96,19 +86,18 @@ public class KafkaUtils {
 
   public static AdminClient createAdminClient(Properties props) {
     props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
-    AdminClient admin = AdminClient.create(props);
-    return admin;
+    return AdminClient.create(props);
   }
 
   public static KafkaConsumer<String, String> buildReadAllConsumer(Properties consumerProperties) {
-    consumerProperties.put("group.id", java.util.UUID.randomUUID().toString());
+    consumerProperties.put("group.id", UUID.randomUUID().toString());
     consumerProperties.put("key.deserializer",
         "org.apache.kafka.common.serialization.StringDeserializer");
     consumerProperties.put("value.deserializer",
         "org.apache.kafka.common.serialization.StringDeserializer");
     consumerProperties.put("enable.auto.commit", "false");
     consumerProperties.put("auto.offset.reset", "earliest");
-    return new KafkaConsumer<String, String>(consumerProperties);
+    return new KafkaConsumer<>(consumerProperties);
   }
 
   public static KafkaProducer<Long, String> createProducer(Properties producerProperties) {
@@ -117,6 +106,9 @@ public class KafkaUtils {
         "org.apache.kafka.common.serialization.LongSerializer");
     producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringSerializer");
-    return new KafkaProducer<Long, String>(producerProperties);
+    return new KafkaProducer<>(producerProperties);
+  }
+
+  private KafkaUtils() {
   }
 }

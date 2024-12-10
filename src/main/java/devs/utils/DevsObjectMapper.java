@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-
 import devs.msg.PortValue;
 import devs.msg.PortValueDerserializer;
 
@@ -40,5 +39,8 @@ public class DevsObjectMapper {
         .registerModule(new GuavaModule())
         .registerModule(new JavaTimeModule())
         .registerModule(portValueModule);
+  }
+
+  private DevsObjectMapper() {
   }
 }

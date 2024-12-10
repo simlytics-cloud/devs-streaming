@@ -18,7 +18,6 @@
 package devs.msg.time;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * An abstract class to represent a message about time.  Time values can be used
@@ -34,8 +33,9 @@ public abstract class SimTime implements Comparable<SimTime> {
 
   public abstract SimTime minus(SimTime operand);
 
-  public abstract int compareTo(@NotNull SimTime operand);
-  
+  @Override
+  public abstract int compareTo(SimTime operand);
+
   public abstract SimTime getMaxValue();
 
   @Override
@@ -46,7 +46,7 @@ public abstract class SimTime implements Comparable<SimTime> {
     if (object == this) {
       return true;
     }
-    if (!(this.getClass().isInstance(object))) {
+    if (!this.getClass().isInstance(object)) {
       return false;
     }
     SimTime simTime = (SimTime) object;

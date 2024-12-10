@@ -17,27 +17,25 @@
 
 package devs.msg.log;
 
-import org.immutables.value.Value;
-
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import devs.msg.DevsMessage;
 import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
+import org.immutables.value.Value;
 
 
 @Value.Immutable
 @JsonSerialize(as = DevsModelLogMessage.class)
 @JsonDeserialize(as = DevsModelLogMessage.class)
 public abstract class AbstractDevsModelLogMessage<T extends SimTime> implements DevsLogMessage, TimedDevsMessage<T> {
-    @Override
-    @Value.Parameter
-    public abstract T getTime();
+  @Override
+  @Value.Parameter
+  public abstract T getTime();
 
-    @Value.Parameter
-    public abstract String getModelId();
+  @Value.Parameter
+  public abstract String getModelId();
 
-    @Value.Parameter
-    public abstract DevsMessage getDevsMessage();
+  @Value.Parameter
+  public abstract DevsMessage getDevsMessage();
 }

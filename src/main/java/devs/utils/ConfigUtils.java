@@ -18,6 +18,7 @@
 package devs.utils;
 
 import com.typesafe.config.Config;
+
 import java.util.Properties;
 
 public class ConfigUtils {
@@ -34,6 +35,9 @@ public class ConfigUtils {
     Properties copy = new Properties();
     copy.putAll(original);
     return copy;
+  }
+
+  private ConfigUtils() {
   }
 
 }

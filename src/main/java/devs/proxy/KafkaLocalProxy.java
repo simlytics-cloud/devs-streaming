@@ -1,5 +1,13 @@
 package devs.proxy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
+import com.typesafe.config.Config;
+import devs.msg.DevsMessage;
+import devs.msg.InitSimMessage;
+import devs.msg.time.SimTime;
+import devs.utils.DevsObjectMapper;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
@@ -17,16 +25,7 @@ import org.apache.pekko.stream.ActorAttributes;
 import org.apache.pekko.stream.Supervision;
 import org.apache.pekko.stream.javadsl.Sink;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
-import com.typesafe.config.Config;
-
-import devs.msg.DevsMessage;
-import devs.msg.InitSimMessage;
-import devs.msg.time.SimTime;
-import devs.utils.DevsObjectMapper;
-
+import java.util.UUID;
 
 
 /**
@@ -39,15 +38,16 @@ import devs.utils.DevsObjectMapper;
 public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> {
 
   public static record ProxyProperties(
-    String componentName, 
-    String producerTopic,
-    Config kafkaProducerConfig, 
-    String consumerTopic, 
-    Config kafkaConsumerConfig
-  ){}
+  String componentName,
+  String producerTopic,
+  Config kafkaProducerConfig,
+  String consumerTopic,
+  Config kafkaConsumerConfig
+  ) {
+  }
 
   public static <TT extends SimTime> Behavior<DevsMessage> create(
-    ProxyProperties props
+      ProxyProperties props
   ) {
     return Behaviors.setup(context -> new KafkaLocalProxy<TT>(context, props));
   }
@@ -63,7 +63,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(props.kafkaConsumerConfig(), new StringDeserializer(),
             new StringDeserializer())
-        .withGroupId(java.util.UUID.randomUUID().toString());
+        .withGroupId(UUID.randomUUID().toString());
 
     // Using a Kafka consumer from the Alpakka Kafka project because this consumer
     // does a better job of managing
@@ -130,8 +130,8 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
       localParentCoordinator.get().tell(devsMessage);
     } else {
       System.err
-          .println("ERROR: Recived the following DevsMessage from Kafka before learning the identity of the local \n" +
-              " parent coordinator via an InitSimMessage: " + record.value());
+          .println("ERROR: Recived the following DevsMessage from Kafka before learning the identity of the local \n"
+              + " parent coordinator via an InitSimMessage: " + record.value());
       System.exit(1);
     }
   }

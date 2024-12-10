@@ -19,8 +19,9 @@ package devs.msg;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.util.List;
 import org.immutables.value.Value;
+
+import java.util.List;
 
 /**
  * A container for Port Values passed to and from a PDevsModel.

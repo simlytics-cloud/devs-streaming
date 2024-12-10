@@ -20,9 +20,9 @@ package devs.msg.time;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.util.Objects;
 import org.immutables.value.Value;
-import org.jetbrains.annotations.NotNull;
+
+import java.util.Objects;
 
 /**
  * Simulation time represented as a long value.
@@ -33,14 +33,16 @@ import org.jetbrains.annotations.NotNull;
 public abstract class AbstractLongSimTime extends SimTime {
 
   public static LongSimTime maxValue = LongSimTime.builder().t(Long.MAX_VALUE).build();
+
   public static LongSimTime create(long t) {
-	  return LongSimTime.builder().t(t).build();
+    return LongSimTime.builder().t(t).build();
   }
+
   public abstract Long getT();
-  
+
   @Override
   public String toString() {
-	  return "LongSimTime: " + getT();
+    return "LongSimTime: " + getT();
   }
 
   @Override
@@ -52,15 +54,15 @@ public abstract class AbstractLongSimTime extends SimTime {
   public LongSimTime minus(SimTime operand) {
     return LongSimTime.builder().t(getT() - ((LongSimTime) operand).getT()).build();
   }
-  
+
   @Override
   @JsonIgnore
   public AbstractLongSimTime getMaxValue() {
-	  return LongSimTime.builder().t(Long.MAX_VALUE).build();
+    return LongSimTime.builder().t(Long.MAX_VALUE).build();
   }
 
   @Override
-  public int compareTo(@NotNull SimTime operand) {
+  public int compareTo(SimTime operand) {
     return getT().compareTo(((LongSimTime) operand).getT());
   }
 

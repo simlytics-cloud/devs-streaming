@@ -17,12 +17,11 @@
 
 package devs;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import devs.msg.Bag;
 import devs.msg.PortValue;
 import devs.msg.time.SimTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements a DEVS atomic model

@@ -17,12 +17,6 @@
 
 package devs.proxy;
 
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -35,25 +29,28 @@ import devs.msg.time.SimTime;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaUtils;
-import java.util.Properties;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Properties;
 
 public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
 
   private final KafkaProducer<Long, String> producer;
   private final String producerTopic;
-  private long index = 0;
+  private long index;
   private final String componentName;
   private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
-  ;
+
 
   public static Behavior<DevsMessage> create(
       String componentName,

@@ -17,34 +17,16 @@
 
 package devs;
 
+import devs.msg.*;
+import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.apache.pekko.actor.typed.javadsl.*;
 import org.slf4j.Logger;
 import org.slf4j.event.Level;
 
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.TransitionDone;
-import devs.msg.time.SimTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 
 public class PDevsCoordinator<T extends SimTime>
@@ -64,10 +46,9 @@ public class PDevsCoordinator<T extends SimTime>
   Map<String, Bag> receivers = new HashMap<>();
   Bag modelOutput;
   private List<String> awaitingTransition = new ArrayList<>();
-  private boolean generatingOutput = false;
+  private boolean generatingOutput;
 
-  public static Behavior<DevsMessage>
-  create(String modelIdentifier,
+  public static Behavior<DevsMessage> create(String modelIdentifier,
       String parentId,
       Map<String, ActorRef<DevsMessage>> modelsSimulators,
       PDevsCouplings couplings) {
@@ -96,27 +77,29 @@ public class PDevsCoordinator<T extends SimTime>
   public String getModelIdentifier() {
     return modelIdentifier;
   }
-  
+
   protected boolean shouldLog(String message) {
-	  return true;
+    return true;
   }
-  
+
   protected void log(Level level, String message) {
-	  if (shouldLog(message)) {
-		  Logger logger = getContext().getLog();
-		  if (logger.isTraceEnabled() && level.toInt() >= Level.TRACE.toInt()) {
-			  logger.trace(message);
-		  } else if (logger.isDebugEnabled() && level.toInt() >= Level.DEBUG.toInt()) {
-			  logger.debug(message);
-		  } else if (logger.isInfoEnabled() && level.toInt() >= Level.INFO.toInt()) {
-			  logger.info(message);
-		  } if (logger.isWarnEnabled()  && level.toInt() >= Level.INFO.toInt()) {
-			  logger.warn(message);
-		  } if (logger.isErrorEnabled()  && level.toInt() >= Level.INFO.toInt()) {
-			  logger.error(message);
-		  } 
-	  }
-	  
+    if (shouldLog(message)) {
+      Logger logger = getContext().getLog();
+      if (logger.isTraceEnabled() && level.toInt() >= Level.TRACE.toInt()) {
+        logger.trace(message);
+      } else if (logger.isDebugEnabled() && level.toInt() >= Level.DEBUG.toInt()) {
+        logger.debug(message);
+      } else if (logger.isInfoEnabled() && level.toInt() >= Level.INFO.toInt()) {
+        logger.info(message);
+      }
+      if (logger.isWarnEnabled() && level.toInt() >= Level.INFO.toInt()) {
+        logger.warn(message);
+      }
+      if (logger.isErrorEnabled() && level.toInt() >= Level.INFO.toInt()) {
+        logger.error(message);
+      }
+    }
+
   }
 
   @Override
@@ -140,9 +123,8 @@ public class PDevsCoordinator<T extends SimTime>
     this.parent = initSimMessage.getParent();
     timeLast = initSimMessage.getInitSim().getTime();
     //System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
-    modelsSimulators.values().forEach(s -> {
-      s.tell(new InitSimMessage<>(initSimMessage.getInitSim(), getContext().getSelf()));
-    });
+    modelsSimulators.values().forEach(s ->
+        s.tell(new InitSimMessage<>(initSimMessage.getInitSim(), getContext().getSelf())));
     return this;
   }
 
@@ -159,7 +141,7 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   private Behavior<DevsMessage> onNextTimeMessage(NextTime<T> nextTime) {
-	  //System.out.println("Next time for " + nextTime.getSender() + " is " + nextTime.getTime());
+    //System.out.println("Next time for " + nextTime.getSender() + " is " + nextTime.getTime());
     nextTimeMap.put(nextTime.getSender(), nextTime.getTime());
 
     // If we have all next time messages from models, the next time if the min
@@ -173,13 +155,13 @@ public class PDevsCoordinator<T extends SimTime>
 
   private Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
     if (sendOutput.getTime().compareTo(timeNext) != 0) {
-      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time " +
-          sendOutput.getTime() + " did not equal " + timeNext);
+      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
+          + sendOutput.getTime() + " did not equal " + timeNext);
     }
     generatingOutput = true;
     buildImminentModels();
     if (getContext().getLog().isDebugEnabled()) {
-    	log(Level.DEBUG, "Immenent models are " + Arrays.toString(imminentModels.toArray()));
+      log(Level.DEBUG, "Immenent models are " + Arrays.toString(imminentModels.toArray()));
     }
     outputMap = new HashMap<>();
     imminentModels.forEach(m -> {
@@ -195,21 +177,21 @@ public class PDevsCoordinator<T extends SimTime>
 
   private Behavior<DevsMessage> onModelOutputs(ModelOutputMessage<T> outputs) {
     if (getContext().getLog().isDebugEnabled()) {
-        log(Level.DEBUG, "Got model outputs at " + outputs.getNextTime() + " from " + outputs.getSender() + ": " + 
-        		Arrays.toString(outputs.getModelOutput().getPortValueList().stream()
-        			.map(pv -> pv.getPortIdentifier()).toArray()));
+      log(Level.DEBUG, "Got model outputs at " + outputs.getNextTime() + " from " + outputs.getSender() + ": "
+          + Arrays.toString(outputs.getModelOutput().getPortValueList().stream()
+          .map(pv -> pv.getPortIdentifier()).toArray()));
     }
     //outputs.getModelOutput().getPortValueList().forEach(portValue -> getContext().getLog().debug(
     //    "  " + portValue.getPortIdentifier() + ": " + portValue.getValue()));
     outputMap.put(outputs.getSender(), Optional.of(outputs.getModelOutput()));
     if (getContext().getLog().isDebugEnabled()) {
-    	log(Level.DEBUG, "Have outputs from " + Arrays.toString(outputMap.keySet().toArray()));
+      log(Level.DEBUG, "Have outputs from " + Arrays.toString(outputMap.keySet().toArray()));
     }
 
     if (haveAllOutputs()) {
       // Send outputs to parent based on mappings and translations
       // Send inputs to children based on mappings and translations
-    	log(Level.DEBUG, "We have all outputs.");
+      log(Level.DEBUG, "We have all outputs.");
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
       modelOutput = outputCouplingMessages.getOutputMessage();
@@ -220,8 +202,8 @@ public class PDevsCoordinator<T extends SimTime>
         modelsSimulators.get(key).tell(ExecuteTransition.builder()
             .time(outputs.getTime()).modelInputsOption(value).build());
         if (getContext().getLog().isDebugEnabled()) {
-        	log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value.getPortValueList().stream()
-        			.map(input -> input.getClass().getName()).toArray()));
+          log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value.getPortValueList().stream()
+              .map(input -> input.getClass().getName()).toArray()));
         }
       });
 
@@ -229,7 +211,7 @@ public class PDevsCoordinator<T extends SimTime>
       List<String> internalTransitions = imminentModels.stream()
           .filter(s -> !receivers.containsKey(s)).toList();
       if (getContext().getLog().isDebugEnabled()) {
-    	  log(Level.DEBUG, "Imminent models executing transition: " + Arrays.asList(internalTransitions));
+        log(Level.DEBUG, "Imminent models executing transition: " + Arrays.asList(internalTransitions));
       }
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
@@ -254,11 +236,11 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   private Behavior<DevsMessage> onExecuteTransitionMessage(ExecuteTransition<T> executeTransition) {
-    if (executeTransition.getTime().compareTo(timeLast) < 0 ||
-        executeTransition.getTime().compareTo(timeNext) > 0) {
+    if (executeTransition.getTime().compareTo(timeLast) < 0
+        || executeTransition.getTime().compareTo(timeNext) > 0) {
       throw new RuntimeException(
-          "Bad synchronization.  " + modelIdentifier + " received ExecuteTransitionMessage where time " +
-              executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
+          "Bad synchronization.  " + modelIdentifier + " received ExecuteTransitionMessage where time "
+              + executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
               + "inclusive");
     }
     if (executeTransition.getModelInputsOption().isEmpty()) {
@@ -287,7 +269,7 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   private Behavior<DevsMessage> onTransitionDone(TransitionDone<T> transitionDone) {
-	  log(Level.DEBUG, transitionDone.getSender() + " sent TransitionDone with next time of " + transitionDone.getNextTime());
+    log(Level.DEBUG, transitionDone.getSender() + " sent TransitionDone with next time of " + transitionDone.getNextTime());
     nextTimeMap.put(transitionDone.getSender(), transitionDone.getNextTime());
     awaitingTransition.remove(transitionDone.getSender());
     if (awaitingTransition.isEmpty()) {
@@ -296,11 +278,11 @@ public class PDevsCoordinator<T extends SimTime>
       timeNext = getNextTime();
       //System.out.println("In onTransitionDone, Next time for " + modelIdentifier + " is " + timeNext);
       if (!generatingOutput) {
-    	  log(Level.DEBUG, "Sending transiton done.");
+        log(Level.DEBUG, "Sending transiton done.");
         sendTransitionDone(transitionDone.getTime());
       } else {
-    	  log(Level.DEBUG, "Sending outputs.");
-    	  generatingOutput = false;
+        log(Level.DEBUG, "Sending outputs.");
+        generatingOutput = false;
         sendOutputs(transitionDone.getTime());
       }
     }
@@ -321,12 +303,9 @@ public class PDevsCoordinator<T extends SimTime>
     }
     return this;
   }
-  
+
   protected Behavior<DevsMessage> onChildFailed(ChildFailed childFailed) {
-	  getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
-	  return this;
+    getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
+    return this;
   }
 }
-
-
-

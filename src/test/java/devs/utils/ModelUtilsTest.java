@@ -22,9 +22,9 @@ import org.junit.jupiter.api.Test;
 
 public class ModelUtilsTest {
 
-    @Test
-    @DisplayName("Test remove illegal characters")
-    void testRemoveIllegalCharacters() {
-        assert ModelUtils.toLegalActorName("Test-Actor One.test?`").equals("Test-ActorOne.test");
-    }
+  @Test
+  @DisplayName("Test remove illegal characters")
+  void testRemoveIllegalCharacters() {
+    assert "Test-ActorOne.test".equals(ModelUtils.toLegalActorName("Test-Actor One.test?`"));
+  }
 }

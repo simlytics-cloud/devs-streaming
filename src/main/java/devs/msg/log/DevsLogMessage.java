@@ -12,10 +12,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.CLASS
 )
-@JsonSubTypes({ 
-  @Type(value = DevsModelLogMessage.class), 
-  @Type(value = StateMessage.class) 
+@JsonSubTypes({
+    @Type(value = DevsModelLogMessage.class),
+    @Type(value = StateMessage.class)
 })
-public abstract interface DevsLogMessage  {
+public abstract interface DevsLogMessage {
 
 }

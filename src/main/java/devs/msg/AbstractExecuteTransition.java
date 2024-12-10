@@ -22,8 +22,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
-import java.util.Optional;
 import org.immutables.value.Value;
+
+import java.util.Optional;
 
 /**
  * A message telling a PDevsSimulator to execute state transition.  If inputs are included,
