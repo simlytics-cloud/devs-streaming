@@ -2,7 +2,6 @@ package devs.experimentalframe;
 
 
 
-
 import devs.Port;
 import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
@@ -24,7 +23,7 @@ public class GeneratorTest {
     // First scheduled event is for t1
     LongSimTime t0 = LongSimTime.builder().t(0L).build();
     LongSimTime t1 = LongSimTime.builder().t(1L).build();
-    assert(generator.timeAdvanceFunction(t0).equals(t1));
+    assert (generator.timeAdvanceFunction(t0).equals(t1));
 
     // For each power of two, generator should output an integer and the word
     for (int e = 0; e <= 3; e++) {
@@ -33,13 +32,13 @@ public class GeneratorTest {
       System.out.println("Testing generator at t = " + t);
       // Time advance should go 1, 2, 4, 8 with powers of two
       LongSimTime simTime = LongSimTime.builder().t(t).build();
-      assert(generator.timeAdvanceFunction(simTime).equals(simTime));
+      assert (generator.timeAdvanceFunction(simTime).equals(simTime));
       // Test the output
-      for (PortValue<?> pv: generator.outputFunction().getPortValueList()) {
+      for (PortValue<?> pv : generator.outputFunction().getPortValueList()) {
         if ("number".equals(pv.getPortIdentifier())) {
           Port<Integer> integerPort = (Port<Integer>) generator.getPorts().get("number");
           Integer i = integerPort.getValue(pv);
-          assert(i == t);
+          assert (i == t);
         } else if ("words".equals(pv.getPortIdentifier())) {
           Port<String> wordPort = (Port<String>) generator.getPorts().get("words");
           String word = wordPort.getValue(pv);
@@ -50,7 +49,7 @@ public class GeneratorTest {
             case 8 -> "Eight";
             default -> "N/A";
           };
-          assert(word.equals(expectedWord));
+          assert (word.equals(expectedWord));
         }
       }
 

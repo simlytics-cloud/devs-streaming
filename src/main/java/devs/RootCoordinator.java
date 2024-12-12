@@ -1,28 +1,38 @@
 /*
- * DEVS Streaming Framework
- * Copyright (C) 2023  simlytics.cloud LLC and DEVS Streaming Framework contributors
+ * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
+ * contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package devs;
 
-import devs.msg.*;
+
+import devs.msg.DevsMessage;
+import devs.msg.InitSim;
+import devs.msg.InitSimMessage;
+import devs.msg.ModelDone;
+import devs.msg.ModelOutputMessage;
+import devs.msg.NextTime;
+import devs.msg.SendOutput;
+import devs.msg.SimulationDone;
 import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
-import org.apache.pekko.actor.typed.javadsl.*;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 
 public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
@@ -31,12 +41,12 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   private final ActorRef<DevsMessage> child;
 
   public static <TT extends SimTime> Behavior<DevsMessage> create(TT endTime,
-      ActorRef<DevsMessage> child) {
+                                                                  ActorRef<DevsMessage> child) {
     return Behaviors.setup(context -> new RootCoordinator<>(context, endTime, child));
   }
 
   public RootCoordinator(ActorContext<DevsMessage> context, T endTime,
-      ActorRef<DevsMessage> child) {
+                         ActorRef<DevsMessage> child) {
     super(context);
     this.endTime = endTime;
     this.child = child;
@@ -81,7 +91,8 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   }
 
   protected Behavior<DevsMessage> onChildFailed(ChildFailed childFailed) {
-    getContext().getLog().error("Child actor failed with cause " + childFailed.cause().getMessage());
+    getContext().getLog()
+        .error("Child actor failed with cause " + childFailed.cause().getMessage());
     return this;
   }
 }

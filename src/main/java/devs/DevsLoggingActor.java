@@ -1,18 +1,16 @@
 /*
- * DEVS Streaming Framework
- * Copyright (C) 2023  simlytics.cloud LLC and DEVS Streaming Framework contributors
+ * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
+ * contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package devs;
@@ -23,18 +21,27 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import devs.msg.log.DevsLogMessage;
 import devs.msg.log.RunIdMessage;
 import devs.utils.DevsObjectMapper;
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.*;
-
 import java.io.OutputStream;
 import java.io.PrintStream;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 
+/**
+ * A utility actor to serialize log messages and write them to an ouput stream.
+ */
 public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
 
   private final PrintStream printStream;
   private final ObjectMapper objectMapper;
   private final String runId;
 
+  /**
+   * A factory class to create a DevsLoggingActor.
+   */
   public static class DevsLoggingActorFactory {
 
     protected final OutputStream outputStream;
@@ -56,7 +63,15 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
   }
 
 
-  public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream, String runId) {
+  /**
+   * Creates a DevsLoggingActor.
+
+   * @param context the actor context
+   * @param outputStream to OutputStream where messages will be logged
+   * @param runId the unique identifier for this simulation run
+   */
+  public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream,
+                          String runId) {
     super(context);
     this.printStream = new PrintStream(outputStream);
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -73,7 +88,8 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
 
   protected Behavior<DevsLogMessage> onDevsLogMessage(DevsLogMessage devsLogMessage)
       throws JsonProcessingException {
-    RunIdMessage runIdMessage = RunIdMessage.builder().runId(runId).devsLogMessage(devsLogMessage).build();
+    RunIdMessage runIdMessage =
+        RunIdMessage.builder().runId(runId).devsLogMessage(devsLogMessage).build();
     String output = objectMapper.writeValueAsString(runIdMessage);
     printStream.println(output);
     return Behaviors.same();

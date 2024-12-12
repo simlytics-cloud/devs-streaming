@@ -18,8 +18,8 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
 
   @Override
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
-    //simulator.getContext().getLog().info("Validating output at " + currentTime);
-    for (PortValue<?> pv: bag.getPortValueList()) {
+    // simulator.getContext().getLog().info("Validating output at " + currentTime);
+    for (PortValue<?> pv : bag.getPortValueList()) {
       if ("acceptNumber".equals(pv.getPortIdentifier())) {
         double d = acceptNumber.getValue(pv);
         System.out.println("Got number " + d + " at " + currentTime);
@@ -38,10 +38,10 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
           case 8 -> "Three";
           default -> "N/A";
         };
-        assert(word.equals(expectedWord));
+        assert (word.equals(expectedWord));
       } else {
-        throw new IllegalArgumentException("Test acceptor did not expect port value with identifier "
-            + pv.getPortIdentifier());
+        throw new IllegalArgumentException(
+            "Test acceptor did not expect port value with identifier " + pv.getPortIdentifier());
       }
     }
 

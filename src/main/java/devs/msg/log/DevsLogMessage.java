@@ -9,13 +9,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * Class used to serialize messages by a DevsLoggingActor.
  */
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.CLASS
-)
-@JsonSubTypes({
-    @Type(value = DevsModelLogMessage.class),
-    @Type(value = StateMessage.class)
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonSubTypes({@Type(value = DevsModelLogMessage.class), @Type(value = StateMessage.class)})
 public abstract interface DevsLogMessage {
 
 }

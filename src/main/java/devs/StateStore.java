@@ -13,12 +13,21 @@
  * the License.
  */
 
-package devs.msg;
+package devs;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import devs.msg.time.SimTime;
 
+/**
+ * Interface of a class to store state values over time.
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "devsType")
-public interface DevsMessage {
+ * @param <T> the time type used by the StateStore
+ * @param <V> the value type used by the StateStore
+ */
+public interface StateStore<T extends SimTime, V> {
 
+  abstract V get(T time);
+
+  abstract void put(T time, V value);
+
+  abstract V getLatest();
 }

@@ -1,0 +1,16 @@
+type: specs.openrewrite.org/v1beta/style
+name: cmm.autoformat.Style
+displayName: Additional rules for Google Java Code style
+styleConfigs:
+  - org.openrewrite.java.style.ImportLayoutStyle:
+      classCountToUseStarImport: 999
+      nameCountToUseStarImport: 999
+      layout:
+        - import static all other imports
+        - <blank line>
+        - import all other imports
+  - org.openrewrite.java.style.TabsAndIndentsStyle:
+      useTabCharacter: false
+      tabSize: 4
+      indentSize: 2
+      continuationIndent: 4  

@@ -8,6 +8,7 @@ import devs.msg.DevsMessage;
 import devs.msg.InitSimMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
+import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
@@ -25,30 +26,20 @@ import org.apache.pekko.stream.ActorAttributes;
 import org.apache.pekko.stream.Supervision;
 import org.apache.pekko.stream.javadsl.Sink;
 
-import java.util.UUID;
-
 
 /**
- * This actor serves as a local proxy for a remote DEVS simulator. It will have
- * a local  coordinator.
- * It get the identity of that coordinator from the initial InitSimMessage.
- * It passes all received DevsMessags to the Kafka producer.
- * All messages received from the consumer go to the parent coordinator.
+ * This actor serves as a local proxy for a remote DEVS simulator. It will have a local coordinator.
+ * It get the identity of that coordinator from the initial InitSimMessage. It passes all received
+ * DevsMessags to the Kafka producer. All messages received from the consumer go to the parent
+ * coordinator.
  */
 public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> {
 
-  public static record ProxyProperties(
-  String componentName,
-  String producerTopic,
-  Config kafkaProducerConfig,
-  String consumerTopic,
-  Config kafkaConsumerConfig
-  ) {
+  public static record ProxyProperties(String componentName, String producerTopic,
+  Config kafkaProducerConfig, String consumerTopic, Config kafkaConsumerConfig) {
   }
 
-  public static <TT extends SimTime> Behavior<DevsMessage> create(
-      ProxyProperties props
-  ) {
+  public static <TT extends SimTime> Behavior<DevsMessage> create(ProxyProperties props) {
     return Behaviors.setup(context -> new KafkaLocalProxy<TT>(context, props));
   }
 
@@ -56,13 +47,11 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
   protected final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
   protected Optional<ActorRef<DevsMessage>> localParentCoordinator;
 
-  public KafkaLocalProxy(ActorContext<DevsMessage> context,
-      ProxyProperties props) {
+  public KafkaLocalProxy(ActorContext<DevsMessage> context, ProxyProperties props) {
     super(context, props.componentName(), props.producerTopic(), props.kafkaProducerConfig());
 
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
-        .create(props.kafkaConsumerConfig(), new StringDeserializer(),
-            new StringDeserializer())
+        .create(props.kafkaConsumerConfig(), new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
 
     // Using a Kafka consumer from the Alpakka Kafka project because this consumer
@@ -74,12 +63,12 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     // webLvcTopic
     // The consumer's auto.offset.reset property is set to earliest so it always
     // reads all data
-    this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(props.consumerTopic()))
-        .map(record -> {
-          System.out.println("Kafka received record: " + record.value());
-          processRecord(record);
-          return NotUsed.notUsed();
-        })
+    this.control = Consumer
+        .plainSource(consumerSettings, Subscriptions.topics(props.consumerTopic())).map(record -> {
+      System.out.println("Kafka received record: " + record.value());
+      processRecord(record);
+      return NotUsed.notUsed();
+    })
         // This supervisor strategy will drop the current record being processed in the
         // event of an
         // error and will continue consuming with the next message
@@ -89,8 +78,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
         // Connect to a sink to continuously run the stream and a materializer that
         // gives a control
         // to shut down the stream on command.
-        .toMat(Sink.ignore(), Consumer::createDrainingControl)
-        .run(getContext().getSystem());
+        .toMat(Sink.ignore(), Consumer::createDrainingControl).run(getContext().getSystem());
   }
 
   @Override
@@ -112,8 +100,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
   }
 
   /**
-   * Process a kafka record, convert it to a DevsMessage, and send it to the local
-   * parent
+   * Process a kafka record, convert it to a DevsMessage, and send it to the local parent
    * 
    * @param record
    */
@@ -129,8 +116,8 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     if (localParentCoordinator.isPresent()) {
       localParentCoordinator.get().tell(devsMessage);
     } else {
-      System.err
-          .println("ERROR: Recived the following DevsMessage from Kafka before learning the identity of the local \n"
+      System.err.println(
+          "ERROR: Recived the following DevsMessage from Kafka before learning the identity of the local \n"
               + " parent coordinator via an InitSimMessage: " + record.value());
       System.exit(1);
     }

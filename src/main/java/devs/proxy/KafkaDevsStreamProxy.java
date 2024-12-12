@@ -1,18 +1,16 @@
 /*
- * DEVS Streaming Framework
- * Copyright (C) 2023  simlytics.cloud LLC and DEVS Streaming Framework contributors
+ * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
+ * contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package devs.proxy;
@@ -29,16 +27,19 @@ import devs.msg.time.SimTime;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaUtils;
+import java.util.Properties;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.*;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Properties;
 
 public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
@@ -52,19 +53,15 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
   private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
 
-  public static Behavior<DevsMessage> create(
-      String componentName,
-      String producerTopic,
-      Config akkaProducerConfig
-  ) {
+  public static Behavior<DevsMessage> create(String componentName, String producerTopic,
+                                             Config akkaProducerConfig) {
     return Behaviors.setup(context -> new KafkaDevsStreamProxy(context, componentName,
         producerTopic, akkaProducerConfig));
   }
 
 
-  public KafkaDevsStreamProxy(ActorContext<DevsMessage> context,
-      String componentName, String producerTopic,
-      Config akkaProducerConfig) {
+  public KafkaDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
+                              String producerTopic, Config akkaProducerConfig) {
     super(context);
     this.componentName = componentName;
     this.producerTopic = producerTopic;
@@ -95,18 +92,16 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
       getContext().getLog().error("Could not deserialize message to string: " + devsMessage);
       throw new RuntimeException(e);
     }
-    producer.send(new ProducerRecord<Long, String>(producerTopic, index,
-        record), new Callback() {
+    producer.send(new ProducerRecord<Long, String>(producerTopic, index, record), new Callback() {
       @Override
       public void onCompletion(RecordMetadata m, Exception e) {
         if (e != null) {
-          System.err.println(
-              componentName + " threw error writing to Kafka topic " + producerTopic);
+          System.err
+              .println(componentName + " threw error writing to Kafka topic " + producerTopic);
           e.printStackTrace();
         } else {
-          logger.debug(
-              componentName + " sending " + devsMessage.getClass().getCanonicalName() + " to "
-                  + producerTopic);
+          logger.debug(componentName + " sending " + devsMessage.getClass().getCanonicalName()
+              + " to " + producerTopic);
         }
       }
     });

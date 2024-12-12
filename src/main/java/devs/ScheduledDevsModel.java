@@ -4,10 +4,9 @@ import devs.msg.Bag;
 import devs.msg.PortValue;
 import devs.msg.time.SimTime;
 import devs.utils.Schedule;
-import scala.collection.mutable.StringBuilder;
-
 import java.util.ArrayList;
 import java.util.List;
+import scala.collection.mutable.StringBuilder;
 
 public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSModel<T, S> {
 
@@ -38,7 +37,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
     StringBuilder stringBuilder = new StringBuilder();
     boolean hasOutput = false;
     if (!schedule.isEmpty()) {
-      for (Object event: schedule.firstEntry().getValue()) {
+      for (Object event : schedule.firstEntry().getValue()) {
         if (event instanceof PortValue<?>) {
           hasOutput = true;
           break;
@@ -55,7 +54,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
     StringBuilder stringBuilder = new StringBuilder();
     List<PortValue<?>> pendingOutputs = new ArrayList<>();
     if (!schedule.isEmpty()) {
-      for (Object event: schedule.firstEntry().getValue()) {
+      for (Object event : schedule.firstEntry().getValue()) {
         if (event instanceof PortValue<?> pv) {
           pendingOutputs.add(pv);
         }
@@ -63,7 +62,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
     }
     stringBuilder.append("In get pending output schedule is " + schedule);
     stringBuilder.append("Penging output is:\n");
-    for (PortValue<?> pv: pendingOutputs) {
+    for (PortValue<?> pv : pendingOutputs) {
       stringBuilder.append("  " + pv);
     }
     logger.debug(stringBuilder.toString());
@@ -77,13 +76,13 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
       ArrayList<Object> currentEvents = schedule.firstEntry().getValue();
       ArrayList<Object> portValues = new ArrayList<>();
       // Find all the port values
-      for (Object event: currentEvents) {
+      for (Object event : currentEvents) {
         if (event instanceof PortValue<?> pv) {
           portValues.add(pv);
         }
       }
       // Remove port values from schedule
-      for (Object pv: portValues) {
+      for (Object pv : portValues) {
         currentEvents.remove(pv);
       }
       if (currentEvents.isEmpty()) {
@@ -100,7 +99,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
   public Bag outputFunction() {
     Bag.Builder bagBuilder = Bag.builder();
     bagBuilder.addAllPortValueList(getPendingOutput());
-    //clearPendingOutput();
+    // clearPendingOutput();
     return bagBuilder.build();
   }
 

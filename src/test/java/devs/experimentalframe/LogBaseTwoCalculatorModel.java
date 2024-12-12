@@ -28,7 +28,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
   @Override
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
     simulator.getContext().getLog().info("Generating roots at " + currentTime);
-    for (PortValue<?> pv: bag.getPortValueList()) {
+    for (PortValue<?> pv : bag.getPortValueList()) {
       if (pv.getPortIdentifier().equals(numberIn.getPortIdentifier())) {
         int number = numberIn.getValue(pv);
         double log = 0.0;
@@ -52,8 +52,9 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
         PortValue<?> outPortValue = new PortValue<String>(outWord, wordOut.getPortIdentifier());
         schedule.add(currentTime, outPortValue);
       } else {
-        throw new IllegalArgumentException("LogBaseTwoCalculatorModel did not expect port value with identifier"
-            + pv.getPortIdentifier());
+        throw new IllegalArgumentException(
+            "LogBaseTwoCalculatorModel did not expect port value with identifier"
+                + pv.getPortIdentifier());
       }
     }
 

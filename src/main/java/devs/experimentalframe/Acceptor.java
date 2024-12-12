@@ -15,7 +15,7 @@ public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
   @Override
   public void internalStateTransitionFunction(T currentTime) {
     // Nothing to do
-    
+
   }
 
 

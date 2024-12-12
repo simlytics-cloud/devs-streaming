@@ -1,18 +1,16 @@
 /*
- * DEVS Streaming Framework
- * Copyright (C) 2023  simlytics.cloud LLC and DEVS Streaming Framework contributors
+ * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
+ * contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package example.storage;
@@ -42,8 +40,9 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag storageInput) {
     int storageValue = getInputValue(storageInput);
 
-    // This line below is more concise than the getInputValue method, but may lead to errors that are hard to
-    //   debug.
+    // This line below is more concise than the getInputValue method, but may lead to errors that
+    // are hard to
+    // debug.
     int storageValue1 = (int) storageInput.getPortValueList().get(0).getValue(); // not used
     if (storageValue == 0) {
       modelState = new StorageState(StorageStateEnum.S0, true);
@@ -57,6 +56,7 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
 
   /**
    * Type safe way of getting value from input ports
+   * 
    * @param storageInput the bag of inputs
    * @return In this case, the integer value for the INPUT (only) port
    */
@@ -68,11 +68,13 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
       if (pv.getPortIdentifier().equals(storageInputPort.getPortIdentifier())) {
         return storageInputPort.getValue(pv);
       } else {
-        throw new IllegalArgumentException("StorageModel input port should be of class StorageInputPort, not "
-            + pv.getClass().getCanonicalName());
+        throw new IllegalArgumentException(
+            "StorageModel input port should be of class StorageInputPort, not "
+                + pv.getClass().getCanonicalName());
       }
     } else {
-      throw new IllegalArgumentException("StorageModel external transition requires one input at a time");
+      throw new IllegalArgumentException(
+          "StorageModel external transition requires one input at a time");
     }
   }
 
@@ -92,6 +94,7 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
 
   @Override
   public Bag outputFunction() {
-    return Bag.builder().addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue())).build();
+    return Bag.builder()
+        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue())).build();
   }
 }

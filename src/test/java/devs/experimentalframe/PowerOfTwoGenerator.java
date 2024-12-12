@@ -4,7 +4,6 @@ import devs.Port;
 import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
 import devs.utils.Schedule;
-
 import java.util.HashMap;
 import java.util.Map;
 

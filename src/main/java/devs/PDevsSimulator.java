@@ -1,27 +1,38 @@
 /*
- * DEVS Streaming Framework
- * Copyright (C) 2023  simlytics.cloud LLC and DEVS Streaming Framework contributors
+ * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
+ * contributors
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
  *
  * http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
  */
 
 package devs;
 
-import devs.msg.*;
+import devs.msg.Bag;
+import devs.msg.DevsMessage;
+import devs.msg.ExecuteTransition;
+import devs.msg.InitSimMessage;
+import devs.msg.ModelDone;
+import devs.msg.ModelOutputMessage;
+import devs.msg.NextTime;
+import devs.msg.SendOutput;
+import devs.msg.SimulationDone;
+import devs.msg.TransitionDone;
 import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.*;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 
 public class PDevsSimulator<T extends SimTime, S,
     M extends PDEVSModel<T, S>> extends AbstractBehavior<DevsMessage> {
@@ -33,8 +44,9 @@ public class PDevsSimulator<T extends SimTime, S,
   protected final M devsModel;
 
 
-  public static <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> aDevsModel, TT initialTime) {
-    return Behaviors.setup(context -> new PDevsSimulator(aDevsModel, initialTime, context));
+  public static <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> devsModel,
+                                                                  TT initialTime) {
+    return Behaviors.setup(context -> new PDevsSimulator<>(devsModel, initialTime, context));
   }
 
   public PDevsSimulator(M devsModel, T initialTime, ActorContext<DevsMessage> context) {
@@ -62,7 +74,6 @@ public class PDevsSimulator<T extends SimTime, S,
     if (time.compareTo(currentTime) < 0) {
       throw new RuntimeException(devsModel.modelIdentifier + " generated a negative time advance.");
     }
-    //System.out.println("Time advance for " + devsModel.modelIdentifier + " is " + time);
     return time;
   }
 
@@ -79,12 +90,8 @@ public class PDevsSimulator<T extends SimTime, S,
           + sendOutput.getTime() + " did not equal " + timeNext);
     }
     Bag modelOutput = devsModel.outputFunction();
-    parent.tell(ModelOutputMessage.builder()
-        .modelOutput(modelOutput)
-        .nextTime(timeNext)
-        .time(sendOutput.getTime())
-        .sender(devsModel.getModelIdentifier())
-        .build());
+    parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
+        .time(sendOutput.getTime()).sender(devsModel.getModelIdentifier()).build());
     return this;
   }
 
@@ -92,10 +99,9 @@ public class PDevsSimulator<T extends SimTime, S,
       ExecuteTransition<T> executeTransition) {
     if (executeTransition.getTime().compareTo(timeLast) < 0
         || executeTransition.getTime().compareTo(timeNext) > 0) {
-      throw new RuntimeException(
-          "Bad synchronization.  " + devsModel.modelIdentifier + " received ExecuteTransitionMessage where time "
-              + executeTransition.getTime() + " is not between " + timeLast + " and " + timeNext
-              + "inclusive");
+      throw new RuntimeException("Bad synchronization.  " + devsModel.modelIdentifier
+          + " received ExecuteTransitionMessage where time " + executeTransition.getTime()
+          + " is not between " + timeLast + " and " + timeNext + "inclusive");
     }
     if (executeTransition.getTime().compareTo(timeNext) == 0) {
       if (executeTransition.getModelInputsOption().isEmpty()) {
@@ -106,10 +112,12 @@ public class PDevsSimulator<T extends SimTime, S,
       }
     } else {
       if (executeTransition.getModelInputsOption().isEmpty()) {
-        throw new IllegalArgumentException("External transition for model " + devsModel.getModelIdentifier()
-            + " is empty.  Transition time is " + executeTransition.getTime() + ".  Next time is " + timeNext);
+        throw new IllegalArgumentException("External transition for model "
+            + devsModel.getModelIdentifier() + " is empty.  Transition time is "
+            + executeTransition.getTime() + ".  Next time is " + timeNext);
       } else {
-        return externalStateTransition(executeTransition.getTime(), executeTransition.getModelInputsOption().get());
+        return externalStateTransition(executeTransition.getTime(),
+            executeTransition.getModelInputsOption().get());
       }
     }
   }
@@ -117,11 +125,8 @@ public class PDevsSimulator<T extends SimTime, S,
   protected void transitionDome(T time) {
     timeLast = time;
     timeNext = timeAdvance(time);
-    parent.tell(TransitionDone.builder()
-        .nextTime(timeNext)
-        .time(time)
-        .sender(devsModel.getModelIdentifier())
-        .build());
+    parent.tell(TransitionDone.builder().nextTime(timeNext).time(time)
+        .sender(devsModel.getModelIdentifier()).build());
   }
 
   protected Behavior<DevsMessage> internalStateTransition(T time) {
@@ -143,9 +148,8 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
   protected Behavior<DevsMessage> onSimulationDone(SimulationDone<T> simulationDone) {
-    parent.tell(
-        ModelDone.builder().time(simulationDone.getTime()).sender(devsModel.getModelIdentifier())
-            .build());
+    parent.tell(ModelDone.builder().time(simulationDone.getTime())
+        .sender(devsModel.getModelIdentifier()).build());
     return Behaviors.stopped();
   }
 
