@@ -19,11 +19,11 @@ public class TestOutputCouplingHandler extends OutputCouplingHandler {
     if ("numbers".equals(portValue.getPortIdentifier())) {
       Integer number = LogBaseTwoCalculatorModel.numberIn.getValue(portValue);
       PortValue<?> pv = LogBaseTwoCalculatorModel.numberIn.createPortValue(number);
-      addInputPortValue(pv, LogBaseTwoCalculatorModel.modelIdentifier, receiverMap);
+      addInputPortValue(pv, LogBaseTwoCalculatorModel.MODEL_ID, receiverMap);
     } else if ("words".equals(portValue.getPortIdentifier())) {
       String word = LogBaseTwoCalculatorModel.wordIn.getValue(portValue);
       PortValue<?> pv = LogBaseTwoCalculatorModel.wordIn.createPortValue(word);
-      addInputPortValue(pv, LogBaseTwoCalculatorModel.modelIdentifier, receiverMap);
+      addInputPortValue(pv, LogBaseTwoCalculatorModel.MODEL_ID, receiverMap);
     } else if (portValue.getPortIdentifier()
         .equals(LogBaseTwoCalculatorModel.numberOut.getPortIdentifier())) {
       Integer number = TestAcceptor.acceptNumber.getValue(portValue);

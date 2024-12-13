@@ -24,7 +24,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
 
   public static String identifier = "generator";
 
-  public static Port<Integer> generatorOutputPort = new Port<>("OUTPUT");
+  public static final Port<Integer> generatorOutputPort = new Port<>("OUTPUT", Integer.class);
 
   public GeneratorModel(Integer initialState) {
     super(initialState, identifier);

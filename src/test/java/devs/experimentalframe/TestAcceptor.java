@@ -13,12 +13,11 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
     super(0);
   }
 
-  public static Port<Integer> acceptNumber = new Port<>("acceptNumber");
-  public static Port<String> acceptWord = new Port<>("acceptWord");
+  public static Port<Integer> acceptNumber = new Port<>("acceptNumber", Integer.class);
+  public static Port<String> acceptWord = new Port<>("acceptWord", String.class);
 
   @Override
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
-    // simulator.getContext().getLog().info("Validating output at " + currentTime);
     for (PortValue<?> pv : bag.getPortValueList()) {
       if ("acceptNumber".equals(pv.getPortIdentifier())) {
         double d = acceptNumber.getValue(pv);

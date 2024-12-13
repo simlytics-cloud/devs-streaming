@@ -107,7 +107,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
 
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
     if (devsMessage instanceof InitSim<?> initSim) {
-      devsMessage = new InitSimMessage((InitSim<?>) initSim, sender);
+      devsMessage = new InitSimMessage<>(initSim, sender);
     }
     devsComponent.tell(devsMessage);
     if (devsMessage instanceof SimulationDone<?> || devsMessage instanceof ModelDone<?>) {

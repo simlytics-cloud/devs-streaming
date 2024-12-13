@@ -9,14 +9,14 @@ import devs.utils.Schedule;
 
 public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, Void> {
 
-  public static final String modelIdentifier = "logBaseTwoCalculatorModel";
-  public static final Port<Integer> numberIn = new Port<>("numberIn");
-  public static final Port<String> wordIn = new Port<>("wordIn");
-  public static final Port<Integer> numberOut = new Port<>("numberOut");
-  public static final Port<String> wordOut = new Port<>("wordOut");
+  public static final String MODEL_ID = "logBaseTwoCalculatorModel";
+  public static final Port<Integer> numberIn = new Port<>("numberIn", Integer.class);
+  public static final Port<String> wordIn = new Port<>("wordIn", String.class);
+  public static final Port<Integer> numberOut = new Port<>("numberOut", Integer.class);
+  public static final Port<String> wordOut = new Port<>("wordOut", String.class);
 
   public LogBaseTwoCalculatorModel() {
-    super(null, modelIdentifier, new Schedule<LongSimTime>());
+    super(null, MODEL_ID, new Schedule<LongSimTime>());
   }
 
   @Override
@@ -27,7 +27,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
 
   @Override
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
-    simulator.getContext().getLog().info("Generating roots at " + currentTime);
+    simulator.getContext().getLog().info("Generating roots at {}", currentTime);
     for (PortValue<?> pv : bag.getPortValueList()) {
       if (pv.getPortIdentifier().equals(numberIn.getPortIdentifier())) {
         int number = numberIn.getValue(pv);

@@ -9,15 +9,14 @@ import java.util.Map;
 
 public class PowerOfTwoGenerator extends Generator<LongSimTime> {
 
-  public final static String modelIdentifier = "powerOfTwoGenerator";
+  public static final String MODEL_ID = "powerOfTwoGenerator";
 
   public PowerOfTwoGenerator() {
-    super(modelIdentifier, buildSchedule());
+    super(MODEL_ID, buildSchedule());
 
   }
 
   protected static Schedule<LongSimTime> buildSchedule() {
-    LongSimTime t0 = LongSimTime.builder().t(0L).build();
     LongSimTime t1 = LongSimTime.builder().t(1L).build();
     LongSimTime t2 = LongSimTime.builder().t(2L).build();
     LongSimTime t4 = LongSimTime.builder().t(4L).build();
@@ -42,8 +41,8 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
   @Override
   protected Map<String, Port<?>> buildPorts() {
     Map<String, Port<?>> ports = new HashMap<>();
-    ports.put("numbers", new Port<Integer>("numbers"));
-    ports.put("words", new Port<String>("words"));
+    ports.put("numbers", new Port<Integer>("numbers", Integer.class));
+    ports.put("words", new Port<String>("words", String.class));
     return ports;
   }
 

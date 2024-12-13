@@ -23,8 +23,9 @@ import example.storage.StorageStateEnum;
 
 public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
 
-  public static Port<StorageStateEnum> storageOutput = new Port<>("STORAGE_OUTPUT");
-  public static Port<Integer> generatorOutput = new Port<>("GENERATOR_OUTPUT");
+  public static final Port<StorageStateEnum> storageOutput = new Port<>("STORAGE_OUTPUT", 
+      StorageStateEnum.class);
+  public static Port<Integer> generatorOutput = new Port<>("GENERATOR_OUTPUT", Integer.class);
 
   public RecorderModel(String sender) {
     super(null, sender);
@@ -32,17 +33,17 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
 
   @Override
   public void internalStateTransitionFunction(LongSimTime currentTime) {
-
+    return;
   }
 
   @Override
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag input) {
-
+    return;
   }
 
   @Override
   public void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
-
+    return;
   }
 
   @Override

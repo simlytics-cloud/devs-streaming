@@ -15,6 +15,8 @@
 
 package devs.msg;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.msg.log.DevsModelLogMessage;
@@ -208,6 +210,7 @@ public class DevsMessageTest {
     assert (desTransitionDone.getSender().compareTo(GeneratorModel.identifier) == 0);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   @DisplayName("Serialize and deserialize DevsRunIdMessage")
   void serdeDevsRunIdMessage() throws JsonProcessingException {
@@ -219,8 +222,8 @@ public class DevsMessageTest {
 
     String json = objectMapper.writeValueAsString(runIdMessage);
     RunIdMessage deserialized = objectMapper.readValue(json, RunIdMessage.class);
-    assert (deserialized.getDevsLogMessage() instanceof StateMessage<?, ?>);
-    StateMessage<?, ?> desStateMessage = (StateMessage) deserialized.getDevsLogMessage();
+    assertTrue(deserialized.getDevsLogMessage() instanceof StateMessage<?, ?>);
+    StateMessage<?, ?> desStateMessage = (StateMessage<?, ?>) deserialized.getDevsLogMessage();
     String stateMessageJson = objectMapper.writeValueAsString(desStateMessage.getModelState());
 
     StorageState desState = objectMapper.readValue(stateMessageJson, StorageState.class);
@@ -240,8 +243,8 @@ public class DevsMessageTest {
     RunIdMessage deserialized2 = objectMapper.readValue(json2, RunIdMessage.class);
     assert ("testId".equals(deserialized2.getRunId()));
     assert (deserialized2.getDevsLogMessage() instanceof DevsModelLogMessage);
-    DevsModelLogMessage desDevsModelLogMessage =
-        (DevsModelLogMessage) deserialized2.getDevsLogMessage();
+    DevsModelLogMessage<LongSimTime> desDevsModelLogMessage =
+        (DevsModelLogMessage<LongSimTime>) deserialized2.getDevsLogMessage();
     assert desDevsModelLogMessage.getDevsMessage() instanceof ExecuteTransition;
     ExecuteTransition<LongSimTime> desExecuteTransition =
         (ExecuteTransition<LongSimTime>) desDevsModelLogMessage.getDevsMessage();

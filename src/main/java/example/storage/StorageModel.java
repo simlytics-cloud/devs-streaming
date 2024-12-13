@@ -23,12 +23,13 @@ import devs.msg.time.LongSimTime;
 
 public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
 
-  public static final String identifier = "storage";
-  public static Port<Integer> storageInputPort = new Port<>("INPUT");
-  public static Port<StorageStateEnum> storageOutputPort = new Port<>("OUTPUT");
+  public static final String MODEL_ID = "storage";
+  public static final Port<Integer> storageInputPort = new Port<>("INPUT", Integer.class);
+  public static final Port<StorageStateEnum> storageOutputPort = new Port<>("OUTPUT", 
+      StorageStateEnum.class);
 
   public StorageModel(StorageState initialState) {
-    super(initialState, identifier);
+    super(initialState, MODEL_ID);
   }
 
   @Override
@@ -40,10 +41,6 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
   public void externalStateTransitionFunction(LongSimTime currentTime, Bag storageInput) {
     int storageValue = getInputValue(storageInput);
 
-    // This line below is more concise than the getInputValue method, but may lead to errors that
-    // are hard to
-    // debug.
-    int storageValue1 = (int) storageInput.getPortValueList().get(0).getValue(); // not used
     if (storageValue == 0) {
       modelState = new StorageState(StorageStateEnum.S0, true);
     } else if (storageValue == 1) {
@@ -55,8 +52,8 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
   }
 
   /**
-   * Type safe way of getting value from input ports
-   * 
+   * Type safe way of getting value from input ports.
+
    * @param storageInput the bag of inputs
    * @return In this case, the integer value for the INPUT (only) port
    */
