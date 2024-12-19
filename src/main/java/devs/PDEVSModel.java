@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class implements a DEVS atomic model.
-
+ *
  * @param <T> the time type used by the model
  * @param <S> the internal state type for the modelState
  */
@@ -35,6 +35,12 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   protected PDevsSimulator<T, S, ?> simulator;
   protected final String modelIdentifier;
 
+  /**
+   * Constructs a new instance of the PDEVSModel class.
+   *
+   * @param modelState      the initial state of the DEVS model
+   * @param modelIdentifier a unique identifier for this model instance
+   */
   public PDEVSModel(S modelState, String modelIdentifier) {
     this.modelState = modelState;
     this.modelIdentifier = modelIdentifier;
@@ -44,7 +50,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   /**
    * The DEVS internal state transition function. This function is called when the model is
    * executing a schedule internal transition that occurs with the passage of time
-
+   *
    * @param currentTime the current time of the transition
    */
   public abstract void internalStateTransitionFunction(T currentTime);
@@ -52,12 +58,13 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   /**
    * The DEVS external state transition function. This function is called when an external event
    * arrives at one of the model's input ports. Note two important considerations. First, the type
-   * of event is not known in advance, so this function will have to use the {@link PortValue
-   * PortValue} contained in the input {@link devs.msg.Bag Bag} to identify the type of event and
-   * process it appropriately. In addition, more than one input is possible at an intant in time.
-
+   * of event is not known in advance, so this function will have to use the
+   * {@link PortValue PortValue} contained in the input {@link devs.msg.Bag Bag} to identify the
+   * type of event and process it appropriately. In addition, more than one input is possible at an
+   * intant in time.
+   *
    * @param currentTime the current time of the transition
-   * @param bag the bag of inputs that has arrived at the current time
+   * @param bag         the bag of inputs that has arrived at the current time
    */
   public abstract void externalStateTransitionFunction(T currentTime, Bag bag);
 
@@ -67,16 +74,16 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * transition. A trivial implementation could call the external state transition function, then
    * the internal state transition function. In other cases, the order may depend on the type of
    * event received.
-
+   *
    * @param currentTime the current time of the transition
-   * @param bag the bag of inputs that has arrived at the current time
+   * @param bag         the bag of inputs that has arrived at the current time
    */
   public abstract void confluentStateTransitionFunction(T currentTime, Bag bag);
 
   /**
    * This is the DEVS time advance function. The DEVS simulator calls this method to determine the
    * time of this model's next internal state transition.
-
+   *
    * @param currentTime the simulator's current time
    * @return the time of the next scheduled internal state transition
    */
@@ -86,7 +93,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * The DEVS output function. The simulator calls this function immediately prior to an internal
    * state transition. Its implementation adds any outputs from this model to the
    * {@link devs.msg.Bag Bag}.
-
+   *
    * @return the {@link devs.msg.Bag Bag} of outputs
    */
   public abstract Bag outputFunction();

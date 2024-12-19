@@ -19,6 +19,19 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import org.immutables.value.Value;
 
+/**
+ * Meta-annotation for configuring the style and naming conventions of immutable value classes
+ * within the DEVS Streaming Framework.
+ * <p>
+ * This annotation leverages Immutables framework's {@link Value.Style} to define specific
+ * conventions for class and builder generation: - Abstract types are prefixed with "Abstract". -
+ * Generated immutable implementations match the abstract type names without the "Abstract" prefix.
+ * - Staged builders are enabled for fine-grained control over instance creation.
+ * <p>
+ * This annotation can be applied at a package or type level to maintain consistency across related
+ * classes. It simplifies the creation and management of immutable objects essential for the
+ * framework's operation.
+ */
 @Target({ElementType.PACKAGE, ElementType.TYPE})
 @Value.Style(typeAbstract = "Abstract*", typeImmutable = "*", stagedBuilder = true)
 public @interface DevsStyle {

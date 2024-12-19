@@ -30,12 +30,28 @@ import org.immutables.value.Value;
 public abstract class AbstractStateMessage<T extends SimTime, S>
     implements TimedDevsMessage<T>, DevsLogMessage {
 
+  /**
+   * Retrieves the unique identifier of the DEVS model associated with this message.
+   *
+   * @return A string representing the unique identifier of the model.
+   */
   @Value.Parameter
   public abstract String getModelId();
 
+  /**
+   * Retrieves the state of the DEVS model associated with this message.
+   *
+   * @return The state of type {@code S}, representing the current state of the DEVS model.
+   */
   @Value.Parameter
   public abstract S getModelState();
 
+  /**
+   * Retrieves the simulation time associated with this message. This value represents the specific
+   * point in the simulation timeline when the message was generated or is relevant.
+   *
+   * @return The simulation time of type {@code T}, which extends {@link SimTime}.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();

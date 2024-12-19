@@ -18,11 +18,25 @@ package devs.msg;
 import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 
+/**
+ * Represents a message used to initialize a simulation within the DEVS framework.
+ * <p>
+ * This message is passed to an actor to initiate the simulation process. It encapsulates the
+ * initialization details along with a reference to the parent actor for communication.
+ *
+ * @param <T> the type of simulation time associated with the initialization.
+ */
 public class InitSimMessage<T extends SimTime> implements DevsMessage {
 
   private final ActorRef<DevsMessage> parent;
   private final InitSim<T> initSim;
 
+  /**
+   * Constructs an InitSimMessage instance to initialize a simulation.
+   *
+   * @param initSim the initialization configuration for the simulation.
+   * @param parent  the reference to the parent actor for communication.
+   */
   public InitSimMessage(InitSim<T> initSim, ActorRef<DevsMessage> parent) {
     this.parent = parent;
     this.initSim = initSim;

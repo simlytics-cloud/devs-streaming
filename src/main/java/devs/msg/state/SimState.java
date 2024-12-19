@@ -17,18 +17,18 @@ package devs.msg.state;
 
 /**
  * An interface for objects whose state can be updated a subsequent state update.
- * 
+ *
  * @param <T> the type of state object
  */
 public interface SimState<T> {
 
   /**
    * An object of type T will be updated by another object of type T, the stateUpdate.
-   * 
+   *
    * @param stateUpdate this object will only have the fields that have changed since the previous
-   *        update set.
+   *                    update set.
    * @return a new object of type T whose fields have been updated based on the values in the state
-   *         update.
+   * update.
    */
   T updateState(T stateUpdate);
 }

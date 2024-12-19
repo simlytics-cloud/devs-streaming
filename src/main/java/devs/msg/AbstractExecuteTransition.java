@@ -35,9 +35,22 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = ExecuteTransition.class)
 public abstract class AbstractExecuteTransition<T extends SimTime> implements TimedDevsMessage<T> {
 
+  /**
+   * Returns an optional container of input port values that may be provided to a PDevsModel during
+   * transition execution. If present, these inputs can trigger an external or confluent state
+   * transition. If absent, an internal state transition is executed.
+   *
+   * @return an {@code Optional} containing the {@link Bag} of input port values, or an empty
+   * {@code Optional} if no inputs are provided.
+   */
   @Value.Parameter
   public abstract Optional<Bag> getModelInputsOption();
 
+  /**
+   * Retrieves the time associated with the transition message.
+   *
+   * @return an instance of type {@code T}, representing the time associated with the transition.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();

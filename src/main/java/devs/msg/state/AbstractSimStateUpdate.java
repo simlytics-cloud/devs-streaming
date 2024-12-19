@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 /**
  * An subsequent message sent to inform external models of the updated state of an object. The state
  * object of type T will have only the changed fields set.
- * 
+ *
  * @param <T> the type of state object
  */
 @Value.Immutable
@@ -32,15 +32,15 @@ public abstract class AbstractSimStateUpdate<T extends SimState<T>> implements S
 
   /**
    * Get the unique identifier of his state object.
-   * 
+   *
    * @return the state identifier
    */
   @Override
   public abstract String getStateId();
 
   /**
-   * Get the state object of type T
-   * 
+   * Get the state object of type T.
+   *
    * @return the state object
    */
   @Override

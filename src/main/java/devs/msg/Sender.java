@@ -15,7 +15,22 @@
 
 package devs.msg;
 
+/**
+ * Represents a core interface that extends {@link DevsMessage} and provides the capability
+ * to retrieve the identifier of the message sender.
+ * The sender identifier is typically used for tracing the origin of a message
+ * within the DEVS Streaming Framework.
+ *
+ * Implementations of this interface can be used to represent messages that
+ * include sender information, enabling the framework to handle and route messages
+ * based on their originating source.
+ */
 public interface Sender extends DevsMessage {
 
+  /**
+   * Retrieves the identifier of the message sender.
+   *
+   * @return the sender identifier as a String.
+   */
   public String getSender();
 }

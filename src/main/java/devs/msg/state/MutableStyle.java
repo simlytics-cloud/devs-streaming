@@ -19,7 +19,19 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import org.immutables.value.Value;
 
+/**
+ * Annotation used to define the style for generating immutable objects and their related builder
+ * patterns. This style configuration is often used in conjunction with the Immutables library to
+ * create immutable classes with specific naming conventions and builder configurations.
+ * <p>
+ * The style specifies: - Abstract type names should start with "Abstract*". - Immutable concrete
+ * type names should match the abstract types, with "Abstract" removed. - A staged builder pattern
+ * is used for object construction.
+ * <p>
+ * This annotation can be applied at the package or type level.
+ */
 @Target({ElementType.PACKAGE, ElementType.TYPE})
 @Value.Style(typeAbstract = "Abstract*", typeImmutable = "*", stagedBuilder = true)
 public @interface MutableStyle {
+
 }

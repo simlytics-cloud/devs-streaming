@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 /**
  * An initial message sent to inform external models of the initial state of an object. The state
  * object of type T will have all of its fields set.
- * 
+ *
  * @param <T> the type of state object
  */
 @Value.Immutable
@@ -33,15 +33,15 @@ public abstract class AbstractSimStateInitialized<T extends SimState<T>>
 
   /**
    * Get the unique identifier of his state object.
-   * 
+   *
    * @return the state identifier
    */
   @Override
   public abstract String getStateId();
 
   /**
-   * Get the state object of type T
-   * 
+   * Get the state object of type T.
+   *
    * @return the state object
    */
   @Override

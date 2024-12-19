@@ -28,6 +28,14 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = Bag.class)
 public abstract class AbstractBag {
 
+  /**
+   * Retrieves a list of {@link PortValue} instances associated with their respective port
+   * identifiers and types. Each {@code PortValue} object encapsulates the value associated with a
+   * specific port.
+   *
+   * @return A list of {@code PortValue<?>} objects representing the values and their associated
+   * metadata for various ports.
+   */
   public abstract List<PortValue<?>> getPortValueList();
 
 }

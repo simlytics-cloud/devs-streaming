@@ -19,11 +19,23 @@ package devs;
 
 import devs.msg.PortValue;
 
+/**
+ * Represents a port within a DEVS model. A port is identified by a unique identifier and is
+ * associated with a specific data type represented by the class type T.
+ *
+ * @param <T> the type of data associated with the port
+ */
 public class Port<T> {
 
   private final String portIdentifier;
   private final Class<T> clazz;
 
+  /**
+   * Constructs a Port instance with a specified identifier and associated data type.
+   *
+   * @param portIdentifier the unique identifier of the port
+   * @param clazz          the class type representing the data type associated with the port
+   */
   public Port(String portIdentifier, Class<T> clazz) {
     this.portIdentifier = portIdentifier;
     this.clazz = clazz;
@@ -33,6 +45,13 @@ public class Port<T> {
     return clazz.cast(portValue.getValue());
   }
 
+  /**
+   * Creates a new instance of {@link PortValue} using the provided value and the port's
+   * identifier.
+   *
+   * @param value the value to be associated with the port
+   * @return a new {@link PortValue} instance containing the specified value and port identifier
+   */
   public PortValue<T> createPortValue(T value) {
     return new PortValue<>(value, portIdentifier);
   }

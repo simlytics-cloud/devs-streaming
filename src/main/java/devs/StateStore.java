@@ -19,7 +19,7 @@ import devs.msg.time.SimTime;
 
 /**
  * Interface of a class to store state values over time.
-
+ *
  * @param <T> the time type used by the StateStore
  * @param <V> the value type used by the StateStore
  */

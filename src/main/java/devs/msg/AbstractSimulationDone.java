@@ -21,11 +21,33 @@ import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
+/**
+ * Represents an abstract message indicating that a simulation is completed at a specific time. This
+ * class is intended to be immutable and is a part of the DEVS (Discrete Event System Specification)
+ * messaging framework. It provides a time value representing when the simulation completion
+ * occurred.
+ *
+ * @param <T> the type of time value, extending {@link SimTime}
+ *            <p>
+ *            Extends the {@link devs.msg.time.TimedDevsMessage}, ensuring that a timestamp is
+ *            always associated with the message.
+ *            <p>
+ *            Annotated with {@link org.immutables.value.Value.Immutable} to generate an immutable
+ *            implementation. Supports JSON serialization and deserialization using Jackson
+ *            annotations {@link com.fasterxml.jackson.databind.annotation.JsonSerialize} and
+ *            {@link com.fasterxml.jackson.databind.annotation.JsonDeserialize}.
+ */
 @Value.Immutable
 @JsonSerialize(as = SimulationDone.class)
 @JsonDeserialize(as = SimulationDone.class)
 public abstract class AbstractSimulationDone<T extends SimTime> implements TimedDevsMessage<T> {
 
+  /**
+   * Retrieves the time value associated with this message. The time represents the simulation time
+   * at which the message is relevant or generated.
+   *
+   * @return the time value of type {@code T}, which extends {@code SimTime}.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();

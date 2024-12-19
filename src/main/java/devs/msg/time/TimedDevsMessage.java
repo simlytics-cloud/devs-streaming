@@ -19,10 +19,15 @@ import devs.msg.DevsMessage;
 
 /**
  * A message with a time value.
- * 
+ *
  * @param <T> the type of time value
  */
 public interface TimedDevsMessage<T extends SimTime> extends DevsMessage {
 
+  /**
+   * Retrieves the simulation time associated with the message.
+   *
+   * @return the simulation time of type {@code T}, which extends {@link SimTime}
+   */
   T getTime();
 }

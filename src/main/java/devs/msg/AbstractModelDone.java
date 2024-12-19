@@ -21,11 +21,24 @@ import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
+/**
+ * Abstract base class representing a timed message with a sender in the DEVS Streaming Framework.
+ * This class serves as an immutable implementation for messages that include a time value and a
+ * sender identifier. It extends the functionality of {@link devs.msg.time.TimedDevsMessage} and
+ * {@link devs.msg.Sender}.
+ *
+ * @param <T> the type of the time value, extending {@link SimTime}
+ */
 @Value.Immutable
 @JsonSerialize(as = ModelDone.class)
 @JsonDeserialize(as = ModelDone.class)
 public abstract class AbstractModelDone<T extends SimTime> implements TimedDevsMessage<T>, Sender {
 
+  /**
+   * Retrieves the time value associated with a message.
+   *
+   * @return the time value of type {@code T}, where {@code T} extends {@link devs.msg.time.SimTime}
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();

@@ -19,6 +19,17 @@ import devs.msg.Bag;
 import java.util.Map;
 
 
+/**
+ * The OutputCouplingMessages class represents a structure containing output messages and internal
+ * messages for a coupled PDevs model. It is used to encapsulate and transport these message types
+ * during the model's execution.
+ * <p>
+ * This class includes the following attributes: - An output message encapsulated in a Bag object. -
+ * Internal messages mapped to their corresponding Bag instances, organized by string keys.
+ * <p>
+ * This structure provides convenience methods for accessing the output message and the internal
+ * messages mapping.
+ */
 public class OutputCouplingMessages {
 
   final Bag outputMessage;

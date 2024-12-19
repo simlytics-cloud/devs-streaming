@@ -33,6 +33,11 @@ import org.apache.pekko.stream.ActorAttributes;
 import org.apache.pekko.stream.Supervision;
 import org.apache.pekko.stream.javadsl.Sink;
 
+/**
+ * Abstract base class for consuming all records from a Kafka topic using a Kafka consumer
+ * implemented via the Apache Pekko Kafka connector. This class is designed for use in environments
+ * that require continuous processing of all records in a Kafka topic.
+ */
 public abstract class KafkaReadAllConsumer {
 
   protected final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -44,45 +49,55 @@ public abstract class KafkaReadAllConsumer {
    * Creates a consumer that constantly reads a Kafka topic for records and procceses each record
    * with the processRecord method.
    *
-   * @param akkaKafkaConsumerConfig A HOCON configuration for the Alpakka Kafka consumer, see
-   *        https://github.com/akka/alpakka-kafka/blob/master/core/src/main/resources/reference.conf
-   * @param classicActorSystem classic actor system in which the stream runs
-   * @param topic topic where messages are stored
+   * @param pekkoKafkaConsumerConfig A HOCON configuration for the Pekko Kafka consumer, see
+   *                                 https://github.com/apache/pekko-connectors-kafka/blob/main/core/src/main/resources/reference.conf
+   * @param classicActorSystem       classic actor system in which the stream runs
+   * @param topic                    topic where messages are stored
    */
-  public KafkaReadAllConsumer(Config akkaKafkaConsumerConfig, ActorSystem classicActorSystem,
-                              String topic) {
+  public KafkaReadAllConsumer(Config pekkoKafkaConsumerConfig, ActorSystem classicActorSystem,
+      String topic) {
     this.classicActorSystem = classicActorSystem;
     objectMapper.registerModule(new Jdk8Module());
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
-        .create(akkaKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
+        .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
 
-    // Using a Kafka consumer from the Alpakka Kafka project because this consumer does a better job
+    // Using a Kafka consumer from the Pekko Kafka project because this consumer does a better job
     // of managing
     // threads. For example, the Java Kafka consumer uses an infinite loop to poll for data
     // consuming an entire thread for this purpose
     // The planSource consumer does not auto commit and subscribes to the webLvcTopic
     // The consumer's auto.offset.reset property is set to earliest so it always reads all data
-    this.control =
-        Consumer.plainSource(consumerSettings, Subscriptions.topics(topic)).map(record -> {
+    this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(topic))
+        .map(record -> {
           processRecord(record);
           return NotUsed.notUsed();
         })
-            // This supervisor strategy will drop the current record being processed in the event of
-            // an
-            // error and will continue consuming with the next message
-            .withAttributes(
-                ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider()))
-            // This statement enables logging of messages in the previous step of the stream
-            .log("LopConsumerLog")
-            // Connect to a sink to continuously run the stream and a materializer that gives a
-            // control
-            // to shut down the stream on command.
-            .toMat(Sink.ignore(), Consumer::createDrainingControl).run(classicActorSystem);
+        // This supervisor strategy will drop the current record being processed in the event of
+        // an
+        // error and will continue consuming with the next message
+        .withAttributes(
+            ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider()))
+        // This statement enables logging of messages in the previous step of the stream
+        .log("LopConsumerLog")
+        // Connect to a sink to continuously run the stream and a materializer that gives a
+        // control
+        // to shut down the stream on command.
+        .toMat(Sink.ignore(), Consumer::createDrainingControl).run(classicActorSystem);
   }
 
   public abstract void processRecord(ConsumerRecord<String, String> record);
 
+  /**
+   * Shuts down the Kafka consumer stream and releases associated resources.
+   * <p>
+   * This method ensures proper termination of the consumer stream by draining all pending messages
+   * being processed before shutting down. The shutdown process uses the consumer's control object
+   * to signal the underlying actor system dispatcher associated with the stream.
+   * <p>
+   * This is particularly important to ensure a graceful shutdown, avoiding unprocessed or partially
+   * processed messages in case of cleanup or termination scenarios.
+   */
   public void shutDown() {
     control.drainAndShutdown(classicActorSystem.getDispatcher());
   }

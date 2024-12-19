@@ -16,13 +16,24 @@
 package devs.msg.state;
 
 /**
- * Interface used to mark messages sent to inform external models about the state of an object
- * 
+ * Interface used to mark messages sent to inform external models about the state of an object.
+ *
  * @param <T> the type of state object
  */
 public interface SimStateMessage<T extends SimState<T>> {
 
+  /**
+   * Retrieves the unique identifier of the state object.
+   *
+   * @return the state identifier as a string
+   */
   String getStateId();
 
+  /**
+   * Retrieves the state object of type T, which represents a state update with only the changed
+   * fields set since the previous update or full initialization.
+   *
+   * @return the updated state object of type T
+   */
   T getStateUpdate();
 }

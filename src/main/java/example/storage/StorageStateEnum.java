@@ -15,6 +15,16 @@
 
 package example.storage;
 
+/**
+ * Defines an enumeration representing the various states of storage.
+ * <p>
+ * Each state corresponds to a specific numerical value, which can be used to uniquely identify and
+ * differentiate between the storage states.
+ * <p>
+ * The available states are: - S0: Represents the storage state with a value of 0.0. - S1:
+ * Represents the storage state with a value of 1.0. - S0_1: Represents the storage state with a
+ * fractional value of 0.1.
+ */
 public enum StorageStateEnum {
 
   S0(0d), S1(1d), S0_1(0.1);

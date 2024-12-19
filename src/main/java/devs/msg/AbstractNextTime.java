@@ -21,15 +21,34 @@ import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
+/**
+ * Represents an immutable message with a time value and a sender within the DEVS framework. This
+ * abstract class provides the base implementation for a message that includes both a timestamp and
+ * a sender identifier. It serves as a foundational structure for creating specific message types in
+ * simulation systems.
+ *
+ * @param <T> the type of time value extending from {@link SimTime}
+ */
 @Value.Immutable
 @JsonSerialize(as = NextTime.class)
 @JsonDeserialize(as = NextTime.class)
 public abstract class AbstractNextTime<T extends SimTime> implements TimedDevsMessage<T>, Sender {
 
+  /**
+   * Retrieves the time value associated with this message. The time value is represented as an
+   * instance of {@code T}, which extends {@link SimTime}.
+   *
+   * @return the time value of type {@code T} associated with this message.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();
 
+  /**
+   * Retrieves the sender identifier associated with this message.
+   *
+   * @return A string representing the sender's unique identifier.
+   */
   @Value.Parameter
   @Override
   public abstract String getSender();

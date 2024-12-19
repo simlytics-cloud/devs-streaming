@@ -4,6 +4,15 @@ import devs.PDEVSModel;
 import devs.msg.Bag;
 import devs.msg.time.SimTime;
 
+/**
+ * The Acceptor class is an abstract DEVS (Discrete Event System Specification) model that
+ * represents a model processing incoming events without generating any output events.  Users of
+ * this class should override the externalStateTransitionFunction to validate that the incoming
+ * messages are correct.
+ *
+ * @param <T> the time type used by the model, extending the SimTime class
+ * @param <S> the internal state type of the model
+ */
 public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
 
   public static String modelIdentifier = "Acceptor";

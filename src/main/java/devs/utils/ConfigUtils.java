@@ -18,8 +18,18 @@ package devs.utils;
 import com.typesafe.config.Config;
 import java.util.Properties;
 
+/**
+ * Utility class for handling configuration-related operations.
+ */
 public class ConfigUtils {
 
+  /**
+   * Converts a Config object to a Properties object by extracting each entry's key and unwrapped
+   * value from the configuration and adding them to the Properties instance.
+   *
+   * @param config the source configuration object containing key-value pairs to be converted
+   * @return a Properties object containing the same key-value pairs as the provided configuration
+   */
   public static Properties toProperties(Config config) {
     Properties properties = new Properties();
     config.entrySet()
@@ -28,12 +38,24 @@ public class ConfigUtils {
   }
 
 
+  /**
+   * Creates and returns a copy of the provided Properties object.
+   *
+   * @param original the Properties object to be copied
+   * @return a new Properties object containing the same key-value pairs as the input
+   */
   public static Properties copyProperties(Properties original) {
     Properties copy = new Properties();
     copy.putAll(original);
     return copy;
   }
 
+  /**
+   * Private constructor to prevent instantiation of the utility class.
+   * <p>
+   * This constructor is intentionally defined as private to ensure that the class cannot be
+   * instantiated. The class is meant to provide static utility methods only.
+   */
   private ConfigUtils() {
   }
 

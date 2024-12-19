@@ -22,19 +22,48 @@ import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import devs.msg.PortValue;
-import devs.msg.PortValueDerserializer;
+import devs.msg.PortValueDeserializer;
 
+/**
+ * Utility class for creating and configuring a custom Jackson {@code ObjectMapper} instance.
+ * <p>
+ * The {@code ObjectMapper} constructed by this class provides serialization and deserialization
+ * support for various modules, including: - Jdk8Module for Java 8 types like Optional. -
+ * GuavaModule for Google Guava types. - JavaTimeModule for Java 8 date and time types.
+ * Additionally, it includes a custom deserializer for the {@code PortValue} class.
+ * <p>
+ * The custom deserializer dynamically handles the type of the value within the {@code PortValue}
+ * object based on the JSON structure.
+ */
 public class DevsObjectMapper {
 
+  /**
+   * Builds and configures a custom Jackson {@code ObjectMapper} instance.
+   * <p>
+   * The returned {@code ObjectMapper} supports serialization and deserialization for several
+   * modules, including: - Jdk8Module for Java 8 types such as {@code Optional}. - GuavaModule for
+   * Google Guava types. - JavaTimeModule for Java 8 date and time types. - A custom module with
+   * {@code PortValueDeserializer} for handling {@code PortValue} objects.
+   *
+   * @return a configured {@code ObjectMapper} for handling custom serialization and deserialization
+   * scenarios, including support for custom data types.
+   */
   public static ObjectMapper buildObjectMapper() {
-    PortValueDerserializer portValueDerserializer = new PortValueDerserializer();
+    PortValueDeserializer portValueDeserializer = new PortValueDeserializer();
     SimpleModule portValueModule =
         new SimpleModule("PortValueDeserializer", new Version(1, 0, 0, null));
-    portValueModule.addDeserializer(PortValue.class, portValueDerserializer);
+    portValueModule.addDeserializer(PortValue.class, portValueDeserializer);
     return new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule())
         .registerModule(new JavaTimeModule()).registerModule(portValueModule);
   }
 
+  /**
+   * Private constructor to prevent instantiation of the utility class.
+   * <p>
+   * The class is designed to provide static methods for creating and configuring a custom Jackson
+   * {@code ObjectMapper}. Instantiation is intentionally restricted as the functionality is
+   * accessible directly via static methods.
+   */
   private DevsObjectMapper() {
   }
 }

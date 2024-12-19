@@ -15,8 +15,8 @@ import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 
 /**
- * A factory to create a PDevsCoordinator for a DEVS coupled model consisting of subordinate 
- * atomic models.
+ * A factory to create a PDevsCoordinator for a DEVS coupled model consisting of subordinate atomic
+ * models.
  */
 public class CoupledModelFactory<T extends SimTime> {
 
@@ -30,16 +30,16 @@ public class CoupledModelFactory<T extends SimTime> {
 
   /**
    * Constructs a CoupledModelFactory.
-
-   * @param modelIdentifier the unique string identifying this model
-   * @param devsModels a list of PDevsModels that are components of the coupled model
-   * @param coupledModelFactories a list of CoupledModelFactories that are components of the 
-   *     coupled model
-   * @param couplings a list of PDevsCouplings used to coupled subordinate DEVS models
+   *
+   * @param modelIdentifier       the unique string identifying this model
+   * @param devsModels            a list of PDevsModels that are components of the coupled model
+   * @param coupledModelFactories a list of CoupledModelFactories that are components of the coupled
+   *                              model
+   * @param couplings             a list of PDevsCouplings used to coupled subordinate DEVS models
    */
   public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels,
-                             List<CoupledModelFactory<T>> coupledModelFactories,
-                             PDevsCouplings couplings) {
+      List<CoupledModelFactory<T>> coupledModelFactories,
+      PDevsCouplings couplings) {
     this.modelIdentifier = modelIdentifier;
     this.devsModels = devsModels;
     this.coupledModelFactories = coupledModelFactories;
@@ -48,18 +48,19 @@ public class CoupledModelFactory<T extends SimTime> {
 
   /**
    * Constructs a CoupledModelFactory.
-
-   * @param modelIdentifier the unique string identifying this model
-   * @param devsModels a list of PDevsModels that are components of the coupled model
-   * @param coupledModelFactories a list of CoupledModelFactories that are components of the 
-   *     coupled model
-   * @param proxyModels a list of KafkaLocalProxy models that are components of the coupled model
-   * @param couplings a list of PDevsCouplings used to coupled subordinate DEVS models
+   *
+   * @param modelIdentifier       the unique string identifying this model
+   * @param devsModels            a list of PDevsModels that are components of the coupled model
+   * @param coupledModelFactories a list of CoupledModelFactories that are components of the coupled
+   *                              model
+   * @param proxyModels           a list of KafkaLocalProxy models that are components of the
+   *                              coupled model
+   * @param couplings             a list of PDevsCouplings used to coupled subordinate DEVS models
    */
   public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels,
-                             List<CoupledModelFactory<T>> coupledModelFactories,
-                             List<KafkaLocalProxy.ProxyProperties> proxyModels,
-                             PDevsCouplings couplings) {
+      List<CoupledModelFactory<T>> coupledModelFactories,
+      List<KafkaLocalProxy.ProxyProperties> proxyModels,
+      PDevsCouplings couplings) {
     this.modelIdentifier = modelIdentifier;
     this.devsModels = devsModels;
     this.coupledModelFactories = coupledModelFactories;
@@ -85,9 +86,9 @@ public class CoupledModelFactory<T extends SimTime> {
 
   /**
    * Creates the PDevsCoordinator for the coupled model.
-
+   *
    * @param parentIdentifier the unique identifier of the parent coupled model
-   * @param initialTime the initial time for the simulation
+   * @param initialTime      the initial time for the simulation
    * @return the created PDevsCoordinator
    */
   public Behavior<DevsMessage> create(String parentIdentifier, T initialTime) {

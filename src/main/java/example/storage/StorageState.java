@@ -18,17 +18,42 @@ package example.storage;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents the state of storage with a specific value and an optional output indicator. This
+ * immutable class captures the state using a predefined enumeration value
+ * ({@link StorageStateEnum}) and a boolean flag indicating whether the state has produced an
+ * output.
+ * <p>
+ * Key features: 1. The `stateValue` property defines the specific state, based on the
+ * {@link StorageStateEnum} enumeration. 2. The `hasOutput` property indicates whether the current
+ * state has generated an output.
+ * <p>
+ * This class includes constructors to initialize the state with or without an output, and provides
+ * getter methods for retrieving the state properties.
+ */
 public class StorageState {
+
   private final StorageStateEnum stateValue;
   private final boolean hasOutput;
 
+  /**
+   * Constructs a new instance of the StorageState class.
+   *
+   * @param stateValue the specific state value represented as a {@link StorageStateEnum}
+   * @param hasOutput  a boolean indicating whether the current state has produced an output
+   */
   @JsonCreator
   public StorageState(@JsonProperty("stateValue") StorageStateEnum stateValue,
-                      @JsonProperty("hasOutput") boolean hasOutput) {
+      @JsonProperty("hasOutput") boolean hasOutput) {
     this.stateValue = stateValue;
     this.hasOutput = hasOutput;
   }
 
+  /**
+   * Constructs a new instance of the StorageState class with a specific state value.
+   *
+   * @param stateValue the specific state value represented as a {@link StorageStateEnum}
+   */
   public StorageState(StorageStateEnum stateValue) {
     this.stateValue = stateValue;
     this.hasOutput = false;

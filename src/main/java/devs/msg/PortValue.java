@@ -18,6 +18,15 @@ package devs.msg;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents a value associated with a specific port in the DEVS Streaming Framework.
+ *
+ * The {@code PortValue} class encapsulates the value, port identifier, and port type.
+ * It provides constructors for initializing these properties and methods for accessing them.
+ * The port type is automatically deduced if not explicitly provided.
+ *
+ * @param <T> The type of the value associated with the port.
+ */
 public class PortValue<T> {
 
   private final T value;
@@ -26,34 +35,70 @@ public class PortValue<T> {
 
   private final String portType;
 
+  /**
+   * Constructs a new {@code PortValue} object representing a value associated with a specific
+   * port.
+   *
+   * @param value          the value to be associated with the port
+   * @param portIdentifier the identifier of the port to which the value is associated
+   * @param portType       the type of the port
+   */
   @JsonCreator
   public PortValue(@JsonProperty("value") T value,
-                   @JsonProperty("portIdentifier") String portIdentifier,
-                   @JsonProperty("portType") String portType) {
+      @JsonProperty("portIdentifier") String portIdentifier,
+      @JsonProperty("portType") String portType) {
     this.value = value;
     this.portIdentifier = portIdentifier;
     this.portType = portType;
   }
 
+  /**
+   * Constructs a new {@code PortValue} object representing a value associated with a specific
+   * port.
+   *
+   * @param value          the value to be associated with the port
+   * @param portIdentifier the identifier of the port to which the value is associated
+   */
   public PortValue(T value, String portIdentifier) {
     this.value = value;
     this.portIdentifier = portIdentifier;
     this.portType = value.getClass().getCanonicalName();
   }
 
+  /**
+   * Retrieves the value associated with this {@code PortValue}.
+   *
+   * @return the value of type {@code T} associated with the port.
+   */
   public T getValue() {
     return value;
   }
 
+  /**
+   * Retrieves the identifier of the port associated with this instance.
+   *
+   * @return the port identifier as a {@code String}.
+   */
   public String getPortIdentifier() {
     return portIdentifier;
   }
 
+  /**
+   * Retrieves the type of the port associated with this instance.
+   *
+   * @return the port type as a {@code String}.
+   */
   @JsonProperty("portType")
   public String getPortType() {
     return portType;
   }
 
+  /**
+   * Returns a string representation of the {@code PortValue} instance, including the port
+   * identifier and associated value.
+   *
+   * @return a string in the format "PortValue with Port ID [portIdentifier] and value [value]".
+   */
   @Override
   public String toString() {
     return "PortValue with Port ID " + portIdentifier + " and value " + value;

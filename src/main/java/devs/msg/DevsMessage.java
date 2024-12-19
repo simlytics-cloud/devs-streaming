@@ -18,6 +18,16 @@ package devs.msg;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 
+/**
+ * Marker interface for all DEVS framework messages.
+ * <p>
+ * This interface serves as a base for various message types used within the DEVS Streaming
+ * Framework. Implementing this interface allows messages to be categorized and passed between
+ * different simulation components and actors.
+ * <p>
+ * The framework utilizes Jackson's {@link JsonTypeInfo} for polymorphic message serialization and
+ * deserialization, associating each message with a specific type identifier.
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "devsType")
 public interface DevsMessage {
 

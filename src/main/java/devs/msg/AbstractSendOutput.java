@@ -21,11 +21,22 @@ import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
+/**
+ * Abstract base class for output messages in a DEVS model that are associated with a specific
+ * simulation time.
+ *
+ * @param <T> the time type, which must extend {@link SimTime}
+ */
 @Value.Immutable
 @JsonSerialize(as = SendOutput.class)
 @JsonDeserialize(as = SendOutput.class)
 public abstract class AbstractSendOutput<T extends SimTime> implements TimedDevsMessage<T> {
 
+  /**
+   * Retrieves the simulation time associated with this DEVS model output message.
+   *
+   * @return the simulation time of type T, where T extends {@code SimTime}.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();

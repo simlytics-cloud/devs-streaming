@@ -21,19 +21,51 @@ import devs.msg.time.SimTime;
 import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
+/**
+ * Represents an abstract model for a transition done message in a DEVS simulation framework. This
+ * class is intended to be immutable and supports JSON serialization and deserialization.
+ *
+ * @param <T> The type of time value that extends from SimTime.
+ *            <p>
+ *            This class implements the following interfaces: - TimedDevsMessage: Indicates the
+ *            message is associated with a specific time value. - Sender: Provides information about
+ *            the sender of the message.
+ *            <p>
+ *            Attributes: - nextTime: Represents the next simulation time associated with this
+ *            transition. - time: The current simulation time for the message. - sender: Identifies
+ *            the sender of the message.
+ */
 @Value.Immutable
 @JsonSerialize(as = TransitionDone.class)
 @JsonDeserialize(as = TransitionDone.class)
 public abstract class AbstractTransitionDone<T extends SimTime>
     implements TimedDevsMessage<T>, Sender {
 
+  /**
+   * Retrieves the next simulation time associated with the transition event represented by this
+   * message.
+   *
+   * @return The next simulation time of type {@code T}, representing the time value for the
+   * subsequent simulation event.
+   */
   @Value.Parameter
   public abstract T getNextTime();
 
+  /**
+   * Retrieves the current simulation time associated with this message.
+   *
+   * @return The current simulation time of type {@code T}, representing the time value associated
+   * with this message.
+   */
   @Value.Parameter
   @Override
   public abstract T getTime();
 
+  /**
+   * Retrieves the identifier of the sender associated with this message.
+   *
+   * @return A string representing the sender's identifier.
+   */
   @Value.Parameter
   @Override
   public abstract String getSender();
