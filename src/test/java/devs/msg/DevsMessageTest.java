@@ -37,11 +37,39 @@ import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.serialization.Serialization;
 import org.apache.pekko.serialization.SerializationExtension;
-import org.apache.pekko.serialization.Serializers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * The `DevsMessageTest` class contains unit tests for serializing and deserializing various types
+ * of `DevsMessage` objects using Akka Serialization and custom object mappers. This class verifies
+ * proper implementation of serialization and deserialization mechanisms for messages in the DEVS
+ * simulation framework.
+ * <p>
+ * Key methods in this class include: - `serdeInitMessage()`: Tests the serialization and
+ * deserialization of the `InitSim` message. - `serdeExecuteTransitionMessage()`: Tests the
+ * serialization and deserialization of the `ExecuteTransition` message. - `serdeModelDone()`: Tests
+ * the serialization and deserialization of the `ModelDone` message. - `serdeModelOutputs()`: Tests
+ * the serialization and deserialization of the `ModelOutputMessage`. - `serdeNextTimeMessage()`:
+ * Tests the serialization and deserialization of the `NextTime` message. - `serdeSendOutput()`:
+ * Tests the serialization and deserialization of the `SendOutput` message. -
+ * `serdeSimulationDone()`: Tests the serialization and deserialization of the `SimulationDone`
+ * message. - `serdeTransitionDone()`: Tests the serialization and deserialization of the
+ * `TransitionDone` message.
+ * <p>
+ * Helper methods: - `deserialize`: Converts byte arrays back into `DevsMessage` objects based on
+ * the provided serializer ID and manifest. - `serialize`: Converts a `DevsMessage` object into a
+ * UTF-8 encoded string.
+ * <p>
+ * The tests ensure: - Correct mapping of serialized data to their respective message types. -
+ * Preservation of message properties, such as time, sender, and additional fields, during
+ * serialization and deserialization. - Compatibility with Akka's serialization framework.
+ * <p>
+ * This class leverages the Jackson ObjectMapper for JSON serialization and Akka Serialization
+ * Extension for binary serialization.
+ */
 public class DevsMessageTest {
+
   LongSimTime zero = LongSimTime.builder().t(0L).build();
   LongSimTime one = LongSimTime.builder().t(1L).build();
 
@@ -51,17 +79,9 @@ public class DevsMessageTest {
   Serialization serialization = SerializationExtension.get(system);
   ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
-  // @BeforeAll
-  // static void registerObjectMapper() {
-  // objectMapper.registerModule(new Jdk8Module());
-  // }
 
-  private DevsMessage deserialize(DevsMessage devsMessage, byte[] bytes) {
-    int serializerId = serialization.findSerializerFor(devsMessage).identifier();
-    String manifest =
-        Serializers.manifestFor(serialization.findSerializerFor(devsMessage), devsMessage);
-    // Turn it back into an object
-    return (DevsMessage) serialization.deserialize(bytes, serializerId, manifest).get();
+  private DevsMessage deserialize(byte[] bytes) {
+    return serialization.deserialize(bytes, DevsMessage.class).get();
 
   }
 
@@ -74,17 +94,16 @@ public class DevsMessageTest {
   void serdeInitMessage() throws JsonProcessingException {
     InitSim<?> initSim = InitSim.builder().time(zero).build();
     DevsMessage devsMessage = initSim;
-    // String json = objectMapper.writeValueAsString(devsMessage);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
-    int serializerId = serialization.findSerializerFor(devsMessage).identifier();
-    String manifest =
-        Serializers.manifestFor(serialization.findSerializerFor(devsMessage), devsMessage);
-    // Turn it back into an object
-    DevsMessage deserialized =
-        (DevsMessage) serialization.deserialize(bytes, serializerId, manifest).get();
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof InitSim<?>);
     InitSim<LongSimTime> desInitSim = (InitSim<LongSimTime>) deserialized;
+    assert (desInitSim.getTime().getT() == 0L);
+
+    String json = objectMapper.writeValueAsString(devsMessage);
+    deserialized = objectMapper.readValue(json, DevsMessage.class);
+    assert (deserialized instanceof InitSim<?>);
+    desInitSim = (InitSim<LongSimTime>) deserialized;
     assert (desInitSim.getTime().getT() == 0L);
   }
 
@@ -98,9 +117,9 @@ public class DevsMessageTest {
             .build();
     DevsMessage devsMessage = executeTransition;
     String json = objectMapper.writeValueAsString(devsMessage);
-    DevsMessage m = objectMapper.readValue(json, DevsMessage.class);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
     assert (deserialized instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> desExecuteTransition =
@@ -116,10 +135,10 @@ public class DevsMessageTest {
     ModelDone<?> modelDone =
         ModelDone.builder().time(zero).sender(GeneratorModel.identifier).build();
     DevsMessage devsMessage = modelDone;
-    // String json = objectMapper.writeValueAsString(devsMessage);
+    String json = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof ModelDone<?>);
     ModelDone<LongSimTime> desModelDoneMessage = (ModelDone<LongSimTime>) deserialized;
     assert (desModelDoneMessage.getTime().getT() == 0L
@@ -136,10 +155,10 @@ public class DevsMessageTest {
             .nextTime(one).time(zero).sender(GeneratorModel.identifier).build();
 
     DevsMessage devsMessage = modelOutputMessage;
-    // String generatorOutputJson = objectMapper.writeValueAsString(devsMessage);
+    String generatorOutputJson = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(generatorOutputJson, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(generatorOutputJson, DevsMessage.class);
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof ModelOutputMessage<?>);
     ModelOutputMessage<LongSimTime> desModelOutputMessage =
         (ModelOutputMessage<LongSimTime>) deserialized;
@@ -155,10 +174,10 @@ public class DevsMessageTest {
     NextTime<SimTime> nextTime =
         NextTime.builder().time(one).sender(GeneratorModel.identifier).build();
     DevsMessage devsMessage = nextTime;
-    // String json = objectMapper.writeValueAsString(devsMessage);
+    String json = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof NextTime<?>);
     NextTime<LongSimTime> desNextTime = (NextTime<LongSimTime>) deserialized;
     assert (desNextTime.getTime().getT() == 1L
@@ -170,10 +189,10 @@ public class DevsMessageTest {
   void serdeSendOutput() throws JsonProcessingException {
     SendOutput<?> sendOutput = SendOutput.builder().time(zero).build();
     DevsMessage devsMessage = sendOutput;
-    // String json = objectMapper.writeValueAsString(devsMessage);
+    String json = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof SendOutput<?>);
     SendOutput<LongSimTime> desSendOutput = (SendOutput<LongSimTime>) deserialized;
     assert (desSendOutput.getTime().getT() == 0L);
@@ -184,10 +203,10 @@ public class DevsMessageTest {
   void serdeSimulationDone() throws JsonProcessingException {
     SimulationDone<?> simulationDone = SimulationDone.builder().time(zero).build();
     DevsMessage devsMessage = simulationDone;
-    // String json = objectMapper.writeValueAsString(devsMessage);
+    String json = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof SimulationDone<?>);
     SimulationDone<LongSimTime> desSimulationDone = (SimulationDone<LongSimTime>) deserialized;
     assert (desSimulationDone.getTime().getT() == 0L);
@@ -199,10 +218,10 @@ public class DevsMessageTest {
     TransitionDone<?> transitionDone =
         TransitionDone.builder().nextTime(one).time(zero).sender(GeneratorModel.identifier).build();
     DevsMessage devsMessage = transitionDone;
-    // String json = objectMapper.writeValueAsString(devsMessage);
-    // DevsMessage deserialized = objectMapper.readValue(json, DevsMessage.class);
+    String json = objectMapper.writeValueAsString(devsMessage);
+    devsMessage = objectMapper.readValue(json, DevsMessage.class);
     byte[] bytes = serialization.serialize(devsMessage).get();
-    DevsMessage deserialized = deserialize(devsMessage, bytes);
+    DevsMessage deserialized = deserialize(bytes);
     assert (deserialized instanceof TransitionDone<?>);
     TransitionDone<LongSimTime> desTransitionDone = (TransitionDone<LongSimTime>) deserialized;
     assert (desTransitionDone.getTime().getT() == 0L);
@@ -222,6 +241,8 @@ public class DevsMessageTest {
 
     String json = objectMapper.writeValueAsString(runIdMessage);
     RunIdMessage deserialized = objectMapper.readValue(json, RunIdMessage.class);
+    //byte[] bytes = serialization.serialize(deserialized).get();
+    //deserialized = serialization.deserialize(bytes, RunIdMessage.class).get();
     assertTrue(deserialized.getDevsLogMessage() instanceof StateMessage<?, ?>);
     StateMessage<?, ?> desStateMessage = (StateMessage<?, ?>) deserialized.getDevsLogMessage();
     String stateMessageJson = objectMapper.writeValueAsString(desStateMessage.getModelState());
@@ -261,7 +282,7 @@ public class DevsMessageTest {
     pw.println("[");
 
     InitSim<?> initSim = InitSim.builder().time(zero).build();
-    String json = serialize(initSim);// objectMapper.writeValueAsString(initSim);
+    String json = serialize(initSim); // objectMapper.writeValueAsString(initSim);
     pw.print(json);
     pw.println(",");
 
@@ -270,7 +291,7 @@ public class DevsMessageTest {
             .modelInputsOption(Optional.of(Bag.builder()
                 .addPortValueList(StorageModel.storageInputPort.createPortValue(1)).build()))
             .build();
-    json = serialize(executeTransition);// objectMapper.writeValueAsString(executeTransition);
+    json = serialize(executeTransition); // objectMapper.writeValueAsString(executeTransition);
     pw.print(json);
     pw.println(",");
 

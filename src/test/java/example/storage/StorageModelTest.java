@@ -23,37 +23,79 @@ import devs.utils.DevsObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Test class for verifying the behavior of the StorageModel functionality.
+ * <p>
+ * This test suite evaluates the output generation, state transitions, and time advance mechanisms
+ * of the StorageModel class, using initial states and simulated input/output bags. The tests ensure
+ * that the StorageModel behaves as expected under various scenarios.
+ */
 public class StorageModelTest {
+
   ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
 
+  /**
+   * Tests the output generation functionality of the {@link StorageModel} class.
+   * <p>
+   * This test verifies that the initial output of the {@link StorageModel} matches the expected
+   * state after being serialized and deserialized using the {@link ObjectMapper}.
+   * <p>
+   * The test ensures that: - A {@link StorageState} object is correctly serialized to JSON and
+   * subsequently deserialized back to a {@link StorageState} instance without data loss. - The
+   * {@link StorageModel} correctly initializes with the deserialized state. - The output function
+   * of the {@link StorageModel} reflects the expected initial state of
+   * {@link StorageStateEnum#S0}.
+   *
+   * @throws JsonProcessingException if an error occurs during JSON serialization or
+   *                                 deserialization
+   */
   @Test
   @DisplayName("Test generation of values")
   void outputTest() throws JsonProcessingException {
 
-    StorageState iState = new StorageState(StorageStateEnum.S0);
-    String iStateJson = objectMapper.writeValueAsString(iState);
-    StorageState initialState = objectMapper.readValue(iStateJson, StorageState.class);
+    StorageState internalState = new StorageState(StorageStateEnum.S0);
+    String internalStateJson = objectMapper.writeValueAsString(internalState);
+    StorageState initialState = objectMapper.readValue(internalStateJson, StorageState.class);
     StorageModel storageModel = new StorageModel(initialState);
     // Output should be the initial state of 0
     assert (storageModel.outputFunction().getPortValueList().get(0)
         .getValue() == StorageStateEnum.S0);
   }
 
+  /**
+   * Tests the state transition functionality of the {@link StorageModel} class.
+   * <p>
+   * This test verifies the behavior of the internal and external state transition functions under
+   * different scenarios in the storage model, ensuring consistency between expected and actual
+   * outcomes. The test also validates serialization and deserialization processes, time advance
+   * calculations, and proper state changes during transitions.
+   * <p>
+   * Specific validations performed by this test include: - Correct initialization of the
+   * {@link StorageModel} with a given initial {@link StorageState}. - Validation that an internal
+   * state transition does not change the current state. - Ensuring that the
+   * {@link StorageModel#outputFunction()} accurately reflects the most recent state. - Confirmation
+   * that external state transitions update the state based on provided input values. - Verification
+   * that computed time advances are consistent with expected behavior. - Accurate handling of state
+   * transitions when multiple state changes (internal and external) occur sequentially.
+   *
+   * @throws JsonProcessingException if an error occurs during JSON serialization or deserialization
+   *                                 in the test
+   */
   @Test
   @DisplayName("Test state transition")
   void stateTransitionTest() throws JsonProcessingException {
 
-    StorageState iState = new StorageState(StorageStateEnum.S0);
-    String iStateJson = objectMapper.writeValueAsString(iState);
-    StorageState initialState = objectMapper.readValue(iStateJson, StorageState.class);
+    StorageState internalState = new StorageState(StorageStateEnum.S0);
+    String internalStateJson = objectMapper.writeValueAsString(internalState);
+    StorageState initialState = objectMapper.readValue(internalStateJson, StorageState.class);
     StorageModel storageModel = new StorageModel(initialState);
 
     // Internal state transition does not change state
     storageModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
     Bag o1 = storageModel.outputFunction();
-    String oJson = objectMapper.writeValueAsString(o1);
-    Bag output = objectMapper.readValue(oJson, Bag.class);
+    String outputJson = objectMapper.writeValueAsString(o1);
+    Bag output = objectMapper.readValue(outputJson, Bag.class);
     // Enum has serialized to a JSON string
     assert (output.getPortValueList().get(0).getValue().equals(StorageStateEnum.S0));
 
@@ -78,11 +120,26 @@ public class StorageModelTest {
 
   }
 
+  /**
+   * Tests the time advance functionality of the {@link StorageModel} class.
+   * <p>
+   * This test verifies the behavior of the {@code timeAdvanceFunction} method for a storage model
+   * initialized with a specific state. The test ensures that the time advance value returned
+   * corresponds to the expected behavior of the model in the given state.
+   * <p>
+   * Key validations performed by this test: - Ensures that initializing the {@link StorageModel}
+   * with {@link StorageStateEnum#S0} results in a time advance value of {@code Long.MAX_VALUE}. -
+   * Validates the compatibility of the {@link StorageState} and {@link StorageStateEnum} with the
+   * {@code timeAdvanceFunction} logic.
+   * <p>
+   * The test uses an initial state of {@link StorageStateEnum#S0} for the {@link StorageModel} and
+   * asserts the correctness of the computed time advance value based on expected outcomes.
+   */
   @Test
   @DisplayName("Test time advance")
   void timeAdvanceTest() {
-    StorageState iState = new StorageState(StorageStateEnum.S0);
-    StorageModel storageModel = new StorageModel(iState);
+    StorageState internalState = new StorageState(StorageStateEnum.S0);
+    StorageModel storageModel = new StorageModel(internalState);
     assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(0L).build())
         .getT() == Long.MAX_VALUE);
   }

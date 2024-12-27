@@ -58,7 +58,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @return the root coordinator's behavior
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(TT endTime,
-      ActorRef<DevsMessage> child) {
+                                                                  ActorRef<DevsMessage> child) {
     return Behaviors.setup(context -> new RootCoordinator<>(context, endTime, child));
   }
 
@@ -71,7 +71,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @param child   the reference to the child actor participating in the simulation
    */
   public RootCoordinator(ActorContext<DevsMessage> context, T endTime,
-      ActorRef<DevsMessage> child) {
+                         ActorRef<DevsMessage> child) {
     super(context);
     this.endTime = endTime;
     this.child = child;

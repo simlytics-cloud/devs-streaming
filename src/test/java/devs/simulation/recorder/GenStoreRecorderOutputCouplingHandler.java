@@ -24,6 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/**
+ * A concrete implementation of the {@link OutputCouplingHandler} that handles port values from
+ * specific models, including a generator and a storage model. It processes the outputs of these
+ * models and routes them to the input ports of a recorder model.
+ */
 public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler {
 
 
@@ -31,9 +36,25 @@ public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler
     super(Optional.empty(), Optional.empty(), Optional.empty());
   }
 
+  /**
+   * Processes incoming port values from a sender model and routes them to the appropriate input
+   * ports of the recorder model. Depending on the sender's identifier, the method interprets the
+   * port value, potentially transforms it, and updates the receiver map to facilitate message
+   * passing within the simulation framework.
+   *
+   * @param sender         the identifier of the model sending the port value. Must match a known
+   *                       sender, such as the GeneratorModel or StorageModel.
+   * @param portValue      the port value received from the sender model. Contains the value, port
+   *                       identifier, and its type.
+   * @param receiverMap    a map that associates model identifiers with a list of port values to
+   *                       send. This is updated by adding new port values for the "recorder"
+   *                       model.
+   * @param outputMessages a list of port values to be sent as output messages. This parameter is
+   *                       not modified by the method.
+   */
   @Override
   public void handlePortValue(String sender, PortValue<?> portValue,
-                              Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
+      Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
 
     if (sender.equals(GeneratorModel.identifier)) {
       PortValue<Integer> recorderInputValue = RecorderModel.generatorOutput

@@ -15,7 +15,6 @@
 
 package devs.simulation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.PDevsSimulator;
@@ -28,7 +27,6 @@ import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
 import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
-import devs.utils.DevsObjectMapper;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
@@ -48,19 +46,82 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * A test class to verify the integration and behavior of a Parallel DEVS (PDEVS) simulation setup
+ * involving components like RootCoordinator, PDEVSCoordinator, CoupledModelFactory, and
+ * PDEVSSimulators.
+ * <p>
+ * This class utilizes the ActorTestKit for testing Akka actors used in the PDEVS simulation and
+ * verifies their interactions through test probes and assertions. The test primarily focuses on
+ * validating: - Initialization of the simulation with an initial time. - Communication and external
+ * transitions between PDEVS components (generator, storage, and recorder). - The behavior of
+ * coupled models and their interconnections through coupling handlers.
+ * <p>
+ * The simulation consists of: - GeneratorModel: Produces outputs at specified times during the
+ * simulation. - StorageModel: Reacts to generator outputs and updates its state. - RecorderModel:
+ * Records the states and outputs for validation.
+ * <p>
+ * The couplings between these models are tested to ensure correct propagation of events and
+ * transitions. The test also validates that appropriate messages are sent and received throughout
+ * the simulation.
+ */
 public class PDevsSimulationTest {
 
+  /**
+   * A static and final instance of {@link ActorTestKit} initialized via its factory method. This
+   * instance supports testing actor-based systems by providing a dedicated actor system and
+   * facilities for simulating and verifying actor interactions.
+   * <p>
+   * Usage of this test kit enables behavior tests for actors, including the ability to send
+   * messages, assert received messages, and test actor lifecycle management in a controlled testing
+   * environment.
+   * <p>
+   * It is managed at the class level to ensure a single test kit instance is reused across all test
+   * cases, promoting efficient resource utilization.
+   */
   static final ActorTestKit testKit = ActorTestKit.create();
-  static ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
+  /**
+   * Performs cleanup operations after all tests have been executed.
+   * <p>
+   * This method ensures that the testing environment is properly shut down by invoking the
+   * `shutdownTestKit` method on the `testKit` instance.
+   * <p>
+   * It is annotated with `@AfterAll`, meaning the method will be executed once after all test
+   * methods in the class have run.
+   * <p>
+   * Usage of this method ensures that resources and testing infrastructure used during the tests
+   * are properly released, preventing potential resource leaks.
+   */
   @AfterAll
   public static void cleanup() {
     testKit.shutdownTestKit();
   }
 
+  /**
+   * Test method to verify the simulation behavior of a PDEVS model using actors such as
+   * RootCoordinator, PDEVSCoordinator, CoupledModelFactory, and PDEVSSimulators.
+   * <p>
+   * This method performs the following key operations: - Spawns simulator actors for
+   * GeneratorModel, StorageModel, and RecorderModel. - Configures a `PDevsCoordinator` with coupled
+   * models and assigns couplings for interaction. - Sets up a `RootCoordinator` to manage the
+   * entire simulation across the generated models. - Sends and validates messages such as
+   * initialization (`InitSim`) and external transitions (`ExecuteTransition`) based on expected
+   * behavioral outputs from the simulation.
+   * <p>
+   * Assertions are employed to ensure that generated simulation messages and transitions behave as
+   * expected: - Validates that initial simulation state starts correctly. - Confirms expected
+   * inputs and outputs from individual models during external transitions.
+   * <p>
+   * This test ensures all models and their interactions adhere to the expected logical flow and
+   * proper states are propagated through the simulation in a coordinated manner.
+   *
+   * @throws InterruptedException if the simulation execution is interrupted
+   */
   @Test
-  @DisplayName("Test PDEVS Simulation with RootCoordinator, PDEVSCoordinator, CoupledModelFactory, and PDEVSSimulators working together")
-  void pDevsSimulationTest() throws InterruptedException {
+  @DisplayName("Test PDEVS Simulation with RootCoordinator, PDEVSCoordinator, CoupledModelFactory, "
+      + "and PDEVSSimulators working together")
+  void parallelDevsSimulationTest() throws InterruptedException {
 
     ActorRef<DevsMessage> generatorSim = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
@@ -72,11 +133,6 @@ public class PDevsSimulationTest {
             LongSimTime.builder().t(0L).build(), context)));
 
     TestProbe<DevsMessage> toRecorderProbe = testKit.createTestProbe("toRecorderProbe");
-
-    ActorRef<DevsMessage> recorderSim = testKit.spawn(
-        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Void, RecorderModel>(
-            new RecorderModel("recorder"), LongSimTime.builder().t(0L).build(),
-            context)));
 
     Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
     modelSimulators.put("generator", generatorSim);
@@ -92,11 +148,15 @@ public class PDevsSimulationTest {
         Behaviors.setup(context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
             "root", modelSimulators, genStoreCoupling, context)));
 
-
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
             LongSimTime.builder().t(2L).build(), coordinator)));
     rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+
+    ActorRef<DevsMessage> recorderSim = testKit.spawn(
+        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Void, RecorderModel>(
+            new RecorderModel("recorder"), LongSimTime.builder().t(0L).build(),
+            context)));
 
     // Expect initSim message to recorder
     DevsMessage message1 = toRecorderProbe.receiveMessage();

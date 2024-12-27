@@ -17,11 +17,40 @@ import org.apache.pekko.actor.typed.ActorRef;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Represents a test class for an experimental frame comprised of a coupled DEVS (Discrete Event
+ * System Specification) model simulation. The class is responsible for setting up a test scenario,
+ * executing the experimental frame, and validating the coupled model's overall functionality.
+ */
 public class ExperimentalFrameTest {
 
+  /**
+   * A factory for creating coupled DEVS (Discrete Event System Specification) models used in the
+   * experimental frame testing within the {@link ExperimentalFrameTest} class. Encapsulates the
+   * logic for initializing and connecting models, as well as defining their couplings, inputs, and
+   * outputs to form a complete coupled model simulation.
+   */
   protected final CoupledModelFactory<LongSimTime> coupledModelFactory;
 
 
+  /**
+   * Constructs an instance of the ExperimentalFrameTest class.
+   * <p>
+   * This constructor initializes the coupled DEVS model factory `coupledModelFactory`, which
+   * represents a coupled simulation model configured with specific generators, calculators, and
+   * acceptors. The coupled model factory is used to create a composite simulation system for
+   * experimental frame testing.
+   * <p>
+   * The components that form the internal coupled model include: - `PowerOfTwoGenerator`: A
+   * generator producing sequences of numbers and corresponding words. -
+   * `LogBaseTwoCalculatorModel`: A model that performs logarithmic calculations and transforms
+   * inputs. - `TestAcceptor`: A model designed to accept and validate the outputs against expected
+   * results.
+   * <p>
+   * These models are connected using the `PDevsCouplings` class, which defines the couplings among
+   * inputs, outputs, and specific coupling handlers. The overall coupled model is constructed with
+   * these components and configured via the `coupledModelFactory`.
+   */
   public ExperimentalFrameTest() {
 
     PowerOfTwoGenerator generator = new PowerOfTwoGenerator();
@@ -36,6 +65,18 @@ public class ExperimentalFrameTest {
         Collections.emptyList(), couplings);
   }
 
+  /**
+   * Tests the execution of a coupled DEVS simulation model within a configured experimental frame.
+   * <p>
+   * This method verifies the behavior of a coupled model created using the `coupledModelFactory` by
+   * executing it within a simulation range defined by a start and end simulation time. The test
+   * uses the experimental frame components, such as generating inputs, calculating outputs, and
+   * validating results through interactions and couplings within the model.
+   * <p>
+   * It calls the `executeExperimentalFrame` method to run the test.
+   *
+   * @throws InterruptedException if the test execution is interrupted unexpectedly
+   */
   @Test
   @DisplayName("Test coupled model in experimental frame")
   protected void testCoupledModel() throws InterruptedException {
@@ -43,6 +84,19 @@ public class ExperimentalFrameTest {
         LongSimTime.builder().t(8L).build());
   }
 
+  /**
+   * Executes the simulation of a coupled DEVS (Discrete Event System Specification) model within a
+   * configured experimental frame.
+   * <p>
+   * This method initializes the test environment using the ActorTestKit, spawns the necessary
+   * actors (including the root coordinator and test frame), and triggers the simulation. The
+   * simulation is executed within the range specified by the start and end simulation times. Upon
+   * completing the simulation, the test environment is properly shut down.
+   *
+   * @param startTime The simulation start time for the experimental frame.
+   * @param endTime   The simulation end time for the experimental frame.
+   * @throws InterruptedException If the execution is interrupted while running the simulation.
+   */
   protected void executeExperimentalFrame(LongSimTime startTime, LongSimTime endTime)
       throws InterruptedException {
     ActorTestKit testKit = ActorTestKit.create();

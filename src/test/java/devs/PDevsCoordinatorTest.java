@@ -15,7 +15,6 @@
 
 package devs;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.msg.Bag;
 import devs.msg.DevsMessage;
 import devs.msg.ExecuteTransition;
@@ -26,7 +25,6 @@ import devs.msg.NextTime;
 import devs.msg.SendOutput;
 import devs.msg.time.LongSimTime;
 import devs.msg.time.SimTime;
-import devs.utils.DevsObjectMapper;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
@@ -45,21 +43,71 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 
+/**
+ * This class performs unit tests for the PDevsCoordinator, focusing on its interactions with
+ * simulated models and root coordinator in a Distributed Discrete Event System (DEVS) simulation.
+ * It uses the ActorTestKit for testing Akka actor behaviors, verifies message passing, and checks
+ * the correctness of simulation transitions, initialization, and output behaviors.
+ * <p>
+ * Key functionality being tested: - Initialization of the simulation through InitSimMessage. -
+ * Coordination and message passing with coupled models. - Internal, external model transitions and
+ * the aggregation of outputs. - Root coordinator's orchestration of simulation cycles.
+ * <p>
+ * The test validates that the PDevsCoordinator interacts correctly with its sub-models, passes
+ * required messages at appropriate times, and ensures simulation progression with correct time
+ * values.
+ */
 public class PDevsCoordinatorTest {
 
+  /**
+   * A statically defined {@link ActorTestKit} used for setting up and testing actor-based behaviors
+   * within the context of PDEVS simulation testing.
+   * <ul>
+   * - Simplifies the creation and management of actor-based tests.
+   * - Allows spawning actors, creating probes, and managing the lifecycle of test scenarios.
+   * - Ensures proper cleanup of testing resources after execution.
+   * </ul>
+   */
   static final ActorTestKit testKit = ActorTestKit.create();
-  static ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
-
+  /**
+   * Cleans up resources used during the test execution. This method shuts down the testkit to
+   * release any resources and ensure no lingering threads remain after tests have completed. It is
+   * annotated with {@code @AfterAll} to ensure it is executed once after all test methods within
+   * this test class have run.
+   */
   @AfterAll
   public static void cleanup() {
     testKit.shutdownTestKit();
   }
 
+  /**
+   * This method tests the functionality of a PDEVS (Parallel DEVS) coordinator and its interaction
+   * with model simulators, ensuring proper simulation message flows and transitions.
+   * <p>
+   * The method validates:
+   * <p>
+   * 1. Initialization of the coordinator with a coupled model "genStoreCoupled" consisting of
+   * generator and storage models. 2. Propagation of the `InitSim` messages to the individual
+   * simulators - generator and storage models. 3. Processing of the `NextTime` message by the
+   * root-level coordinator indicating the imminent next event time. 4. Handling of `SendOutput`
+   * messages, ensuring the imminent generator outputs a value according to its scheduled time. 5.
+   * Proper coordination of internal and external transitions, including: - Transition requests sent
+   * by the coordinator to simulators. - Processing of received outputs and corresponding model
+   * states and inputs. 6. Aggregation of `TransitionDone` responses from simulators and relaying of
+   * a `ModelOutputMessage` to the root-level coordinator. 7. Cyclic behavior of the PDEVS
+   * simulation, ensuring the second cycle of time-based transitions follows the expected flow. 8.
+   * Validation of inputs and outputs at each step, verifying the correctness of state progression
+   * and message handling mechanisms across the simulation lifecycle.
+   * <p>
+   * This test ensures that the PDEVS coordinator behaves as expected under the tested scenario,
+   * maintaining synchronization and message accuracy between multiple interacting simulation
+   * models.
+   */
   @SuppressWarnings("unchecked")
   @Test
   @DisplayName("Test PDEVS Coordinator")
-  void pevsCoordinatorTest() {
+  void pdevsCoordinatorTest() {
     TestProbe<DevsMessage> generatorInProbe = testKit.createTestProbe();
     TestProbe<DevsMessage> storageInProbe = testKit.createTestProbe();
     TestProbe<DevsMessage> rootInProbe = testKit.createTestProbe();

@@ -55,7 +55,7 @@ public abstract class KafkaReadAllConsumer {
    * @param topic                    topic where messages are stored
    */
   public KafkaReadAllConsumer(Config pekkoKafkaConsumerConfig, ActorSystem classicActorSystem,
-      String topic) {
+                              String topic) {
     this.classicActorSystem = classicActorSystem;
     objectMapper.registerModule(new Jdk8Module());
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings

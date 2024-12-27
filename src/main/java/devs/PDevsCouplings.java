@@ -50,7 +50,7 @@ public class PDevsCouplings {
    *                       targets.
    */
   public PDevsCouplings(List<InputCouplingHandler> inputHandlers,
-      List<OutputCouplingHandler> outputHandlers) {
+                        List<OutputCouplingHandler> outputHandlers) {
     this.inputHandlers = inputHandlers;
     this.outputHandlers = outputHandlers;
   }

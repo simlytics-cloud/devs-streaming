@@ -61,7 +61,7 @@ public abstract class InputCouplingHandler {
    *                    those models.
    */
   public abstract void handlePortValue(PortValue<?> portValue,
-      Map<String, List<PortValue<?>>> receiverMap);
+                                       Map<String, List<PortValue<?>>> receiverMap);
 
   /**
    * A utility method to add a {@link devs.msg.PortValue} the the recieverMap.
@@ -72,7 +72,7 @@ public abstract class InputCouplingHandler {
    *                    those models.
    */
   protected void addInputPortValue(PortValue<?> portValue, String receiver,
-      Map<String, List<PortValue<?>>> receiverMap) {
+                                   Map<String, List<PortValue<?>>> receiverMap) {
     if (receiverMap.containsKey(receiver)) {
       receiverMap.get(receiver).add(portValue);
     } else {

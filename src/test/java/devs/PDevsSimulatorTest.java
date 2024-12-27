@@ -34,18 +34,67 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Test class for validating the functionality of the PDEVS Simulator.
+ * <p>
+ * This test ensures the correct behavior of the simulator in terms of initialization, state
+ * transitions, output generation, and time advancements within the framework of the Parallel
+ * Discrete Event System Specification (PDEVS).
+ * <p>
+ * It utilizes the Akka TestKit for actor-based testing and verifies the communication and responses
+ * of the simulator via defined DEVS framework message interfaces.
+ * <p>
+ * The test focuses on the following aspects: - Initialization of the simulator with initial time
+ * and model state. - Sending input messages and verifying the corresponding outputs. - Executing
+ * state transitions and validating changes in system behavior and time. - Ensuring the correct
+ * processing of both transition and output generation steps.
+ * <p>
+ * The class includes a cleanup method to shut down the Akka TestKit after the tests, ensuring
+ * proper resource management.
+ */
 public class PDevsSimulatorTest {
 
+  /**
+   * A static and final variable representing an instance of {@code ActorTestKit}. This test kit is
+   * used for testing actor-based implementations in a simulated environment. It provides support
+   * for creating test actors and probes, and managing the lifecycle of actors during testing.
+   * <p>
+   * This instance is initialized once for use across various test cases in the class. It enables
+   * consistent testing by simulating actor interactions and capturing messages.
+   * <p>
+   * The test environment is shut down during cleanup to release resources.
+   */
   static final ActorTestKit testKit = ActorTestKit.create();
 
+  /**
+   * Cleans up resources after all tests in the test class have been executed.
+   * <br>
+   * This method shuts down the ActorTestKit used in the test class, ensuring proper resource
+   * management and cleanup of actor-related resources.
+   */
   @AfterAll
   public static void cleanup() {
     testKit.shutdownTestKit();
   }
 
+  /**
+   * Tests the functionality of the PDEVS simulator.
+   * <p>
+   * This test verifies the correct behavior of a discrete event system simulation using the PDEVS
+   * (Parallel Discrete Event System) simulator implementation. The test focuses on initialization,
+   * state transitions, output generation, and time progression within the simulator.
+   * <p>
+   * The test includes: 1. Validating initial setup and expectation of the next simulation time. 2.
+   * Generating and validating outputs from the simulator. 3. Ensuring proper state transitions and
+   * their effects on simulation time.
+   * <p>
+   * Assertions are made on: - The type and correctness of messages exchanged within the simulator.
+   * - The accuracy of simulation timestamps after events and transitions. - The output values that
+   * the simulated model generates at different stages.
+   */
   @Test
   @DisplayName("Test PDEVS Simulator")
-  void pDevsSimulatorTest() {
+  void parallelDevsSimulatorTest() {
     TestProbe<DevsMessage> probe = testKit.createTestProbe();
     ActorRef<DevsMessage> simulator = testKit.spawn(Behaviors.setup(
         context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(new GeneratorModel(0),

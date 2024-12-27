@@ -248,7 +248,7 @@
                         <recipe>org.openrewrite.java.format.AutoFormat</recipe>
                     </activeRecipes>
                     <activeStyles>
-                        <style>cmm.autoformat.Style</style>
+                        <style>google.autoformat.Style</style>
                     </activeStyles>
                 </configuration>
                 <dependencies>
@@ -270,6 +270,8 @@
                 <version>3.6.0</version>
                 <configuration>
                     <configLocation>google_checks.xml</configLocation>
+                    <suppressionsLocation>google-checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
                 <executions>
                     <execution>
@@ -291,6 +293,7 @@
                 <configuration>
                     <configLocation>google_checks.xml</configLocation>
                     <suppressionsLocation>google-checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                 </configuration>
             </plugin>
         </plugins>

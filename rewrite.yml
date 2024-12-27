@@ -1,5 +1,5 @@
 type: specs.openrewrite.org/v1beta/style
-name: cmm.autoformat.Style
+name: google.autoformat.Style
 displayName: Additional rules for Google Java Code style
 styleConfigs:
   - org.openrewrite.java.style.ImportLayoutStyle:

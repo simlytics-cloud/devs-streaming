@@ -18,8 +18,28 @@ package devs.utils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for the ModelUtils utility class.
+ * <p>
+ * This test class is designed to verify the correctness of methods provided by the ModelUtils
+ * class. Specifically, it ensures that input strings are sanitized correctly to conform with
+ * predefined format or naming conventions.
+ * <p>
+ * This class uses the JUnit testing framework.
+ */
 public class ModelUtilsTest {
 
+  /**
+   * Tests the functionality of the ModelUtils.toLegalActorName method to ensure that it correctly
+   * removes illegal characters from a given input string.
+   * <p>
+   * The test verifies the sanitization of the input string, replacing or removing characters not
+   * allowed by the naming convention and returning the expected sanitized output.
+   * <p>
+   * This specific test case checks that: - Spaces are removed from the string. - Characters not in
+   * the allowed set (alphanumeric, specific special characters) are omitted. - The resulting string
+   * matches the expected output after sanitization.
+   */
   @Test
   @DisplayName("Test remove illegal characters")
   void testRemoveIllegalCharacters() {

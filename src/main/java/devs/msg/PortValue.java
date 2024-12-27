@@ -45,8 +45,8 @@ public class PortValue<T> {
    */
   @JsonCreator
   public PortValue(@JsonProperty("value") T value,
-      @JsonProperty("portIdentifier") String portIdentifier,
-      @JsonProperty("portType") String portType) {
+                   @JsonProperty("portIdentifier") String portIdentifier,
+                   @JsonProperty("portType") String portType) {
     this.value = value;
     this.portIdentifier = portIdentifier;
     this.portType = portType;

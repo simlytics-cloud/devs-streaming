@@ -71,7 +71,7 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
    * @return a Behavior instance for the KafkaDevsStreamProxy actor
    */
   public static Behavior<DevsMessage> create(String componentName, String producerTopic,
-      Config pekkoProducerConfig) {
+                                             Config pekkoProducerConfig) {
     return Behaviors.setup(context -> new KafkaDevsStreamProxy(context, componentName,
         producerTopic, pekkoProducerConfig));
   }
@@ -88,7 +88,7 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
    * @param pekkoProducerConfig the Pekko configuration containing Kafka producer properties
    */
   public KafkaDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
-      String producerTopic, Config pekkoProducerConfig) {
+                              String producerTopic, Config pekkoProducerConfig) {
     super(context);
     this.componentName = componentName;
     this.producerTopic = producerTopic;

@@ -38,8 +38,8 @@ public class CoupledModelFactory<T extends SimTime> {
    * @param couplings             a list of PDevsCouplings used to coupled subordinate DEVS models
    */
   public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels,
-      List<CoupledModelFactory<T>> coupledModelFactories,
-      PDevsCouplings couplings) {
+                             List<CoupledModelFactory<T>> coupledModelFactories,
+                             PDevsCouplings couplings) {
     this.modelIdentifier = modelIdentifier;
     this.devsModels = devsModels;
     this.coupledModelFactories = coupledModelFactories;
@@ -58,9 +58,9 @@ public class CoupledModelFactory<T extends SimTime> {
    * @param couplings             a list of PDevsCouplings used to coupled subordinate DEVS models
    */
   public CoupledModelFactory(String modelIdentifier, List<PDEVSModel<T, ?>> devsModels,
-      List<CoupledModelFactory<T>> coupledModelFactories,
-      List<KafkaLocalProxy.ProxyProperties> proxyModels,
-      PDevsCouplings couplings) {
+                             List<CoupledModelFactory<T>> coupledModelFactories,
+                             List<KafkaLocalProxy.ProxyProperties> proxyModels,
+                             PDevsCouplings couplings) {
     this.modelIdentifier = modelIdentifier;
     this.devsModels = devsModels;
     this.coupledModelFactories = coupledModelFactories;

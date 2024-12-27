@@ -206,7 +206,7 @@ public class PDevsCoordinator<T extends SimTime>
    * time (minimum time) from the `nextTimeMap`.
    *
    * @return The next simulation time of type {@code T}, representing the earliest scheduled time
-   *     from the `nextTimeMap`.
+   * from the `nextTimeMap`.
    */
   T buildImminentModels() {
     T minTime = getNextTime();
@@ -221,8 +221,7 @@ public class PDevsCoordinator<T extends SimTime>
    * and calculates the minimum next time once all simulators have reported their times.
    *
    * <p>If all next times have been received, the method determines the global next simulation time
-   * and
-   * notifies the parent actor.
+   * and notifies the parent actor.
    *
    * @param nextTime The {@code NextTime} message containing the sender's identifier and the next
    *                 simulation time determined by the sender model's simulator.
@@ -363,7 +362,7 @@ public class PDevsCoordinator<T extends SimTime>
    * @param executeTransition the {@code ExecuteTransition} message containing the simulation time
    *                          and optional input data for the model.
    * @return the updated behavior of the coordinator after processing the {@code ExecuteTransition}
-   *     message.
+   * message.
    * @throws RuntimeException if the message's time is not within the expected time range.
    */
   Behavior<DevsMessage> onExecuteTransitionMessage(ExecuteTransition<T> executeTransition) {
@@ -412,7 +411,7 @@ public class PDevsCoordinator<T extends SimTime>
    *                       sender, its next simulation time, and the time of completion for the
    *                       transition.
    * @return the updated behavior of the coordinator after processing the {@code TransitionDone}
-   *     message.
+   * message.
    */
   Behavior<DevsMessage> onTransitionDone(TransitionDone<T> transitionDone) {
     log(Level.DEBUG, transitionDone.getSender() + " sent TransitionDone with next time of "

@@ -71,7 +71,7 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
    * @param runId        the unique identifier for this simulation run
    */
   public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream,
-      String runId) {
+                          String runId) {
     super(context);
     this.printStream = new PrintStream(outputStream);
     this.objectMapper = DevsObjectMapper.buildObjectMapper();

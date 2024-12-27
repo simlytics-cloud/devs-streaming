@@ -59,7 +59,7 @@ public class KafkaSimTimeKey<T extends SimTime> {
    */
   @JsonCreator
   public KafkaSimTimeKey(@JsonProperty("simTime") SimTime simTime,
-      @JsonProperty("index") Long index) {
+                         @JsonProperty("index") Long index) {
     this.simTime = simTime;
     this.index = index;
   }

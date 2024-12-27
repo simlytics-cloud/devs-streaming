@@ -64,7 +64,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * @return a new Behavior instance configured for the given DEVS model and initial time
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> devsModel,
-      TT initialTime) {
+                                                                  TT initialTime) {
     return Behaviors.setup(context -> new PDevsSimulator<>(devsModel, initialTime, context));
   }
 
