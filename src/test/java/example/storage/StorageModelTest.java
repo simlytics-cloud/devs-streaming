@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
- * contributors
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,6 +11,7 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
 package example.storage;
@@ -100,18 +101,18 @@ public class StorageModelTest {
     assert (output.getPortValueList().get(0).getValue().equals(StorageStateEnum.S0));
 
     // External state transition function changes state value to match input
-    // and time advance will yield current time
+    // and time advance will yield zero
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(2L).build(),
         Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(0)).build());
-    assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(2L).build()).getT() == 2L);
+    assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(2L).build()).getT() == 0L);
     assert (storageModel.outputFunction().getPortValueList().get(0)
         .getValue() == StorageStateEnum.S0);
 
-    // After internal state transition, time advance will be max long
+    // After internal state transition, time advance will be max long minus current time
     storageModel.internalStateTransitionFunction(LongSimTime.builder().t(3L).build());
     assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(3L).build())
-        .getT() == Long.MAX_VALUE);
+        .getT() == Long.MAX_VALUE - 3L);
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(3L).build(),
         Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(1)).build());

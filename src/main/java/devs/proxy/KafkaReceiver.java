@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
- * contributors
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,6 +11,7 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
 package devs.proxy;
@@ -44,6 +45,7 @@ import org.apache.pekko.kafka.javadsl.Consumer;
 import org.apache.pekko.stream.ActorAttributes;
 import org.apache.pekko.stream.Supervision;
 import org.apache.pekko.stream.javadsl.Sink;
+import org.slf4j.Logger;
 
 
 /**
@@ -68,6 +70,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   private final ActorRef<DevsMessage> sender;
 
   private final ActorRef<DevsMessage> devsComponent;
+  private final Logger logger;
 
   /**
    * Creates a new behavior instance of KafkaReceiver to handle Kafka message consumption and
@@ -107,6 +110,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     super(context);
     this.devsComponent = devsComponent;
     this.sender = sender;
+    this.logger = context.getLog();
     objectMapper.registerModule(new Jdk8Module());
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
@@ -120,7 +124,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     // The consumer's auto.offset.reset property is set to earliest so it always reads all data
     this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(consumerTopic))
         .map(record -> {
-          System.out.println("Kafka received record: " + record.value());
+          logger.debug("Kafka received record: " + record.value());
           processRecord(record);
           return NotUsed.notUsed();
         })
@@ -165,7 +169,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     try {
       devsMessage = objectMapper.readValue(record.value(), DevsMessage.class);
     } catch (JsonProcessingException e) {
-      System.err.println("Could not deserialize JSON record " + record.value());
+      logger.error("Could not deserialize JSON record " + record.value());
       e.printStackTrace();
     }
     getContext().getSelf().tell(devsMessage);

@@ -34,6 +34,8 @@
         </encoder>
     </appender>
 
+    <logger name="org.apache.kafka" level="warn" />
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT" />
         <appender-ref ref="FILE" />

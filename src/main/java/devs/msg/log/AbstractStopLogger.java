@@ -14,21 +14,19 @@
  *
  */
 
-package devs.msg.time;
+package devs.msg.log;
 
-import devs.msg.DevsMessage;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.immutables.value.Value;
 
 /**
- * A message with a time value.
- *
- * @param <T> the type of time value
+ * Message sent to a DevsLoggingActor to tell it to complete logging actions, clean up resources,
+ * and stop.
  */
-public interface TimedDevsMessage<T extends SimTime> extends DevsMessage {
+@Value.Immutable
+@JsonSerialize(as = StopLogger.class)
+@JsonDeserialize(as = StopLogger.class)
+public class AbstractStopLogger implements DevsLogMessage {
 
-  /**
-   * Retrieves the simulation time associated with the message.
-   *
-   * @return the simulation time of type {@code T}, which extends {@link SimTime}
-   */
-  T getTime();
 }

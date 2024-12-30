@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Copyright (C) 2023 simlytics.cloud LLC and DEVS Streaming Framework
- * contributors
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -11,6 +11,7 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 
 package example;
@@ -23,6 +24,7 @@ import devs.StateLoggingSimulator;
 import devs.msg.DevsMessage;
 import devs.msg.InitSim;
 import devs.msg.log.DevsLogMessage;
+import devs.msg.log.StopLogger;
 import devs.msg.time.LongSimTime;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
@@ -37,6 +39,7 @@ import java.util.UUID;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.Terminated;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -101,6 +104,21 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
   }
 
   /**
+   * A reference to an actor responsible for handling and logging DEVS (Discrete Event System
+   * Specification) related messages during the execution of the GenStore application.
+   * <p>
+   * This actor is primarily used to manage logging operations for the simulation components,
+   * including generator, storage, and coordination models. It processes messages of type
+   * {@code DevsLogMessage}, which may include logging details about state transitions, received
+   * messages, or other simulation events.
+   * <p>
+   * The actor is initialized during the startup process of the GenStore application and is
+   * monitored for lifecycle changes. When the root coordinator actor is terminated, the
+   * {@code loggingActor} is also stopped as part of the cleanup process.
+   */
+  ActorRef<DevsLogMessage> loggingActor;
+
+  /**
    * Creates a receive handler for the {@code GenStoreApp} interface.
    * <p>
    * This method defines the behavior of the actor by specifying how it handles messages of type
@@ -113,6 +131,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
   public Receive<GenStoreApp> createReceive() {
     ReceiveBuilder<GenStoreApp> genStoreAppReceiveBuilder = newReceiveBuilder();
     genStoreAppReceiveBuilder.onMessage(GenStoreStart.class, this::onStart);
+    genStoreAppReceiveBuilder.onSignal(Terminated.class, this::onTerminated);
     return genStoreAppReceiveBuilder.build();
   }
 
@@ -139,8 +158,10 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    */
   protected Behavior<GenStoreApp> onStart(GenStoreStart start) {
     ActorContext<GenStoreApp> context = this.getContext();
-    ActorRef<DevsLogMessage> loggingActor =
+    loggingActor =
         context.spawn(DevsLoggingActor.create(System.out, UUID.randomUUID().toString()), "logger");
+
+    context.watch(loggingActor);
 
     ActorRef<DevsMessage> generator =
         context.spawn(StateLoggingSimulator.create(new GeneratorModel(0),
@@ -164,10 +185,28 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     ActorRef<DevsMessage> rootCoordinator = context
         .spawn(RootCoordinator.create(LongSimTime.builder().t(3L).build(), coordinator), "root");
 
+    context.watch(rootCoordinator);
+
     rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
 
-    // context.watch(rootCoordinator);
     return Behaviors.same();
+  }
+
+  /**
+   * Handles the termination signal for the {@code ExampleGenStoreApp} actor. This method reacts
+   * when a watched actor is terminated, such as stopping associated resources or performing cleanup
+   * operations.
+   *
+   * @param signal the termination signal containing details about the terminated actor.
+   * @return the stopped behavior for the actor if the terminated actor is identified as "root",
+   * otherwise returns a stopped behavior by default.
+   */
+  protected Behavior<GenStoreApp> onTerminated(Terminated signal) {
+    if (signal.getRef().path().name().equals("root")) {
+      loggingActor.tell(StopLogger.builder().build());
+      return Behaviors.same();
+    }
+    return Behaviors.stopped();
   }
 
   /**
