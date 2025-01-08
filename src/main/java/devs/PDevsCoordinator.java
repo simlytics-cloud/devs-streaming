@@ -316,7 +316,7 @@ public class PDevsCoordinator<T extends SimTime>
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
         modelsSimulators.get(key).tell(
-            ExecuteTransition.builder().time(outputs.getTime()).modelInputsOption(value).build());
+            ExecuteTransition.builder().time(outputs.getNextTime()).modelInputsOption(value).build());
         if (getContext().getLog().isDebugEnabled()) {
           log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value.getPortValueList()
               .stream().map(input -> input.getClass().getName()).toArray()));
