@@ -194,7 +194,6 @@ public class PDevsCoordinatorTest {
     ModelOutputMessage<LongSimTime> modelOutputMessage =
         (ModelOutputMessage<LongSimTime>) message7;
     assert (modelOutputMessage.getNextTime().getT() == 1L);
-    assert (modelOutputMessage.getTime().getT() == 1L);
     assert ("genStoreCoupled".equals(modelOutputMessage.getSender()));
 
     // Root coordinator starts a new cycle with a SendOutput message
@@ -240,7 +239,6 @@ public class PDevsCoordinatorTest {
     ModelOutputMessage<LongSimTime> modelOutputMessage2 =
         (ModelOutputMessage<LongSimTime>) message11;
     assert (modelOutputMessage2.getNextTime().getT() == 1L);
-    assert (modelOutputMessage2.getTime().getT() == 1L);
     assert ("genStoreCoupled".equals(modelOutputMessage2.getSender()));
 
     // Root coordinator starts a new cycle with a SendOutput message
@@ -269,7 +267,6 @@ public class PDevsCoordinatorTest {
     ModelOutputMessage<LongSimTime> modelOutputMessage3 =
         (ModelOutputMessage<LongSimTime>) message14;
     assert (modelOutputMessage3.getNextTime().getT() == 2L);
-    assert (modelOutputMessage3.getTime().getT() == 1L);
     assert ("genStoreCoupled".equals(modelOutputMessage3.getSender()));
 
   }

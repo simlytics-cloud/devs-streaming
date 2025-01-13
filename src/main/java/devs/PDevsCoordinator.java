@@ -334,12 +334,12 @@ public class PDevsCoordinator<T extends SimTime>
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
         modelsSimulators.get(modelId)
-            .tell(ExecuteTransition.builder().time(outputs.getTime()).build());
+            .tell(ExecuteTransition.builder().time(outputs.getNextTime()).build());
       });
       // If the model outputs have not generated any transitions, output is done. Send output
       // message.
       if (awaitingTransition.isEmpty()) {
-        sendOutputs(outputs.getTime());
+        sendOutputs();
       }
     }
     return this;
@@ -347,11 +347,9 @@ public class PDevsCoordinator<T extends SimTime>
 
   /**
    * Sends the model's outputs to the parent actor in the form of a {@code ModelOutputMessage}.
-   *
-   * @param time The current simulation time, which is included in the output message.
    */
-  void sendOutputs(T time) {
-    parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext).time(time)
+  void sendOutputs() {
+    parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
         .sender(modelIdentifier).build());
   }
 
@@ -432,7 +430,7 @@ public class PDevsCoordinator<T extends SimTime>
       } else {
         log(Level.DEBUG, "Sending outputs.");
         generatingOutput = false;
-        sendOutputs(transitionDone.getTime());
+        sendOutputs();
       }
     }
     return this;

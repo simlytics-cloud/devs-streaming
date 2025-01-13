@@ -158,7 +158,7 @@ public class PDevsSimulator<T extends SimTime, S,
     }
     Bag modelOutput = devsModel.outputFunction();
     parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
-        .time(sendOutput.getTime()).sender(devsModel.getModelIdentifier()).build());
+        .sender(devsModel.getModelIdentifier()).build());
     return this;
   }
 

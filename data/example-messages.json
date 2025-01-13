@@ -41,10 +41,6 @@
     "timeType" : "devs.msg.time.LongSimTime",
     "t" : 0
   },
-  "time" : {
-    "timeType" : "devs.msg.time.LongSimTime",
-    "t" : 1
-  },
   "sender" : "generator"
 },
 {

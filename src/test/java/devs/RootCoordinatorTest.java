@@ -148,7 +148,7 @@ public class RootCoordinatorTest {
     SendOutput<LongSimTime> sendOutput = (SendOutput<LongSimTime>) message2;
     assert (sendOutput.getTime().getT() == 2L);
     rootCoordinator.tell(ModelOutputMessage.builder().modelOutput(Bag.builder().build())
-        .nextTime(LongSimTime.builder().t(5L).build()).time(LongSimTime.builder().t(2L).build())
+        .nextTime(LongSimTime.builder().t(5L).build())
         .sender("child").build());
 
     DevsMessage message3 = probe.receiveMessage();
@@ -156,7 +156,7 @@ public class RootCoordinatorTest {
     SendOutput<LongSimTime> sendOutput2 = (SendOutput<LongSimTime>) message3;
     assert (sendOutput2.getTime().getT() == 5L);
     rootCoordinator.tell(ModelOutputMessage.builder().modelOutput(Bag.builder().build())
-        .nextTime(LongSimTime.builder().t(11L).build()).time(sendOutput.getTime()).sender("child")
+        .nextTime(LongSimTime.builder().t(11L).build()).sender("child")
         .build());
 
     DevsMessage message4 = probe.receiveMessage();

@@ -43,7 +43,7 @@ import org.immutables.value.Value;
 @JsonSerialize(as = ModelOutputMessage.class)
 @JsonDeserialize(as = ModelOutputMessage.class)
 public abstract class AbstractModelOutputMessage<T extends SimTime>
-    implements TimedDevsMessage<T>, Sender {
+    implements Sender {
 
   /**
    * Retrieves the model output encapsulated in a {@link Bag} object. The {@code Bag} contains a
@@ -65,16 +65,6 @@ public abstract class AbstractModelOutputMessage<T extends SimTime>
    */
   @Value.Parameter
   public abstract T getNextTime();
-
-  /**
-   * Retrieves the simulation time associated with this message. The time is represented as an
-   * object of type {@code T}, which extends the {@code SimTime} class.
-   *
-   * @return the simulation time of the message as an instance of {@code T}.
-   */
-  @Value.Parameter
-  @Override
-  public abstract T getTime();
 
   /**
    * Retrieves the identifier of the sender associated with this message. The sender is typically

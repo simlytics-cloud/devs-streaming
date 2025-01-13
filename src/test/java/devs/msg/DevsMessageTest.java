@@ -153,7 +153,7 @@ public class DevsMessageTest {
     PortValue<Integer> portValue = GeneratorModel.generatorOutputPort.createPortValue(1);
     ModelOutputMessage<?> modelOutputMessage =
         ModelOutputMessage.builder().modelOutput(Bag.builder().addPortValueList(portValue).build())
-            .nextTime(one).time(zero).sender(GeneratorModel.identifier).build();
+            .nextTime(one).sender(GeneratorModel.identifier).build();
 
     DevsMessage devsMessage = modelOutputMessage;
     String generatorOutputJson = objectMapper.writeValueAsString(devsMessage);
@@ -163,7 +163,6 @@ public class DevsMessageTest {
     assert (deserialized instanceof ModelOutputMessage<?>);
     ModelOutputMessage<LongSimTime> desModelOutputMessage =
         (ModelOutputMessage<LongSimTime>) deserialized;
-    assert (desModelOutputMessage.getTime().getT() == 0L);
     assert (desModelOutputMessage.getNextTime().getT() == 1L);
     Bag desGeneratorOutput = desModelOutputMessage.getModelOutput();
     assert ((Integer) desGeneratorOutput.getPortValueList().get(0).getValue() == 1);
@@ -308,7 +307,7 @@ public class DevsMessageTest {
                 .addPortValueList(
                     StorageModel.storageOutputPort.createPortValue(StorageStateEnum.S1))
                 .build())
-            .nextTime(zero).time(one).sender(GeneratorModel.identifier).build();
+            .nextTime(zero).sender(GeneratorModel.identifier).build();
 
     json = serialize(modelOutputMessage); // objectMapper.writeValueAsString(modelOutputMessage);
     pw.print(json);
