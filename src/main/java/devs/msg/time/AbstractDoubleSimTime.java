@@ -30,7 +30,17 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = DoubleSimTime.class)
 public abstract class AbstractDoubleSimTime extends SimTime {
 
-  public static DoubleSimTime maxValue = DoubleSimTime.builder().t(Double.MAX_VALUE).build();
+  /**
+   * Calculates the maximum possible simulation time value by subtracting the current
+   * simulation time value from {@code Double.MAX_VALUE}.
+   *
+   * @param currentTime the current simulation time represented as a {@link DoubleSimTime}
+   * @return a new {@link DoubleSimTime} instance representing the maximum simulation time
+   *         value relative to the given {@code currentTime}
+   */
+  public static DoubleSimTime maxValue(DoubleSimTime currentTime) {
+    return DoubleSimTime.builder().t(Double.MAX_VALUE - currentTime.getT()).build();
+  }
 
   /**
    * Creates an immutable instance of {@link DoubleSimTime} with the specified simulation time
