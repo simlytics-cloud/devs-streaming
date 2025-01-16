@@ -23,21 +23,13 @@ import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
 /**
- * Represents an abstract, immutable message that encapsulates model output, a time value, and the
- * corresponding sender. This class is a message used in a timed Discrete Event System Simulation
- * (DEVS) to convey information about a model's output, the next simulation time, and other
- * time-related data within the DEVS framework.
+ * Represents an abstract definition for a model output message within the DEVS framework.
+ * This class encapsulates the output of a model as a collection of port-value pairs,
+ * the next simulation time, and the sender's identification. It is a core component
+ * used to propagate simulation results and scheduling information.
  *
- * @param <T> the type of time value, which extends the {@link SimTime} class.
- *            <p>
- *            This abstract class implements the {@link devs.msg.time.TimedDevsMessage} interface to
- *            provide the time value of the message, and the {@link Sender} interface to indicate
- *            the sender of the message. It is designed to facilitate clarity and immutability for
- *            simulation steps in the DEVS framework.
- *            <p>
- *            The concrete implementation of this class is generated as {@code ModelOutputMessage}
- *            using the Immutables framework. It is also configured to be serialized and
- *            deserialized using Jackson.
+ * @param <T> A generic parameter representing types extending {@code SimTime}, which encapsulates
+ *            simulation time-specific information.
  */
 @Value.Immutable
 @JsonSerialize(as = ModelOutputMessage.class)

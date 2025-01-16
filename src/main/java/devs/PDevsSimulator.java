@@ -141,13 +141,13 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
   /**
-   * Handles the sending of an output message in the simulation. This method validates the
-   * synchronization of the simulation time and triggers the model's output function to generate
-   * output. The generated output and related information are sent to the parent actor.
+   * Handles the SendOutput message during the PDEVS simulation. This method validates the
+   * synchronization of the simulation time, invokes the DEVS model's output function, and sends
+   * the output to the parent actor encapsulated in a ModelOutputMessage.
    *
-   * @param sendOutput the message containing information about the output scheduling in the
-   *                   simulation, including the intended simulation time
-   * @return the updated Behavior of the simulator to continue processing DevsMessages
+   * @param sendOutput the SendOutput message containing the current simulation time and context
+   *                   for generating and sending the model's output
+   * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's current state
    * @throws RuntimeException if the simulation time in the SendOutput message does not match the
    *                          expected next simulation time
    */

@@ -30,7 +30,18 @@ import org.immutables.value.Value;
 @JsonDeserialize(as = LongSimTime.class)
 public abstract class AbstractLongSimTime extends SimTime {
 
-  public static LongSimTime maxValue = LongSimTime.builder().t(Long.MAX_VALUE).build();
+  /**
+   * Calculates the maximum possible simulation time value by subtracting the current simulation
+   * time from the maximum allowable value for a long. This method returns a new instance of
+   * {@link LongSimTime} with the calculated value.
+   *
+   * @param currentTime the current simulation time as a {@link LongSimTime} instance
+   * @return a new {@link LongSimTime} instance representing the maximum simulation time value
+   * derived from the given current time
+   */
+  public static LongSimTime maxValue(LongSimTime currentTime) {
+    return LongSimTime.builder().t(Long.MAX_VALUE - currentTime.getT()).build();
+  }
 
   /**
    * Creates a new {@link LongSimTime} instance with the specified simulation time.

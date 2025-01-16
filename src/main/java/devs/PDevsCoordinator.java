@@ -283,12 +283,15 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   /**
-   * Processes the output message received from a model by updating internal state, triggering
-   * transitions, and coordinating communication between models.
+   * Handles the model output messages, processes them, and coordinates the next steps
+   * such as forwarding messages to child models, sending outputs to parent models,
+   * and executing transitions. This method ensures that all outputs are received
+   * and processed appropriately before proceeding.
    *
-   * @param outputs the message containing the output data from a model, including the sender's
-   *                identifier, output values, and timing information.
-   * @return the updated behavior of the coordinator after processing the model's outputs.
+   * @param outputs the {@link ModelOutputMessage} containing the outputs from a model,
+   *                including the sender, the next simulation time, and the associated
+   *                port-value list.
+   * @return the current behavior of the actor, allowing for further processing.
    */
   Behavior<DevsMessage> onModelOutputs(ModelOutputMessage<T> outputs) {
     if (getContext().getLog().isDebugEnabled()) {
@@ -346,7 +349,11 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   /**
-   * Sends the model's outputs to the parent actor in the form of a {@code ModelOutputMessage}.
+   * Sends the output data encapsulated in a ModelOutputMessage to the parent.
+   *
+   * The message includes the current model output, the next scheduled time for processing,
+   * and the identifier of the sender. The message is built using the ModelOutputMessage builder
+   * and sent to the parent using the `tell` method.
    */
   void sendOutputs() {
     parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
