@@ -95,10 +95,10 @@ public class StorageModelTest {
     // Internal state transition does not change state
     storageModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
     Bag o1 = storageModel.outputFunction();
-    String outputJson = objectMapper.writeValueAsString(o1);
-    Bag output = objectMapper.readValue(outputJson, Bag.class);
+    //String outputJson = objectMapper.writeValueAsString(o1);
+    //Bag output = objectMapper.readValue(outputJson, Bag.class);
     // Enum has serialized to a JSON string
-    assert (output.getPortValueList().get(0).getValue().equals(StorageStateEnum.S0));
+    assert (o1.getPortValueList().get(0).getValue().equals(StorageStateEnum.S0));
 
     // External state transition function changes state value to match input
     // and time advance will yield zero

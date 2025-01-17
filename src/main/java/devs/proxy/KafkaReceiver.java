@@ -71,6 +71,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
 
   private final ActorRef<DevsMessage> devsComponent;
   private final Logger logger;
+  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
   /**
    * Creates a new behavior instance of KafkaReceiver to handle Kafka message consumption and
@@ -111,7 +112,6 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     this.devsComponent = devsComponent;
     this.sender = sender;
     this.logger = context.getLog();
-    objectMapper.registerModule(new Jdk8Module());
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
@@ -140,8 +140,6 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
         // to shut down the stream on command.
         .toMat(Sink.ignore(), Consumer::createDrainingControl).run(getContext().getSystem());
   }
-
-  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
 
   @Override

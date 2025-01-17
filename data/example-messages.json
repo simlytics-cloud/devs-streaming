@@ -32,7 +32,7 @@
   "devsType" : "devs.msg.ModelOutputMessage",
   "modelOutput" : {
     "portValueList" : [ {
-      "value" : "S1",
+      "value" : [ "example.storage.StorageStateEnum", "S1" ],
       "portIdentifier" : "OUTPUT",
       "portType" : "example.storage.StorageStateEnum"
     } ]

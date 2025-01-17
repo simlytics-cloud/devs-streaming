@@ -17,6 +17,7 @@
 package devs.utils;
 
 import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
@@ -55,7 +56,8 @@ public class DevsObjectMapper {
         new SimpleModule("PortValueDeserializer", new Version(1, 0, 0, null));
     portValueModule.addDeserializer(PortValue.class, portValueDeserializer);
     return new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule())
-        .registerModule(new JavaTimeModule()).registerModule(portValueModule);
+        .registerModule(new JavaTimeModule()).registerModule(portValueModule)
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 
   /**

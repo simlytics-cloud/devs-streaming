@@ -18,6 +18,7 @@ package devs.msg;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 /**
  * Represents a value associated with a specific port in the DEVS Streaming Framework.
@@ -29,7 +30,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @param <T> The type of the value associated with the port.
  */
 public class PortValue<T> {
-
+  @JsonTypeInfo(
+    use = JsonTypeInfo.Id.CLASS,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "@class"
+  )
   private final T value;
 
   private final String portIdentifier;
@@ -45,7 +50,12 @@ public class PortValue<T> {
    * @param portType       the type of the port
    */
   @JsonCreator
-  public PortValue(@JsonProperty("value") T value,
+  public PortValue(@JsonProperty("value") 
+                    @JsonTypeInfo(
+                      use = JsonTypeInfo.Id.CLASS,
+                      include = JsonTypeInfo.As.PROPERTY,
+                      property = "@class"
+                    )T value,
                    @JsonProperty("portIdentifier") String portIdentifier,
                    @JsonProperty("portType") String portType) {
     this.value = value;
@@ -71,6 +81,11 @@ public class PortValue<T> {
    *
    * @return the value of type {@code T} associated with the port.
    */
+  @JsonTypeInfo(
+    use = JsonTypeInfo.Id.CLASS,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "@class"
+  )
   public T getValue() {
     return value;
   }
