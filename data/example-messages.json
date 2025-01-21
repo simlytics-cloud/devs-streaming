@@ -32,9 +32,9 @@
   "devsType" : "devs.msg.ModelOutputMessage",
   "modelOutput" : {
     "portValueList" : [ {
-      "value" : [ "example.storage.StorageStateEnum", "S1" ],
+      "value" : "S1",
       "portIdentifier" : "OUTPUT",
-      "portType" : "example.storage.StorageStateEnum"
+      "portType" : "java.lang.String"
     } ]
   },
   "nextTime" : {

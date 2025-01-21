@@ -42,8 +42,8 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
 
   public static final String MODEL_ID = "storage";
   public static final Port<Integer> storageInputPort = new Port<>("INPUT", Integer.class);
-  public static final Port<StorageStateEnum> storageOutputPort = new Port<>("OUTPUT",
-      StorageStateEnum.class);
+  public static final Port<String> storageOutputPort = new Port<>("OUTPUT",
+      String.class);
 
   /**
    * Constructs a new instance of the StorageModel class, initializing it with a given state.
@@ -154,6 +154,6 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
   @Override
   public Bag outputFunction() {
     return Bag.builder()
-        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue())).build();
+        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue().name())).build();
   }
 }

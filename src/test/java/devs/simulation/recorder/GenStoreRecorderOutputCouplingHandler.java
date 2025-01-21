@@ -62,14 +62,8 @@ public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler
           .createPortValue(GeneratorModel.generatorOutputPort.getValue(portValue));
       addInputPortValue(recorderInputValue, "recorder", receiverMap);
     } else if (sender.equals(StorageModel.MODEL_ID)) {
-      PortValue<StorageStateEnum> recorderInputValue;
-      if (portValue.getValue() instanceof String) {
-        recorderInputValue = RecorderModel.storageOutput
-            .createPortValue(StorageStateEnum.valueOf((String) portValue.getValue()));
-      } else {
-        recorderInputValue = RecorderModel.storageOutput
-            .createPortValue(StorageModel.storageOutputPort.getValue(portValue));
-      }
+      PortValue<String> recorderInputValue = RecorderModel.storageOutput
+      .createPortValue(StorageModel.storageOutputPort.getValue(portValue));
       addInputPortValue(recorderInputValue, "recorder", receiverMap);
     }
 

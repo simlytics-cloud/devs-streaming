@@ -44,8 +44,8 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
    * In the simulation framework, this port can interact with other components to emit storage state
    * messages as part of output behavior or coupling configurations.
    */
-  public static final Port<StorageStateEnum> storageOutput = new Port<>("STORAGE_OUTPUT",
-      StorageStateEnum.class);
+  public static final Port<String> storageOutput = new Port<>("STORAGE_OUTPUT",
+      String.class);
   /**
    * Represents an output port for generating integer-based output values within the DEVS (Discrete
    * Event System Specification) simulation framework. The port is uniquely identified with the

@@ -305,7 +305,7 @@ public class DevsMessageTest {
         ModelOutputMessage.builder()
             .modelOutput(Bag.builder()
                 .addPortValueList(
-                    StorageModel.storageOutputPort.createPortValue(StorageStateEnum.S1))
+                    StorageModel.storageOutputPort.createPortValue("S1"))
                 .build())
             .nextTime(zero).sender(GeneratorModel.identifier).build();
 

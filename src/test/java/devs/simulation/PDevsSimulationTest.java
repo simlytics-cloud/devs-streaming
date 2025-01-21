@@ -192,7 +192,7 @@ public class PDevsSimulationTest {
     PortValue<?> storagePortValue = executeExternalTransition2.getModelInputsOption().get()
         .getPortValueList().stream()
         .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
-    assert (storagePortValue.getValue().equals(StorageStateEnum.S0));
+    assert (storagePortValue.getValue().equals("S0"));
     assert (executeExternalTransition2.getTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition2);
 
@@ -210,7 +210,7 @@ public class PDevsSimulationTest {
     PortValue<?> storagePortValue4 = executeExternalTransition3.getModelInputsOption().get()
         .getPortValueList().stream()
         .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
-    assert (storagePortValue4.getValue().equals(StorageStateEnum.S1));
+    assert (storagePortValue4.getValue().equals("S1"));
 
   }
 }
