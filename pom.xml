@@ -17,8 +17,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>cloud.simlytics</groupId>
@@ -26,12 +26,14 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <scala.binary.version>3</scala.binary.version>
         <jackson.version>2.17.1</jackson.version>
         <pekko.version>1.1.0-M1</pekko.version>
-        <kafka.version>3.7.0</kafka.version>
+        <kafka.version>3.7.1</kafka.version>
     </properties>
 
     <repositories>
@@ -58,12 +60,12 @@
     </dependencyManagement>
 
     <dependencies>
-		<!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
-		<dependency>
-		    <groupId>com.fasterxml.jackson.core</groupId>
-		    <artifactId>jackson-databind</artifactId>
-		    <version>${jackson.version}</version>
-		</dependency>
+        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
         <!-- Junit5 -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -95,17 +97,17 @@
             <artifactId>pekko-protobuf-v3_${scala.binary.version}</artifactId>
             <version>${pekko.version}</version>
         </dependency>
-         <dependency>
+        <dependency>
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-slf4j_${scala.binary.version}</artifactId>
             <version>${pekko.version}</version>
         </dependency>
-         <dependency>
+        <dependency>
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-testkit_${scala.binary.version}</artifactId>
             <version>${pekko.version}</version>
         </dependency>
-      <dependency>
+        <dependency>
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-actor_${scala.binary.version}</artifactId>
             <version>${pekko.version}</version>
@@ -156,7 +158,12 @@
             <artifactId>annotations</artifactId>
             <version>24.0.1</version>
             <scope>compile</scope>
-        </dependency>       
+        </dependency>
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -215,23 +222,81 @@
                     <sourcepath>src/main/java;target/generated-sources/annotations</sourcepath>
                 </configuration>
             </plugin>
-             <plugin>
-              <groupId>org.owasp</groupId>
-              <artifactId>dependency-check-maven</artifactId>
-              <version>9.2.0</version>
-              <configuration>
-				<nvdApiKey>f0a7aafa-78a8-494c-86a5-aead93adcceb</nvdApiKey>
-			  </configuration>
-              <!--executions>
+            <plugin>
+                <groupId>org.owasp</groupId>
+                <artifactId>dependency-check-maven</artifactId>
+                <version>9.2.0</version>
+                <configuration>
+                    <nvdApiKey>f0a7aafa-78a8-494c-86a5-aead93adcceb</nvdApiKey>
+                </configuration>
+                <!--executions>
                   <execution>
                       <goals>
                           <goal>check</goal>
                       </goals>
                   </execution>
               </executions-->
-            </plugin>           
+            </plugin>
+            <plugin>
+                <groupId>org.openrewrite.maven</groupId>
+                <artifactId>rewrite-maven-plugin</artifactId>
+                <version>5.46.1</version>
+                <configuration>
+                    <activeRecipes>
+                        <recipe>org.openrewrite.recipes.OpenRewriteBestPractices</recipe>
+                        <recipe>org.openrewrite.staticanalysis.CodeCleanup</recipe>
+                        <recipe>org.openrewrite.java.format.AutoFormat</recipe>
+                    </activeRecipes>
+                    <activeStyles>
+                        <style>google.autoformat.Style</style>
+                    </activeStyles>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-static-analysis</artifactId>
+                        <version>1.21.1</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>org.openrewrite.recipe</groupId>
+                        <artifactId>rewrite-recommendations</artifactId>
+                        <version>1.14.1</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>google_checks.xml</configLocation>
+                    <suppressionsLocation>google-checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
 
     </build>
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <configLocation>google_checks.xml</configLocation>
+                    <suppressionsLocation>google-checkstyle-suppressions.xml</suppressionsLocation>
+                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

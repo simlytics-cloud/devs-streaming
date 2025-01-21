@@ -34,16 +34,12 @@
     "portValueList" : [ {
       "value" : "S1",
       "portIdentifier" : "OUTPUT",
-      "portType" : "example.storage.StorageStateEnum"
+      "portType" : "java.lang.String"
     } ]
   },
   "nextTime" : {
     "timeType" : "devs.msg.time.LongSimTime",
     "t" : 0
-  },
-  "time" : {
-    "timeType" : "devs.msg.time.LongSimTime",
-    "t" : 1
   },
   "sender" : "generator"
 },

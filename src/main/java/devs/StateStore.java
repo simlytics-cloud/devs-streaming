@@ -14,21 +14,21 @@
  *
  */
 
-package devs.msg.time;
+package devs;
 
-import devs.msg.DevsMessage;
+import devs.msg.time.SimTime;
 
 /**
- * A message with a time value.
+ * Interface of a class to store state values over time.
  *
- * @param <T> the type of time value
+ * @param <T> the time type used by the StateStore
+ * @param <V> the value type used by the StateStore
  */
-public interface TimedDevsMessage<T extends SimTime> extends DevsMessage {
+public interface StateStore<T extends SimTime, V> {
 
-  /**
-   * Retrieves the simulation time associated with the message.
-   *
-   * @return the simulation time of type {@code T}, which extends {@link SimTime}
-   */
-  T getTime();
+  abstract V get(T time);
+
+  abstract void put(T time, V value);
+
+  abstract V getLatest();
 }
