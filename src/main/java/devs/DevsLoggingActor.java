@@ -31,6 +31,7 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
 /**
  * A utility actor to serialize log messages and write them to an ouput stream.
@@ -84,7 +85,12 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
    * @return a behavior instance for the DevsLoggingActor
    */
   public static Behavior<DevsLogMessage> create(OutputStream outputStream, String runId) {
-    return Behaviors.setup(context -> new DevsLoggingActor(context, outputStream, runId));
+    return Behaviors.setup(context -> {
+      context.getSystem().receptionist().tell(
+        Receptionist.register(StateLoggingSimulator.stateLoggerKey, context.getSelf())
+      );
+      return new DevsLoggingActor(context, outputStream, runId);
+    });
   }
 
 

@@ -123,7 +123,7 @@ public class PDevsCoordinatorTest {
 
     ActorRef<DevsMessage> coordinator = testKit.spawn(
         Behaviors.setup(context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
-            "root", modelSimulators, genStoreCoupling, context)));
+            modelSimulators, genStoreCoupling, context)));
 
     coordinator.tell(new InitSimMessage<SimTime>(
         InitSim.builder().time(LongSimTime.builder().t(0L).build()).build(),

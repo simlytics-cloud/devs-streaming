@@ -247,7 +247,7 @@ public class KafkaDevsStreamProxyTest {
         testKit.spawn(
             Behaviors.setup(
                 context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
-                    "root", modelSimulators, genStoreCoupling, context)),
+                    modelSimulators, genStoreCoupling, context)),
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =
@@ -424,7 +424,7 @@ public class KafkaDevsStreamProxyTest {
         testKit.spawn(
             Behaviors.setup(
                 context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
-                    "root", modelSimulators, genStoreCoupling, context)),
+                    modelSimulators, genStoreCoupling, context)),
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =

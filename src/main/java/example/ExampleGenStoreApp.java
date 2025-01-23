@@ -164,12 +164,12 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     context.watch(loggingActor);
 
     ActorRef<DevsMessage> generator =
-        context.spawn(StateLoggingSimulator.create(new GeneratorModel(0),
-            LongSimTime.builder().t(0L).build(), loggingActor), "generator");
+        context.spawn(StateLoggingSimulator.createStateLoggingSimulator(new GeneratorModel(0),
+            LongSimTime.builder().t(0L).build()), "generator");
 
     ActorRef<DevsMessage> storage = context
-        .spawn(StateLoggingSimulator.create(new StorageModel(new StorageState(StorageStateEnum.S0)),
-            LongSimTime.builder().t(0L).build(), loggingActor), "storage");
+        .spawn(StateLoggingSimulator.createStateLoggingSimulator(new StorageModel(new StorageState(StorageStateEnum.S0)),
+            LongSimTime.builder().t(0L).build()), "storage");
 
     Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
     modelSimulators.put("generator", generator);
@@ -179,7 +179,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
         new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
             Collections.singletonList(new GenStoreOutputCouplingHandler()));
     ActorRef<DevsMessage> coordinator =
-        context.spawn(PDevsCoordinator.create("coupled", "root", modelSimulators, genStoreCoupling),
+        context.spawn(PDevsCoordinator.create("coupled", modelSimulators, genStoreCoupling),
             "coordinator");
 
     ActorRef<DevsMessage> rootCoordinator = context

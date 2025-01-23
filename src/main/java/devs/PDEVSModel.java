@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
- * DEVS Streaming Framework Java contributors.  All rights reserved.
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and DEVS Streaming Framework
+ * Java contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -39,7 +39,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   /**
    * Constructs a new instance of the PDEVSModel class.
    *
-   * @param modelState      the initial state of the DEVS model
+   * @param modelState the initial state of the DEVS model
    * @param modelIdentifier a unique identifier for this model instance
    */
   public PDEVSModel(S modelState, String modelIdentifier) {
@@ -59,13 +59,12 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   /**
    * The DEVS external state transition function. This function is called when an external event
    * arrives at one of the model's input ports. Note two important considerations. First, the type
-   * of event is not known in advance, so this function will have to use the
-   * {@link PortValue PortValue} contained in the input {@link devs.msg.Bag Bag} to identify the
-   * type of event and process it appropriately. In addition, more than one input is possible at an
-   * intant in time.
+   * of event is not known in advance, so this function will have to use the {@link PortValue
+   * PortValue} contained in the input {@link devs.msg.Bag Bag} to identify the type of event and
+   * process it appropriately. In addition, more than one input is possible at an intant in time.
    *
    * @param currentTime the current time of the transition
-   * @param bag         the bag of inputs that has arrived at the current time
+   * @param bag the bag of inputs that has arrived at the current time
    */
   public abstract void externalStateTransitionFunction(T currentTime, Bag bag);
 
@@ -77,7 +76,7 @@ public abstract class PDEVSModel<T extends SimTime, S> {
    * event received.
    *
    * @param currentTime the current time of the transition
-   * @param bag         the bag of inputs that has arrived at the current time
+   * @param bag the bag of inputs that has arrived at the current time
    */
   public abstract void confluentStateTransitionFunction(T currentTime, Bag bag);
 
@@ -110,4 +109,9 @@ public abstract class PDEVSModel<T extends SimTime, S> {
   public void setSimulator(PDevsSimulator<T, S, ?> simulator) {
     this.simulator = simulator;
   }
+
+  public DevsSimulatorProvider<T> getDevsSimulatorProvider() {
+    return new DevsSimulatorProvider<>(this);
+  }
+
 }

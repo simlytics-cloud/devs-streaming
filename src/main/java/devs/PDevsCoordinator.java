@@ -60,7 +60,6 @@ public class PDevsCoordinator<T extends SimTime>
 
   final String modelIdentifier;
   ActorRef<DevsMessage> parent;
-  final String parentId;
   final Map<String, ActorRef<DevsMessage>> modelsSimulators;
   private final PDevsCouplings couplings;
   private T timeLast;
@@ -74,9 +73,9 @@ public class PDevsCoordinator<T extends SimTime>
   private List<String> awaitingTransition = new ArrayList<>();
   private boolean generatingOutput;
 
-  public static Behavior<DevsMessage> create(String modelIdentifier, String parentId,
+  public static Behavior<DevsMessage> create(String modelIdentifier,
       Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings) {
-    return Behaviors.setup(context -> new PDevsCoordinator<>(modelIdentifier, parentId,
+    return Behaviors.setup(context -> new PDevsCoordinator<>(modelIdentifier,
         modelsSimulators, couplings, context));
   }
 
@@ -86,7 +85,6 @@ public class PDevsCoordinator<T extends SimTime>
    * simulations, including its models, simulators, and couplings.
    *
    * @param modelIdentifier  the unique identifier of the coordinator model.
-   * @param parentId         the identifier of the parent model, if applicable.
    * @param modelsSimulators a map containing the identifiers of component models and their
    *                         associated simulator actor references.
    * @param couplings        the coupling information defining input-output relationships between
@@ -94,7 +92,7 @@ public class PDevsCoordinator<T extends SimTime>
    * @param context          the actor context for the current Pekko actor.
    * @throws IllegalArgumentException if the modelsSimulators map is empty.
    */
-  public PDevsCoordinator(String modelIdentifier, String parentId,
+  public PDevsCoordinator(String modelIdentifier,
       Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings,
       ActorContext<DevsMessage> context) {
     // Check for valid data
@@ -104,7 +102,6 @@ public class PDevsCoordinator<T extends SimTime>
           "Cannot create a PDevsCoordinator with no component models");
     }
     this.modelIdentifier = modelIdentifier;
-    this.parentId = parentId;
     this.modelsSimulators = modelsSimulators;
     this.couplings = couplings;
   }
@@ -296,7 +293,7 @@ public class PDevsCoordinator<T extends SimTime>
   Behavior<DevsMessage> onModelOutputs(ModelOutputMessage<T> outputs) {
     if (getContext().getLog().isDebugEnabled()) {
       log(Level.DEBUG,
-          "Got model outputs at " + outputs.getNextTime() + " from " + outputs.getSender() + ": "
+          "Got model outputs at " + timeNext + " from " + outputs.getSender() + ": "
               + Arrays.toString(outputs.getModelOutput().getPortValueList().stream()
               .map(pv -> pv.getPortIdentifier()).toArray()));
     }
@@ -319,7 +316,7 @@ public class PDevsCoordinator<T extends SimTime>
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
         modelsSimulators.get(key).tell(
-            ExecuteTransition.builder().time(outputs.getNextTime()).modelInputsOption(value)
+            ExecuteTransition.builder().time(timeNext).modelInputsOption(value)
                 .build());
         if (getContext().getLog().isDebugEnabled()) {
           log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value.getPortValueList()
@@ -337,7 +334,7 @@ public class PDevsCoordinator<T extends SimTime>
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
         modelsSimulators.get(modelId)
-            .tell(ExecuteTransition.builder().time(outputs.getNextTime()).build());
+            .tell(ExecuteTransition.builder().time(timeNext).build());
       });
       // If the model outputs have not generated any transitions, output is done. Send output
       // message.

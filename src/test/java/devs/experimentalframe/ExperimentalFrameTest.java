@@ -20,6 +20,7 @@ import devs.CoupledModelFactory;
 import devs.PDEVSModel;
 import devs.PDevsCouplings;
 import devs.RootCoordinator;
+import devs.SimulatorProvider;
 import devs.msg.DevsMessage;
 import devs.msg.InitSim;
 import devs.msg.time.LongSimTime;
@@ -72,13 +73,17 @@ public class ExperimentalFrameTest {
     PowerOfTwoGenerator generator = new PowerOfTwoGenerator();
     LogBaseTwoCalculatorModel logCalculator = new LogBaseTwoCalculatorModel();
     TestAcceptor testAcceptor = new TestAcceptor();
-    List<PDEVSModel<LongSimTime, ?>> devsModels =
-        Arrays.asList(generator, logCalculator, testAcceptor);
+    List<SimulatorProvider<LongSimTime>> simulatorProviders =
+        Arrays.asList(generator.getDevsSimulatorProvider(), 
+        logCalculator.getDevsSimulatorProvider(),
+        testAcceptor.getDevsSimulatorProvider());
 
     PDevsCouplings couplings = new PDevsCouplings(Collections.emptyList(),
         Collections.singletonList(new TestOutputCouplingHandler()));
-    coupledModelFactory = new CoupledModelFactory<>("experimentalFrameTest", devsModels,
-        Collections.emptyList(), couplings);
+    coupledModelFactory = new CoupledModelFactory<LongSimTime>(
+      "experimentalFrameTest",
+      simulatorProviders,
+      couplings);
   }
 
   /**
@@ -117,7 +122,7 @@ public class ExperimentalFrameTest {
       throws InterruptedException {
     ActorTestKit testKit = ActorTestKit.create();
     ActorRef<DevsMessage> testFrame =
-        testKit.spawn(coupledModelFactory.create("root", startTime), "experimentalFrameTest");
+        testKit.spawn(coupledModelFactory.create(startTime), "experimentalFrameTest");
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(RootCoordinator.create(endTime, testFrame), "root");
     rootCoordinator.tell(InitSim.builder().time(startTime).build());

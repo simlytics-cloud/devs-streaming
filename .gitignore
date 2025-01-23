@@ -8,4 +8,5 @@ lib/
 project/project/
 project/target/
 .settings/
+.metals/
 .settings/org.eclipse.jdt.core.prefs

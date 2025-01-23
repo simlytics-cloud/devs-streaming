@@ -2,5 +2,8 @@
     "java.configuration.updateBuildConfiguration": "interactive",
     "java.format.settings.url": "https://raw.githubusercontent.com/google/styleguide/gh-pages/eclipse-java-google-style.xml",
     "java.checkstyle.configuration": "${workspaceFolder}\\updated_google_checks.xml",
+    "files.watcherExclude": {
+        "**/target": true
+    },
 
 }

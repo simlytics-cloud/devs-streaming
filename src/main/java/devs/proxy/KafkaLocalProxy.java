@@ -20,10 +20,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.typesafe.config.Config;
+import devs.SimulatorProvider;
 import devs.msg.DevsMessage;
 import devs.msg.InitSimMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
+import devs.utils.ModelUtils;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -67,6 +69,26 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
                                        Config kafkaProducerConfig, String consumerTopic,
                                        Config kafkaConsumerConfig) {
 
+  }
+
+  public static class KafkaProxySimulatorProvider<T extends SimTime> implements SimulatorProvider<T> {
+    protected final ProxyProperties properties;
+
+    public KafkaProxySimulatorProvider(ProxyProperties properties) {
+      this.properties = properties;
+    }
+
+    @Override
+    public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context,
+        T initialTime) {
+      return context.spawn(KafkaLocalProxy.create(properties), ModelUtils.toLegalActorName(properties.componentName()));
+    }
+
+    @Override
+    public String getModelIdentifier() {
+      return properties.componentName();
+    }
+    
   }
 
   /**

@@ -27,6 +27,7 @@ import devs.msg.SendOutput;
 import devs.msg.SimulationDone;
 import devs.msg.TransitionDone;
 import devs.msg.time.SimTime;
+import devs.utils.ModelUtils;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
@@ -64,7 +65,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * @param initialTime the initial simulation time for the model, of type {@link SimTime}
    * @return a new Behavior instance configured for the given DEVS model and initial time
    */
-  public static <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> devsModel,
+  public static final <TT extends SimTime> Behavior<DevsMessage> create(PDEVSModel<TT, ?> devsModel,
                                                                   TT initialTime) {
     return Behaviors.setup(context -> new PDevsSimulator<>(devsModel, initialTime, context));
   }
@@ -85,6 +86,17 @@ public class PDevsSimulator<T extends SimTime, S,
     devsModel.setSimulator(this);
   }
 
+
+  protected ReceiveBuilder<DevsMessage> createReceiveBuilder() {
+    ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
+
+    builder.onMessage(InitSimMessage.class, this::onInitSimMessage);
+    builder.onMessage(SendOutput.class, this::onSendOutputMessage);
+    builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
+    builder.onMessage(SimulationDone.class, this::onSimulationDone);
+    return builder;
+  }
+
   /**
    * Creates a receive handler for processing various types of DevsMessage. This method defines the
    * behavior of the simulator by specifying how it handles different message types, including
@@ -95,14 +107,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   @Override
   public Receive<DevsMessage> createReceive() {
-    ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
-
-    builder.onMessage(InitSimMessage.class, this::onInitSimMessage);
-    builder.onMessage(SendOutput.class, this::onSendOutputMessage);
-    builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
-    builder.onMessage(SimulationDone.class, this::onSimulationDone);
-
-    return builder.build();
+    return createReceiveBuilder().build();
   }
 
   /**

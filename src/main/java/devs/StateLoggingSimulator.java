@@ -23,16 +23,24 @@ import devs.msg.ExecuteTransition;
 import devs.msg.InitSimMessage;
 import devs.msg.ModelOutputMessage;
 import devs.msg.SendOutput;
+import devs.msg.SimulationDone;
 import devs.msg.log.DevsLogMessage;
 import devs.msg.log.DevsModelLogMessage;
+import devs.msg.log.PekkoReceptionistListingResponse;
 import devs.msg.log.StateMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
+import devs.utils.ModelUtils;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.apache.pekko.actor.typed.receptionist.Receptionist;
+import org.apache.pekko.actor.typed.receptionist.ServiceKey;
 import org.apache.pekko.serialization.Serialization;
 import org.apache.pekko.serialization.SerializationExtension;
 
@@ -48,8 +56,12 @@ import org.apache.pekko.serialization.SerializationExtension;
  */
 public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T, S>>
     extends PDevsSimulator<T, S, M> {
+      
+  public static final ServiceKey<DevsLogMessage> stateLoggerKey =
+      ServiceKey.create(DevsLogMessage.class, "devsLoggingService");
 
-  final ActorRef<DevsLogMessage> loggingActor;
+  ActorRef<DevsLogMessage> loggingActor;
+  private final ActorRef<Receptionist.Listing> listingResponseAdapter;
   final Serialization serialization;
   final ObjectMapper objectMapper;
 
@@ -62,14 +74,13 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
    * @param <M1>         the type of the DEVS model that extends {@code PDEVSModel<T1, S1>}
    * @param devsModel    the Parallel DEVS (PDEVS) model to be simulated
    * @param initialTime  the initial simulation time
-   * @param loggingActor the ActorRef used to send logging messages
    * @return the behavior representing the state-logging simulator associated with the provided
    * model
    */
-  public static <T1 extends SimTime, S1, M1 extends PDEVSModel<T1, S1>> Behavior<DevsMessage>
-      create(M1 devsModel, T1 initialTime, ActorRef<DevsLogMessage> loggingActor) {
+  public static final <T1 extends SimTime, S1, M1 extends PDEVSModel<T1, S1>> Behavior<DevsMessage>
+      createStateLoggingSimulator(M1 devsModel, T1 initialTime) {
     return Behaviors.setup(
-        context -> new StateLoggingSimulator<>(devsModel, initialTime, context, loggingActor));
+        context -> new StateLoggingSimulator<>(devsModel, initialTime, context));
   }
 
   /**
@@ -81,15 +92,21 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
    * @param initialTime  the initial simulation time, of type {@code T} extending {@link SimTime}
    * @param context      the actor context for the simulator, of type {@link ActorContext}
    *                     interacting with {@link DevsMessage}
-   * @param loggingActor the actor to which state log messages, of type {@link DevsLogMessage}, will
-   *                     be sent
    */
-  public StateLoggingSimulator(M devsModel, T initialTime, ActorContext<DevsMessage> context,
-      ActorRef<DevsLogMessage> loggingActor) {
+  public StateLoggingSimulator(M devsModel, T initialTime, ActorContext<DevsMessage> context) {
     super(devsModel, initialTime, context);
-    this.loggingActor = loggingActor;
     this.serialization = SerializationExtension.get(context.getSystem());
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
+    this.listingResponseAdapter = context.messageAdapter(Receptionist.Listing.class, PekkoReceptionistListingResponse::new);
+
+    context.getSystem().receptionist().tell(Receptionist.subscribe(stateLoggerKey, listingResponseAdapter));
+  }
+
+  @Override
+  public Receive<DevsMessage> createReceive() {
+    ReceiveBuilder<DevsMessage> builder = super.createReceiveBuilder();
+    builder.onMessage(PekkoReceptionistListingResponse.class, this::onPekkoReceptionistListingResponse);
+    return builder.build();
   }
 
   /**
@@ -113,7 +130,26 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
   protected void logState(T simTime) {
     StateMessage<?, ?> stateMessage = StateMessage.builder().modelId(devsModel.getModelIdentifier())
         .modelState(devsModel.getModelState()).time(simTime).build();
-    loggingActor.tell(stateMessage);
+    sendLogMessage(stateMessage);
+  }
+
+  protected void sendLogMessage(DevsLogMessage devsLogMessage) {
+    if (loggingActor != null) {
+      loggingActor.tell(devsLogMessage);
+    } else {
+      getContext().getLog().warn("Cannot send log message because loggingActor Pekko Receptionist has not sent listing");
+    }
+  }
+
+  protected Behavior<DevsMessage> onPekkoReceptionistListingResponse(PekkoReceptionistListingResponse listingResponse) {
+    Set<ActorRef<DevsLogMessage>> loggingActors = listingResponse.getListing().getAllServiceInstances(stateLoggerKey);
+    if (!loggingActors.isEmpty()) {
+      loggingActors.forEach(devsLoggingActor -> this.loggingActor = devsLoggingActor);
+    } else {
+      getContext().getLog().warn("Received emply PekkoReceptionistListingResponse for logging actors");
+    }
+    
+    return Behaviors.same();
   }
 
   @Override
@@ -123,7 +159,7 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
     DevsModelLogMessage<?> devsModelLogMessage =
         DevsModelLogMessage.builder().time(executeTransition.getTime())
             .modelId(devsModel.getModelIdentifier()).devsMessage(executeTransition).build();
-    loggingActor.tell(devsModelLogMessage);
+    sendLogMessage(devsModelLogMessage);
     logState(executeTransition.getTime());
     return behavior;
   }
@@ -149,7 +185,7 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
     DevsModelLogMessage<?> devsModelLogMessage =
         DevsModelLogMessage.builder().time(sendOutput.getTime())
             .modelId(devsModel.getModelIdentifier()).devsMessage(modelOutputMessage).build();
-    loggingActor.tell(devsModelLogMessage);
+    sendLogMessage(devsModelLogMessage);
     return this;
   }
 

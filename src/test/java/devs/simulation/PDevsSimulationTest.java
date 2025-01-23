@@ -147,7 +147,7 @@ public class PDevsSimulationTest {
 
     ActorRef<DevsMessage> coordinator = testKit.spawn(
         Behaviors.setup(context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
-            "root", modelSimulators, genStoreCoupling, context)));
+            modelSimulators, genStoreCoupling, context)));
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
