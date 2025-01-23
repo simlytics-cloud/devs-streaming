@@ -45,9 +45,6 @@ public class CoupledModelFactory<T extends SimTime> extends LoggingSimulatorProv
    * Constructs a CoupledModelFactory.
    *
    * @param modelIdentifier       the unique string identifying this model
-   * @param devsModels            a list of PDevsModels that are components of the coupled model
-   * @param coupledModelFactories a list of CoupledModelFactories that are components of the coupled
-   *                              model
    * @param couplings             a list of PDevsCouplings used to coupled subordinate DEVS models
    */
   public CoupledModelFactory(String modelIdentifier, 
