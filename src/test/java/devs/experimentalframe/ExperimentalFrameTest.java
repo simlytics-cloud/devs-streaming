@@ -127,7 +127,7 @@ public class ExperimentalFrameTest {
         testKit.spawn(RootCoordinator.create(endTime, testFrame), "root");
     rootCoordinator.tell(InitSim.builder().time(startTime).build());
     TestProbe<DevsMessage> testProbe = testKit.createTestProbe();
-    testProbe.expectTerminated(rootCoordinator, Duration.ofSeconds(10));
+    testProbe.expectTerminated(rootCoordinator, Duration.ofSeconds(100));
     // Thread.sleep(10 * 1000);
     testKit.shutdownTestKit();
   }

@@ -6,7 +6,7 @@ import devs.msg.DevsMessage;
 import devs.msg.time.SimTime;
 import devs.utils.ModelUtils;
 
-class DevsSimulatorProvider<T extends SimTime> extends LoggingSimulatorProvider<T> {
+public class DevsSimulatorProvider<T extends SimTime> extends LoggingSimulatorProvider<T> {
     protected final PDEVSModel<T, ?> devsModel;
 
     public DevsSimulatorProvider(PDEVSModel<T, ?> devsModel) {

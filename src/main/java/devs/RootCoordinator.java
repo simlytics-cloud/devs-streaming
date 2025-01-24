@@ -29,6 +29,7 @@ import devs.msg.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
+import org.apache.pekko.actor.typed.Terminated;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -94,6 +95,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     builder.onMessage(ModelOutputMessage.class, this::onModelOutputMessage);
     builder.onMessage(ModelDone.class, this::onModelDone);
     builder.onSignal(ChildFailed.class, this::onChildFailed);
+    builder.onSignal(Terminated.class, this::onTerminated);
 
     return builder.build();
   }
@@ -169,5 +171,10 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     getContext().getLog()
         .error("Child actor failed with cause " + childFailed.cause().getMessage());
     return this;
+  }
+
+  Behavior<DevsMessage> onTerminated(Terminated terminated) {
+    getContext().getLog().debug("Root coordinator received terminated {}", terminated);
+    return Behaviors.same();
   }
 }

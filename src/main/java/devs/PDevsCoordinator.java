@@ -36,6 +36,7 @@ import java.util.Optional;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
+import org.apache.pekko.actor.typed.Terminated;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
@@ -60,7 +61,7 @@ public class PDevsCoordinator<T extends SimTime>
 
   final String modelIdentifier;
   ActorRef<DevsMessage> parent;
-  final Map<String, ActorRef<DevsMessage>> modelsSimulators;
+  final Map<String, ActorRef<DevsMessage>> modelSimulators;
   private final PDevsCouplings couplings;
   private T timeLast;
   private T timeNext;
@@ -102,7 +103,7 @@ public class PDevsCoordinator<T extends SimTime>
           "Cannot create a PDevsCoordinator with no component models");
     }
     this.modelIdentifier = modelIdentifier;
-    this.modelsSimulators = modelsSimulators;
+    this.modelSimulators = modelsSimulators;
     this.couplings = couplings;
   }
 
@@ -164,6 +165,7 @@ public class PDevsCoordinator<T extends SimTime>
     builder.onMessage(TransitionDone.class, this::onTransitionDone);
     builder.onMessage(SimulationDone.class, this::onSimulationDone);
     builder.onMessage(ModelDone.class, this::onModelDone);
+    builder.onSignal(Terminated.class, this::onTerminated);
     builder.onSignal(ChildFailed.class, this::onChildFailed);
 
     return builder.build();
@@ -182,7 +184,7 @@ public class PDevsCoordinator<T extends SimTime>
     this.parent = initSimMessage.getParent();
     timeLast = initSimMessage.getInitSim().getTime();
     // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
-    modelsSimulators.values().forEach(
+    modelSimulators.values().forEach(
         s -> s.tell(new InitSimMessage<>(initSimMessage.getInitSim(), getContext().getSelf())));
     return this;
   }
@@ -230,7 +232,7 @@ public class PDevsCoordinator<T extends SimTime>
     nextTimeMap.put(nextTime.getSender(), nextTime.getTime());
 
     // If we have all next time messages from models, the next time if the min
-    if (nextTimeMap.size() == modelsSimulators.size()) {
+    if (nextTimeMap.size() == modelSimulators.size()) {
       timeNext = getNextTime();
       // System.out.println("In onNextTimeMessage, Next time for " + modelIdentifier + " is " +
       // timeNext);
@@ -262,7 +264,7 @@ public class PDevsCoordinator<T extends SimTime>
     }
     outputMap = new HashMap<>();
     imminentModels.forEach(m -> {
-      modelsSimulators.get(m).tell(sendOutput);
+      modelSimulators.get(m).tell(sendOutput);
       outputMap.put(m, Optional.empty());
     });
     return this;
@@ -315,7 +317,7 @@ public class PDevsCoordinator<T extends SimTime>
 
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
-        modelsSimulators.get(key).tell(
+        modelSimulators.get(key).tell(
             ExecuteTransition.builder().time(timeNext).modelInputsOption(value)
                 .build());
         if (getContext().getLog().isDebugEnabled()) {
@@ -333,7 +335,7 @@ public class PDevsCoordinator<T extends SimTime>
       }
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
-        modelsSimulators.get(modelId)
+        modelSimulators.get(modelId)
             .tell(ExecuteTransition.builder().time(timeNext).build());
       });
       // If the model outputs have not generated any transitions, output is done. Send output
@@ -387,7 +389,7 @@ public class PDevsCoordinator<T extends SimTime>
       // input
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
-        modelsSimulators.get(key).tell(ExecuteTransition.builder().time(executeTransition.getTime())
+        modelSimulators.get(key).tell(ExecuteTransition.builder().time(executeTransition.getTime())
             .modelInputsOption(value).build());
       });
     }
@@ -451,7 +453,8 @@ public class PDevsCoordinator<T extends SimTime>
    */
   Behavior<DevsMessage> onSimulationDone(SimulationDone<T> simulationDone) {
     awaitingTransition = new ArrayList<>();
-    modelsSimulators.values().forEach(modelSimulator -> modelSimulator.tell(simulationDone));
+    modelSimulators.keySet().forEach(key -> awaitingTransition.add(key));
+    modelSimulators.values().forEach(modelSimulator -> modelSimulator.tell(simulationDone));
     return this;
   }
 
@@ -472,6 +475,11 @@ public class PDevsCoordinator<T extends SimTime>
       return Behaviors.stopped();
     }
     return this;
+  }
+
+  Behavior<DevsMessage> onTerminated(Terminated terminated) {
+    getContext().getLog().warn("{} Received terminated: {}", modelIdentifier, terminated);
+    return Behaviors.same();
   }
 
   /**
