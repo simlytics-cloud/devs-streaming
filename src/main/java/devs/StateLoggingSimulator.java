@@ -103,8 +103,13 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
   }
 
   @Override
+  public ReceiveBuilder<DevsMessage> createReceiveBuilder() {
+    return super.createReceiveBuilder();
+  }
+
+  @Override
   public Receive<DevsMessage> createReceive() {
-    ReceiveBuilder<DevsMessage> builder = super.createReceiveBuilder();
+    ReceiveBuilder<DevsMessage> builder = createReceiveBuilder();
     builder.onMessage(PekkoReceptionistListingResponse.class, this::onPekkoReceptionistListingResponse);
     return builder.build();
   }
