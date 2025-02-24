@@ -16,6 +16,7 @@
 
 package devs.proxy;
 
+import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
@@ -26,7 +27,6 @@ import devs.msg.InitSimMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import devs.utils.ModelUtils;
-import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
@@ -71,7 +71,11 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
 
   }
 
-  public static class KafkaProxySimulatorProvider<T extends SimTime> implements SimulatorProvider<T> {
+  /**
+   * Provides a KafkaLocalProxy as a DEVS Simulator for the underlying proxy model.
+   */
+  public static class KafkaProxySimulatorProvider<T extends SimTime> implements 
+      SimulatorProvider<T> {
     protected final ProxyProperties properties;
 
     public KafkaProxySimulatorProvider(ProxyProperties properties) {
@@ -81,7 +85,8 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     @Override
     public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context,
         T initialTime) {
-      return context.spawn(KafkaLocalProxy.create(properties), ModelUtils.toLegalActorName(properties.componentName()));
+      return context.spawn(KafkaLocalProxy.create(properties), 
+        ModelUtils.toLegalActorName(properties.componentName()));
     }
 
     @Override

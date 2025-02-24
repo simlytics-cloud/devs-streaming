@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
- * DEVS Streaming Framework Java contributors.  All rights reserved.
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and DEVS Streaming Framework
+ * Java contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,6 +16,19 @@
 
 package example;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.ActorSystem;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.Terminated;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import devs.DevsLoggingActor;
 import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
@@ -32,19 +45,6 @@ import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
 import example.storage.StorageStateEnum;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.ActorSystem;
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.Terminated;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 
 /**
  * ExampleGenStoreApp is an Pekko-based actor system implementation that simulates a coupled model
@@ -139,7 +139,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    * Constructs an instance of {@code ExampleGenStoreApp}.
    *
    * @param context the actor context for the {@code GenStoreApp} actor, used for managing and
-   *                interacting with the actor's lifecycle and messaging behavior.
+   *        interacting with the actor's lifecycle and messaging behavior.
    */
   private ExampleGenStoreApp(ActorContext<GenStoreApp> context) {
     super(context);
@@ -167,9 +167,9 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
         context.spawn(StateLoggingSimulator.createStateLoggingSimulator(new GeneratorModel(0),
             LongSimTime.builder().t(0L).build()), "generator");
 
-    ActorRef<DevsMessage> storage = context
-        .spawn(StateLoggingSimulator.createStateLoggingSimulator(new StorageModel(new StorageState(StorageStateEnum.S0)),
-            LongSimTime.builder().t(0L).build()), "storage");
+    ActorRef<DevsMessage> storage = context.spawn(StateLoggingSimulator.createStateLoggingSimulator(
+        new StorageModel(new StorageState(StorageStateEnum.S0)),
+        LongSimTime.builder().t(0L).build()), "storage");
 
     Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
     modelSimulators.put("generator", generator);
@@ -178,9 +178,8 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     PDevsCouplings genStoreCoupling =
         new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
             Collections.singletonList(new GenStoreOutputCouplingHandler()));
-    ActorRef<DevsMessage> coordinator =
-        context.spawn(PDevsCoordinator.create("coupled", modelSimulators, genStoreCoupling),
-            "coordinator");
+    ActorRef<DevsMessage> coordinator = context.spawn(
+        PDevsCoordinator.create("coupled", modelSimulators, genStoreCoupling), "coordinator");
 
     ActorRef<DevsMessage> rootCoordinator = context
         .spawn(RootCoordinator.create(LongSimTime.builder().t(3L).build(), coordinator), "root");
@@ -199,7 +198,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    *
    * @param signal the termination signal containing details about the terminated actor.
    * @return the stopped behavior for the actor if the terminated actor is identified as "root",
-   * otherwise returns a stopped behavior by default.
+   *         otherwise returns a stopped behavior by default.
    */
   protected Behavior<GenStoreApp> onTerminated(Terminated signal) {
     if (signal.getRef().path().name().equals("root")) {
@@ -217,7 +216,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    * actor.
    *
    * @return a {@code Behavior} instance representing the initial setup of the
-   * {@code ExampleGenStoreApp} actor.
+   *         {@code ExampleGenStoreApp} actor.
    */
   public static Behavior<GenStoreApp> create() {
     return Behaviors.setup(ExampleGenStoreApp::new);

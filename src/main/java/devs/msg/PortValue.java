@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
- * DEVS Streaming Framework Java contributors.  All rights reserved.
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and DEVS Streaming Framework
+ * Java contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -23,18 +23,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 /**
  * Represents a value associated with a specific port in the DEVS Streaming Framework.
  *
- * The {@code PortValue} class encapsulates the value, port identifier, and port type.
- * It provides constructors for initializing these properties and methods for accessing them.
- * The port type is automatically deduced if not explicitly provided.
+ * The {@code PortValue} class encapsulates the value, port identifier, and port type. It provides
+ * constructors for initializing these properties and methods for accessing them. The port type is
+ * automatically deduced if not explicitly provided.
  *
  * @param <T> The type of the value associated with the port.
  */
 public class PortValue<T> {
-  @JsonTypeInfo(
-    use = JsonTypeInfo.Id.CLASS,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "@class"
-  )
+  @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+      property = "@class")
   private final T value;
 
   private final String portIdentifier;
@@ -42,32 +39,27 @@ public class PortValue<T> {
   private final String portType;
 
   /**
-   * Constructs a new {@code PortValue} object representing a value associated with a specific
-   * port.
+   * Constructs a new {@code PortValue} object representing a value associated with a specific port.
    *
-   * @param value          the value to be associated with the port
+   * @param value the value to be associated with the port
    * @param portIdentifier the identifier of the port to which the value is associated
-   * @param portType       the type of the port
+   * @param portType the type of the port
    */
   @JsonCreator
-  public PortValue(@JsonProperty("value") 
-                    @JsonTypeInfo(
-                      use = JsonTypeInfo.Id.CLASS,
-                      include = JsonTypeInfo.As.PROPERTY,
-                      property = "@class"
-                    )T value,
-                   @JsonProperty("portIdentifier") String portIdentifier,
-                   @JsonProperty("portType") String portType) {
+  public PortValue(
+      @JsonProperty("value") @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS,
+          include = JsonTypeInfo.As.PROPERTY, property = "@class") T value,
+      @JsonProperty("portIdentifier") String portIdentifier,
+      @JsonProperty("portType") String portType) {
     this.value = value;
     this.portIdentifier = portIdentifier;
     this.portType = portType;
   }
 
   /**
-   * Constructs a new {@code PortValue} object representing a value associated with a specific
-   * port.
+   * Constructs a new {@code PortValue} object representing a value associated with a specific port.
    *
-   * @param value          the value to be associated with the port
+   * @param value the value to be associated with the port
    * @param portIdentifier the identifier of the port to which the value is associated
    */
   public PortValue(T value, String portIdentifier) {
@@ -81,11 +73,8 @@ public class PortValue<T> {
    *
    * @return the value of type {@code T} associated with the port.
    */
-  @JsonTypeInfo(
-    use = JsonTypeInfo.Id.CLASS,
-    include = JsonTypeInfo.As.PROPERTY,
-    property = "@class"
-  )
+  @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+      property = "@class")
   public T getValue() {
     return value;
   }

@@ -16,6 +16,7 @@
 
 package devs.proxy;
 
+import java.util.Properties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -28,7 +29,6 @@ import devs.msg.time.SimTime;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaUtils;
-import java.util.Properties;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -73,7 +73,7 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
    */
   public static Behavior<DevsMessage> create(String componentName, String producerTopic,
                                              Config pekkoProducerConfig) {
-    return Behaviors.setup(context -> new KafkaDevsStreamProxy(context, componentName,
+    return Behaviors.setup(context -> new KafkaDevsStreamProxy<>(context, componentName,
         producerTopic, pekkoProducerConfig));
   }
 

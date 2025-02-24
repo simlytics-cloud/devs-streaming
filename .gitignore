@@ -9,4 +9,5 @@ project/project/
 project/target/
 .settings/
 .metals/
+.vscode/
 .settings/org.eclipse.jdt.core.prefs

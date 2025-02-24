@@ -16,6 +16,13 @@
 
 package devs;
 
+import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import devs.msg.Bag;
 import devs.msg.DevsMessage;
 import devs.msg.ExecuteTransition;
@@ -27,14 +34,6 @@ import devs.msg.SendOutput;
 import devs.msg.SimulationDone;
 import devs.msg.TransitionDone;
 import devs.msg.time.SimTime;
-import devs.utils.ModelUtils;
-import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
-import org.apache.pekko.actor.typed.javadsl.ActorContext;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 
 /**
  * {@code PDevsSimulator} is a generic simulation actor that implements the Parallel Discrete Event
@@ -152,7 +151,8 @@ public class PDevsSimulator<T extends SimTime, S,
    *
    * @param sendOutput the SendOutput message containing the current simulation time and context
    *                   for generating and sending the model's output
-   * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's current state
+   * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's 
+   *                    current state
    * @throws RuntimeException if the simulation time in the SendOutput message does not match the
    *                          expected next simulation time
    */

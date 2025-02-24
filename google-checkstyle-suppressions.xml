@@ -5,6 +5,7 @@
   "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 
 <suppressions>
+  <suppress checks="CustomImportOrder" />
   <suppress checks="AbbreviationAsWordInName" />
   <suppress checks="JavadocParagraph" />
   <suppress checks="JavadocTagContinuationIndentation" />

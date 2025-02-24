@@ -16,13 +16,6 @@
 
 package devs;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import devs.msg.log.DevsLogMessage;
-import devs.msg.log.RunIdMessage;
-import devs.msg.log.StopLogger;
-import devs.utils.DevsObjectMapper;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import org.apache.pekko.actor.typed.Behavior;
@@ -32,6 +25,13 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import devs.msg.log.DevsLogMessage;
+import devs.msg.log.RunIdMessage;
+import devs.msg.log.StopLogger;
+import devs.utils.DevsObjectMapper;
 
 /**
  * A utility actor to serialize log messages and write them to an ouput stream.
@@ -86,9 +86,8 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
    */
   public static Behavior<DevsLogMessage> create(OutputStream outputStream, String runId) {
     return Behaviors.setup(context -> {
-      context.getSystem().receptionist().tell(
-        Receptionist.register(StateLoggingSimulator.stateLoggerKey, context.getSelf())
-      );
+      context.getSystem().receptionist()
+          .tell(Receptionist.register(StateLoggingSimulator.stateLoggerKey, context.getSelf()));
       return new DevsLoggingActor(context, outputStream, runId);
     });
   }

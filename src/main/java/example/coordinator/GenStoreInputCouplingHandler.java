@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
- * DEVS Streaming Framework Java contributors.  All rights reserved.
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and DEVS Streaming Framework
+ * Java contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -54,10 +54,9 @@ public class GenStoreInputCouplingHandler extends InputCouplingHandler {
    * Handles input port values for the GenStore coordinator. This implementation does not process
    * any incoming port values, as the GenStore coordinator does not require input handling.
    *
-   * @param portValue   the {@link PortValue} to handle, representing the data sent to an input
-   *                    port.
+   * @param portValue the {@link PortValue} to handle, representing the data sent to an input port.
    * @param receiverMap a map where the keys are model identifiers and the values are lists of
-   *                    {@link PortValue} instances to be routed to the corresponding models.
+   *        {@link PortValue} instances to be routed to the corresponding models.
    */
   @Override
   public void handlePortValue(PortValue<?> portValue, Map<String, List<PortValue<?>>> receiverMap) {

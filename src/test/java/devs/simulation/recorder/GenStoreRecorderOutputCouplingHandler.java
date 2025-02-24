@@ -16,14 +16,13 @@
 
 package devs.simulation.recorder;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import devs.OutputCouplingHandler;
 import devs.msg.PortValue;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
-import example.storage.StorageStateEnum;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
  * A concrete implementation of the {@link OutputCouplingHandler} that handles port values from
@@ -63,7 +62,7 @@ public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler
       addInputPortValue(recorderInputValue, "recorder", receiverMap);
     } else if (sender.equals(StorageModel.MODEL_ID)) {
       PortValue<String> recorderInputValue = RecorderModel.storageOutput
-      .createPortValue(StorageModel.storageOutputPort.getValue(portValue));
+          .createPortValue(StorageModel.storageOutputPort.getValue(portValue));
       addInputPortValue(recorderInputValue, "recorder", receiverMap);
     }
 

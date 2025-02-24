@@ -1,6 +1,6 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
- * DEVS Streaming Framework Java contributors.  All rights reserved.
+ * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and DEVS Streaming Framework
+ * Java contributors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,6 +16,8 @@
 
 package devs;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Set;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.msg.Bag;
 import devs.msg.DevsMessage;
@@ -23,16 +25,12 @@ import devs.msg.ExecuteTransition;
 import devs.msg.InitSimMessage;
 import devs.msg.ModelOutputMessage;
 import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
 import devs.msg.log.DevsLogMessage;
 import devs.msg.log.DevsModelLogMessage;
 import devs.msg.log.PekkoReceptionistListingResponse;
 import devs.msg.log.StateMessage;
 import devs.msg.time.SimTime;
 import devs.utils.DevsObjectMapper;
-import devs.utils.ModelUtils;
-import java.nio.charset.StandardCharsets;
-import java.util.Set;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -56,7 +54,7 @@ import org.apache.pekko.serialization.SerializationExtension;
  */
 public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T, S>>
     extends PDevsSimulator<T, S, M> {
-      
+
   public static final ServiceKey<DevsLogMessage> stateLoggerKey =
       ServiceKey.create(DevsLogMessage.class, "devsLoggingService");
 
@@ -68,38 +66,41 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
   /**
    * Creates an Pekko Behavior for a state-logging DEVS simulator.
    *
-   * @param <T1>         the type extending {@code SimTime} that represents the time system used in
-   *                     the simulation
-   * @param <S1>         the state type used within the model
-   * @param <M1>         the type of the DEVS model that extends {@code PDEVSModel<T1, S1>}
-   * @param devsModel    the Parallel DEVS (PDEVS) model to be simulated
-   * @param initialTime  the initial simulation time
+   * @param <T1> the type extending {@code SimTime} that represents the time system used in the
+   *        simulation
+   * @param <S1> the state type used within the model
+   * @param <M1> the type of the DEVS model that extends {@code PDEVSModel<T1, S1>}
+   * @param devsModel the Parallel DEVS (PDEVS) model to be simulated
+   * @param initialTime the initial simulation time
    * @return the behavior representing the state-logging simulator associated with the provided
-   * model
+   *         model
    */
-  public static final <T1 extends SimTime, S1, M1 extends PDEVSModel<T1, S1>> Behavior<DevsMessage>
-      createStateLoggingSimulator(M1 devsModel, T1 initialTime) {
-    return Behaviors.setup(
-        context -> new StateLoggingSimulator<>(devsModel, initialTime, context));
+  public static final <T1 extends SimTime, S1, M1 extends PDEVSModel<T1, S1>> 
+      Behavior<DevsMessage> createStateLoggingSimulator(
+      M1 devsModel, T1 initialTime) {
+    return Behaviors.setup(context -> new StateLoggingSimulator<>(devsModel, initialTime, 
+      context));
   }
 
   /**
    * Constructs a StateLoggingSimulator instance for simulating a PDEVS model with state logging
    * functionality.
    *
-   * @param devsModel    the DEVS model to be simulated, an instance of {@code M} extending
-   *                     {@link PDEVSModel}
-   * @param initialTime  the initial simulation time, of type {@code T} extending {@link SimTime}
-   * @param context      the actor context for the simulator, of type {@link ActorContext}
-   *                     interacting with {@link DevsMessage}
+   * @param devsModel the DEVS model to be simulated, an instance of {@code M} extending
+   *        {@link PDEVSModel}
+   * @param initialTime the initial simulation time, of type {@code T} extending {@link SimTime}
+   * @param context the actor context for the simulator, of type {@link ActorContext} interacting
+   *        with {@link DevsMessage}
    */
   public StateLoggingSimulator(M devsModel, T initialTime, ActorContext<DevsMessage> context) {
     super(devsModel, initialTime, context);
     this.serialization = SerializationExtension.get(context.getSystem());
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
-    this.listingResponseAdapter = context.messageAdapter(Receptionist.Listing.class, PekkoReceptionistListingResponse::new);
+    this.listingResponseAdapter =
+        context.messageAdapter(Receptionist.Listing.class, PekkoReceptionistListingResponse::new);
 
-    context.getSystem().receptionist().tell(Receptionist.subscribe(stateLoggerKey, listingResponseAdapter));
+    context.getSystem().receptionist()
+        .tell(Receptionist.subscribe(stateLoggerKey, listingResponseAdapter));
   }
 
   @Override
@@ -110,7 +111,8 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
   @Override
   public Receive<DevsMessage> createReceive() {
     ReceiveBuilder<DevsMessage> builder = createReceiveBuilder();
-    builder.onMessage(PekkoReceptionistListingResponse.class, this::onPekkoReceptionistListingResponse);
+    builder.onMessage(PekkoReceptionistListingResponse.class,
+        this::onPekkoReceptionistListingResponse);
     return builder.build();
   }
 
@@ -119,7 +121,7 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
    *
    * @param devsMessage the {@link DevsMessage} instance to be serialized
    * @return the serialized string representation of the provided {@link DevsMessage} in UTF-8
-   * encoding
+   *         encoding
    */
   String serialize(DevsMessage devsMessage) {
     return new String(serialization.serialize(devsMessage).get(), StandardCharsets.UTF_8);
@@ -130,7 +132,7 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
    * logging actor.
    *
    * @param simTime the current simulation time, of type {@code T} representing the time system used
-   *                in the simulation
+   *        in the simulation
    */
   protected void logState(T simTime) {
     StateMessage<?, ?> stateMessage = StateMessage.builder().modelId(devsModel.getModelIdentifier())
@@ -142,18 +144,22 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
     if (loggingActor != null) {
       loggingActor.tell(devsLogMessage);
     } else {
-      getContext().getLog().warn("Cannot send log message because loggingActor Pekko Receptionist has not sent listing");
+      getContext().getLog().warn(
+          "Cannot send log message because loggingActor Pekko Receptionist has not sent listing");
     }
   }
 
-  protected Behavior<DevsMessage> onPekkoReceptionistListingResponse(PekkoReceptionistListingResponse listingResponse) {
-    Set<ActorRef<DevsLogMessage>> loggingActors = listingResponse.getListing().getAllServiceInstances(stateLoggerKey);
+  protected Behavior<DevsMessage> onPekkoReceptionistListingResponse(
+      PekkoReceptionistListingResponse listingResponse) {
+    Set<ActorRef<DevsLogMessage>> loggingActors =
+        listingResponse.getListing().getAllServiceInstances(stateLoggerKey);
     if (!loggingActors.isEmpty()) {
       loggingActors.forEach(devsLoggingActor -> this.loggingActor = devsLoggingActor);
     } else {
-      getContext().getLog().warn("Received emply PekkoReceptionistListingResponse for logging actors");
+      getContext().getLog()
+          .warn("Received emply PekkoReceptionistListingResponse for logging actors");
     }
-    
+
     return Behaviors.same();
   }
 
@@ -183,9 +189,8 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
           + sendOutput.getTime() + " did not equal " + timeNext);
     }
     Bag modelOutput = devsModel.outputFunction();
-    ModelOutputMessage<?> modelOutputMessage =
-        ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
-            .sender(devsModel.getModelIdentifier()).build();
+    ModelOutputMessage<?> modelOutputMessage = ModelOutputMessage.builder().modelOutput(modelOutput)
+        .nextTime(timeNext).sender(devsModel.getModelIdentifier()).build();
     parent.tell(modelOutputMessage);
     DevsModelLogMessage<?> devsModelLogMessage =
         DevsModelLogMessage.builder().time(sendOutput.getTime())

@@ -154,6 +154,7 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
   @Override
   public Bag outputFunction() {
     return Bag.builder()
-        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue().name())).build();
+        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue().name()))
+        .build();
   }
 }
