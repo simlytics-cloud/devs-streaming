@@ -156,7 +156,8 @@ public class ImmutablePort<T> extends Port<T> {
         || clazz.equals(Float.class)
         || clazz.equals(Void.class)
         || clazz.isEnum()
-        || clazz.isPrimitive();
+        || clazz.isPrimitive()
+        || clazz.isRecord();
   }
 
 
