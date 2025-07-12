@@ -30,7 +30,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <scala.binary.version>3</scala.binary.version>
         <jackson.version>2.17.1</jackson.version>
-        <pekko.version>1.1.0-M1</pekko.version>
+        <pekko.version>1.1.4</pekko.version>
         <kafka.version>3.7.0</kafka.version>
     </properties>
 
@@ -81,7 +81,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>32.0.0-jre</version>
+            <version>32.0.1-jre</version>
         </dependency>
 
         <!-- pekko -->
@@ -143,7 +143,7 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.5.6</version>
+            <version>1.5.13</version>
         </dependency>
 
         <dependency>
