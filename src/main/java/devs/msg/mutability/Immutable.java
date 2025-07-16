@@ -27,7 +27,7 @@ import java.lang.reflect.Modifier;
  * mutability where necessary.
  * <p>
  * The concept hinges upon a naming convention where the mutable and immutable classes share a
- * similar structure, differing primarily by the use of the “Immutable” prefix in the immutable
+ * similar structure, differing primarily by the use of the Immutable prefix in the immutable
  * class's name.
  * <p>
  * Type Parameter:
