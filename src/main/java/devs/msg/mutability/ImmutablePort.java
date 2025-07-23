@@ -31,65 +31,37 @@ import org.immutables.value.Value;
  * The immutable nature of this class guarantees that values associated with the port cannot
  * be directly modified after creation, providing a safeguard against unintended state changes.
  *
- * @param <T> the type of data associated with this port
+ * @param <I> the type of data associated with this port
  */
-public class ImmutablePort<T> extends Port<T> {
+public class ImmutablePort<I> extends Port<I> {
 
   /**
    * Constructs a Port instance with a specified identifier and associated data type.
    *
    * @param portIdentifier the unique identifier of the port
    */
-  public ImmutablePort(String portIdentifier) {
-    super(portIdentifier);
-  }
-
-
-  /**
-   * Creates a new instance of {@code PortValue<T>} for the specified value.
-   * If the value is mutable, it is first converted to its immutable counterpart
-   * using the {@code toImmutable()} method. If the value is not deemed immutable,
-   * an {@code IllegalArgumentException} is thrown.
-   *
-   * @param value the value to be associated with the {@code PortValue}.
-   *              If the value is a mutable object, it will be converted
-   *              to an immutable object before creating a {@code PortValue}.
-   * @return a {@code PortValue<T>} instance containing the specified value and
-   *         the port identifier.
-   * @throws IllegalArgumentException if the value is not immutable.
-   */
-  @Override
-  public PortValue<T> createPortValue(T value) {
-    if (value instanceof Mutable mutable) {
-      return (PortValue<T>) new PortValue<>(mutable.toImmutable(), getPortIdentifier());
-    } else {
-      if (!isImmutable(value.getClass())) {
-              throw new IllegalArgumentException(
-                  "Value must be immutable: " + value.getClass().getName());
-      }
-      return super.createPortValue(value);
+  public ImmutablePort(String portIdentifier, Class<I> clazz) {
+    super(portIdentifier, clazz);
+    if (!clazz.isInterface() && !isImmutable(clazz)) {
+      throw new IllegalArgumentException("The class " + clazz.getCanonicalName()
+       + " must be immutable");
     }
   }
 
-  /**
-   * Retrieves the value associated with the given {@code PortValue}.
-   * If the value contained in the {@code PortValue} is an instance of {@code Immutable},
-   * it is converted to its mutable counterpart using the {@code toMutable} method.
-   * Otherwise, delegates to the superclass implementation to retrieve the value.
-   *
-   * @param portValue the {@code PortValue} instance from which the value is to be retrieved.
-   *                  If the contained value is immutable, it will be converted to its mutable form.
-   * @return the value associated with the given {@code PortValue}. If the value is immutable,
-   *         the corresponding mutable form of the value is returned.
-   */
+  
+
+
   @Override
-  public T getValue(PortValue<?> portValue) {
-    if (portValue.getValue() instanceof Immutable immutable) {
-          return (T) immutable.toMutable();
-        } else {
-      return super.getValue(portValue);
+  public PortValue<I> createPortValue(I value) {
+    if (!isImmutable(value.getClass())) {
+      throw new IllegalArgumentException("The class " + value.getClass().getCanonicalName()
+       + " must be immutable");
     }
+    return super.createPortValue(value);
   }
+
+
+
 
   /**
    * Determines whether a given class is immutable. A class is considered immutable if:
@@ -102,6 +74,11 @@ public class ImmutablePort<T> extends Port<T> {
    * @return true if the class is immutable; false otherwise
    */
   public static boolean isImmutable(Class<?> clazz) {
+    // Check if the class implements the Immutable interface
+    if (Immutable.class.isAssignableFrom(clazz)) {
+      return true;
+    }
+
     // Check if the class is a known immutable type (including Enum, primitive wrappers, etc.)
     if (isKnownImmutable(clazz) || isImmutablesGeneratedClass(clazz)) {
       return true;

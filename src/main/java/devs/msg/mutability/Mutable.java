@@ -88,8 +88,13 @@ public interface Mutable extends MutableImmutable {
         Object fieldValue = MutabilityUtil.toImmutable(field.get(this));
         String setterMethodName = field.getName();
 
-        builderClass.getMethod(setterMethodName, field.getType())
-            .invoke(builder, fieldValue);
+        try {
+          builderClass.getMethod(setterMethodName, fieldValue.getClass())
+              .invoke(builder, fieldValue);
+        } catch (NoSuchMethodException e) {
+            builderClass.getMethod(setterMethodName, field.getType())
+              .invoke(builder, fieldValue);
+        }
       }
 
       return (I) builderClass.getMethod("build").invoke(builder);

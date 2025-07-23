@@ -27,7 +27,7 @@ import devs.msg.PortValue;
 public class Port<T> {
 
   private final String portIdentifier;
-  private final Class<T> clazz;
+  protected final Class<T> clazz;
 
   /**
    * Constructs a Port instance with a specified identifier and associated data type.
