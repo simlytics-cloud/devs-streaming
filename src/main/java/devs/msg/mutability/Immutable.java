@@ -67,6 +67,7 @@ import java.lang.reflect.Modifier;
  *   copying and nested transformations.
  */
 public interface Immutable<M extends Mutable> extends MutableImmutable {
+
   /**
    * Converts the current immutable instance to its corresponding mutable version.
    * The method identifies the mutable class associated with the immutable class,

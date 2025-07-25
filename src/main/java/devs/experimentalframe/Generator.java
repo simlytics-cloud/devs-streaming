@@ -53,13 +53,6 @@ public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T,
 
   protected abstract Map<String, Port<?>> buildPorts();
 
-
-  @Override
-  public void internalStateTransitionFunction(T currentTime) {
-    clearPendingOutput();
-
-  }
-
   @Override
   public void externalStateTransitionFunction(T currentTime, Bag bag) {
     // No external events

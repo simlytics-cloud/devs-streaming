@@ -100,7 +100,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    */
   @Override
   public void internalStateTransitionFunction(LongSimTime currentTime) {
-    clearPendingOutput();
+    clearScheduledOutput();
 
   }
 

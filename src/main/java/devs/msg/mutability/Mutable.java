@@ -16,7 +16,11 @@
 package devs.msg.mutability;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Optional;
+
+import org.checkerframework.checker.units.qual.s;
 
 
 /**
@@ -87,13 +91,15 @@ public interface Mutable extends MutableImmutable {
         field.setAccessible(true);
         Object fieldValue = MutabilityUtil.toImmutable(field.get(this));
         String setterMethodName = field.getName();
+        Optional<Method> methoOption = Arrays.asList(builderClass.getDeclaredMethods()).stream()
+          .filter(method -> method.getName().equals(setterMethodName))
+          .findFirst();
 
-        try {
-          builderClass.getMethod(setterMethodName, fieldValue.getClass())
-              .invoke(builder, fieldValue);
-        } catch (NoSuchMethodException e) {
-            builderClass.getMethod(setterMethodName, field.getType())
-              .invoke(builder, fieldValue);
+        if (methoOption.isPresent()) {
+          methoOption.get().invoke(builder, fieldValue);
+        } else {
+          throw new IllegalArgumentException("The class " + builderClass.getCanonicalName() 
+            + " has no method named " + setterMethodName);
         }
       }
 

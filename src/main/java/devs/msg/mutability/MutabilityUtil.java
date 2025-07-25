@@ -31,6 +31,17 @@ import java.util.stream.Collectors;
  */
 public class MutabilityUtil {
 
+  public static <I, M extends I> M objectToMutable(I object, Class<M> clazz) {
+    if (object instanceof Immutable immutable) {
+      return clazz.cast(immutable.toMutable());
+    } else if (object instanceof Mutable) {
+      return clazz.cast(object);
+    } else {
+      throw new IllegalArgumentException("Object of type " + object.getClass().getCanonicalName()
+        + " cannot be converted to Mubable");
+    }
+  }
+
 
   /**
    * Retrieves all declared fields of a given class, including fields from its superclasses. The

@@ -49,6 +49,17 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
     this.schedule = schedule;
   }
 
+  /**
+   * A DEVS simulator calls the output function immediately prior to an internal state transition.
+   * So, for a scheduled DEVS model, the internal state transition must remove the scheduled
+   * outputs that were added to the Bag in the output function.  Any class that extends a 
+   * ScheduledDevsModel and overrides this internal state transition function must ensure that
+   * it calls clearScheduledOutput() at the beginning of the internal state transition.
+   */
+  @Override
+  public void internalStateTransitionFunction(T currentTime) {
+    clearScheduledOutput();
+  }
 
   /**
    * Determines the next scheduled internal state transition time for the model. If the schedule is
@@ -112,7 +123,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * @return a list of {@code PortValue<?>} representing the pending outputs from the schedule. If
    * the schedule is empty, an empty list is returned.
    */
-  protected List<PortValue<?>> getPendingOutput() {
+  protected List<PortValue<?>> getScheduledOutput() {
     StringBuilder stringBuilder = new StringBuilder();
     List<PortValue<?>> pendingOutputs = new ArrayList<>();
     if (!schedule.isEmpty()) {
@@ -143,7 +154,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * The method ensures that only non-output related events remain in the schedule, maintaining
    * consistency in the DEVS model's state transitions.
    */
-  protected void clearPendingOutput() {
+  protected void clearScheduledOutput() {
     StringBuilder stringBuilder = new StringBuilder();
     stringBuilder.append("Prior to clearing output schedule is " + schedule);
     if (!schedule.isEmpty()) {
@@ -180,8 +191,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
   @Override
   public Bag outputFunction() {
     Bag.Builder bagBuilder = Bag.builder();
-    bagBuilder.addAllPortValueList(getPendingOutput());
-    // clearPendingOutput();
+    bagBuilder.addAllPortValueList(getScheduledOutput());
     return bagBuilder.build();
   }
 
