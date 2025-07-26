@@ -22,7 +22,6 @@ import devs.msg.time.SimTime;
 import devs.utils.Schedule;
 import java.util.ArrayList;
 import java.util.List;
-import scala.collection.mutable.StringBuilder;
 
 /**
  * An abstract base class for creating models in the PDEVS (Parallel Discrete Event System)
@@ -32,33 +31,34 @@ import scala.collection.mutable.StringBuilder;
  * @param <T> The type representing simulation time, extending the SimTime class.
  * @param <S> The type representing the state of the model.
  */
-public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSModel<T, S> {
+public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface<T, S> {
 
-  protected final Schedule<T> schedule;
 
-  /**
-   * Constructs a new instance of the ScheduledDevsModel class.
-   *
-   * @param modelState      the initial state of the DEVS model
-   * @param modelIdentifier a unique identifier for this model instance
-   * @param schedule        the schedule associated with the DEVS model, used for event scheduling
-   *                        and management
-   */
-  public ScheduledDevsModel(S modelState, String modelIdentifier, Schedule<T> schedule) {
-    super(modelState, modelIdentifier);
-    this.schedule = schedule;
-  }
+
+  public abstract Schedule<T> getSchedule();
 
   /**
    * A DEVS simulator calls the output function immediately prior to an internal state transition.
    * So, for a scheduled DEVS model, the internal state transition must remove the scheduled
-   * outputs that were added to the Bag in the output function.  Any class that extends a 
-   * ScheduledDevsModel and overrides this internal state transition function must ensure that
-   * it calls clearScheduledOutput() at the beginning of the internal state transition.
+   * outputs that were added to the Bag in the output function.  This method clears the scheduled
+   * output then calls the abstract scheduledInternalStateTransition function to implement 
+   * additional state transition.
    */
   @Override
-  public void internalStateTransitionFunction(T currentTime) {
+  default public void internalStateTransitionFunction(T currentTime) {
     clearScheduledOutput();
+    scheduledInternalStateTransitionFunction(currentTime);
+  }
+
+
+  public abstract void scheduledInternalStateTransitionFunction(T currentTime);
+
+  public abstract void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag);
+
+  @Override
+  default void confluentStateTransitionFunction(T currentTime, Bag bag) {
+    clearScheduledOutput();
+    scheduledConfluentStateTransitionFunction(currentTime, bag);
   }
 
   /**
@@ -71,8 +71,8 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * the schedule is empty
    */
   @Override
-  public T timeAdvanceFunction(T currentTime) {
-    StringBuilder stringBuilder = new StringBuilder();
+  default public T timeAdvanceFunction(T currentTime) {
+    Schedule<T> schedule = getSchedule();
     T nextTime = null;
     if (schedule.isEmpty()) {
       nextTime = (T) currentTime.getMaxValue();
@@ -80,9 +80,6 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
       nextTime = schedule.firstKey();
     }
     T timeAdvance = (T) nextTime.minus(currentTime);
-    stringBuilder.append("Schedule at " + currentTime + " is " + schedule);
-    stringBuilder.append("Time advance function at " + currentTime + " is " + timeAdvance);
-    logger.debug(stringBuilder.toString());
     return timeAdvance;
   }
 
@@ -96,20 +93,15 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * @return {@code true} if there is pending output based on the current schedule, {@code false}
    * otherwise
    */
-  protected boolean hasPendingOutput() {
-    StringBuilder stringBuilder = new StringBuilder();
-    boolean hasOutput = false;
+  default public boolean hasScheduleOutput() {
+    Schedule<T> schedule = getSchedule();
     if (!schedule.isEmpty()) {
       for (Object event : schedule.firstEntry().getValue()) {
         if (event instanceof PortValue<?>) {
-          hasOutput = true;
           break;
         }
       }
     }
-    stringBuilder.append("In has pending output schedule is " + schedule);
-    stringBuilder.append("Has pending output is " + hasOutput);
-    logger.debug(stringBuilder.toString());
     return false;
   }
 
@@ -123,8 +115,8 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * @return a list of {@code PortValue<?>} representing the pending outputs from the schedule. If
    * the schedule is empty, an empty list is returned.
    */
-  protected List<PortValue<?>> getScheduledOutput() {
-    StringBuilder stringBuilder = new StringBuilder();
+  default public List<PortValue<?>> getScheduledOutput() {
+    Schedule<T> schedule = getSchedule();
     List<PortValue<?>> pendingOutputs = new ArrayList<>();
     if (!schedule.isEmpty()) {
       for (Object event : schedule.firstEntry().getValue()) {
@@ -133,12 +125,6 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
         }
       }
     }
-    stringBuilder.append("In get pending output schedule is " + schedule);
-    stringBuilder.append("Penging output is:\n");
-    for (PortValue<?> pv : pendingOutputs) {
-      stringBuilder.append("  " + pv);
-    }
-    logger.debug(stringBuilder.toString());
     return pendingOutputs;
   }
 
@@ -154,9 +140,8 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * The method ensures that only non-output related events remain in the schedule, maintaining
    * consistency in the DEVS model's state transitions.
    */
-  protected void clearScheduledOutput() {
-    StringBuilder stringBuilder = new StringBuilder();
-    stringBuilder.append("Prior to clearing output schedule is " + schedule);
+  default public void clearScheduledOutput() {
+    Schedule<T> schedule = getSchedule();
     if (!schedule.isEmpty()) {
       ArrayList<Object> currentEvents = schedule.firstEntry().getValue();
       ArrayList<Object> portValues = new ArrayList<>();
@@ -176,8 +161,6 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
         schedule.put(schedule.firstKey(), currentEvents);
       }
     }
-    stringBuilder.append("After clearing output schedule is " + schedule);
-    logger.debug(stringBuilder.toString());
   }
 
   /**
@@ -189,7 +172,7 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * there are no pending outputs, an empty Bag is returned.
    */
   @Override
-  public Bag outputFunction() {
+  default public Bag outputFunction() {
     Bag.Builder bagBuilder = Bag.builder();
     bagBuilder.addAllPortValueList(getScheduledOutput());
     return bagBuilder.build();

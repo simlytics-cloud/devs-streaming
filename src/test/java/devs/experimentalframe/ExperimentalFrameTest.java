@@ -17,7 +17,6 @@
 package devs.experimentalframe;
 
 import devs.CoupledModelFactory;
-import devs.PDEVSModel;
 import devs.PDevsCouplings;
 import devs.RootCoordinator;
 import devs.SimulatorProvider;

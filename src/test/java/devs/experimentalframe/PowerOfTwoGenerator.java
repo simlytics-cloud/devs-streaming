@@ -110,4 +110,12 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
     return ports;
   }
 
+  @Override
+  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
+    // Nothing more to do
+    
+  }
+
+  
+
 }

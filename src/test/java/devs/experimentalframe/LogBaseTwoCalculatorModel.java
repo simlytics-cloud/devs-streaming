@@ -16,6 +16,7 @@
 
 package devs.experimentalframe;
 
+import devs.PDEVSModel;
 import devs.Port;
 import devs.ScheduledDevsModel;
 import devs.msg.Bag;
@@ -36,7 +37,7 @@ import devs.utils.Schedule;
  * values on the `numberOut` port. - Computed string-based output of logarithmic text on the
  * `wordOut` port.
  */
-public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, Void> {
+public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> implements ScheduledDevsModel<LongSimTime, Void> {
 
   /**
    * Represents the unique identifier for the model class `LogBaseTwoCalculatorModel`.
@@ -77,6 +78,8 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    */
   public static final Port<String> wordOut = new Port<>("wordOut", String.class);
 
+  public final Schedule<LongSimTime> schedule;
+
   /**
    * Constructs a new instance of the LogBaseTwoCalculatorModel. This model is designed to operate
    * within a DEVS simulation framework and calculates the base-2 logarithm of given inputs. It
@@ -84,25 +87,15 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    * identifier, and a new schedule for handling events.
    */
   public LogBaseTwoCalculatorModel() {
-    super(null, MODEL_ID, new Schedule<LongSimTime>());
+    super(null, MODEL_ID);
+    this.schedule = new Schedule<>();
   }
 
-  /**
-   * Executes the internal state transition function of the DEVS model.
-   * <p>
-   * The method is invoked during internal events within the simulation framework. It handles
-   * updating the internal state of the model and removing any pending output events from the
-   * schedule, ensuring consistency in the DEVS model's state transitions.
-   *
-   * @param currentTime The current simulation time represented as a {@code LongSimTime} instance.
-   *                    This parameter provides the time context in which the state transition
-   *                    occurs.
-   */
   @Override
-  public void internalStateTransitionFunction(LongSimTime currentTime) {
-    clearScheduledOutput();
-
+  public Schedule<LongSimTime> getSchedule() {
+    return schedule;
   }
+
 
   /**
    * Executes the external state transition function of the DEVS model.
@@ -155,6 +148,10 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
 
   }
 
+  @Override
+  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
+    // Nothing more to do.  The schedule has been cleared
+  }
   /**
    * Executes the confluent state transition function of the DEVS model.
    * <p>
@@ -169,9 +166,9 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    *                    simulation time.
    */
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, Bag bag) {
+  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime, Bag bag) {
     externalStateTransitionFunction(currentTime, bag);
-    internalStateTransitionFunction(currentTime);
+    scheduledInternalStateTransitionFunction(currentTime);
 
   }
 

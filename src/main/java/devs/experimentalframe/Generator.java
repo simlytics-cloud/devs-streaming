@@ -16,6 +16,7 @@
 
 package devs.experimentalframe;
 
+import devs.PDEVSModel;
 import devs.Port;
 import devs.ScheduledDevsModel;
 import devs.msg.Bag;
@@ -32,11 +33,12 @@ import java.util.Map;
  *
  * @param <T> The type representing simulation time, extending the SimTime class.
  */
-public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T, Void> {
+public abstract class Generator<T extends SimTime> extends PDEVSModel<T, Void> implements ScheduledDevsModel<T, Void> {
 
 
   public static final String MODEL_ID = "Generator";
   protected final Map<String, Port<?>> ports;
+  protected final Schedule<T> schedule;
 
   /**
    * Constructs a new instance of the Generator class.
@@ -46,10 +48,15 @@ public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T,
    *                 the timing and firing of events
    */
   protected Generator(String modelIdentifier, Schedule<T> schedule) {
-    super(null, modelIdentifier, schedule);
+    super(null, modelIdentifier);
+    this.schedule = schedule;
     this.ports = buildPorts();
   }
 
+  @Override
+  public Schedule<T> getSchedule() {
+    return schedule;
+  }
 
   protected abstract Map<String, Port<?>> buildPorts();
 
@@ -63,11 +70,12 @@ public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T,
   }
 
   @Override
-  public void confluentStateTransitionFunction(T currentTime, Bag bag) {
-    externalStateTransitionFunction(currentTime, bag); // Will throw an error. No external
-    // events expected
-    internalStateTransitionFunction(currentTime);
+  public void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag) {
+    // Will trhow an error.  No external events allowed to a generator
+    externalStateTransitionFunction(currentTime, bag);
   }
+
+  
 
 
   public Map<String, Port<?>> getPorts() {
