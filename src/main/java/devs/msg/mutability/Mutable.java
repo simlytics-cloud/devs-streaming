@@ -20,9 +20,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Optional;
 
-import org.checkerframework.checker.units.qual.s;
-
-
 /**
  * Represents a marker interface for mutable objects that can be converted into an immutable
  * representation. Classes implementing this interface are expected to adhere to a naming
@@ -54,6 +51,11 @@ import org.checkerframework.checker.units.qual.s;
  * to enable seamless conversion to their immutable counterparts.
  */
 public interface Mutable extends MutableImmutable {
+
+  default <M extends Mutable> M deepCopy() {
+    Immutable<M> immutable = toImmutable();
+    return immutable.toMutable();
+  }
 
 
   /**

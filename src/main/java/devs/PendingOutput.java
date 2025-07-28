@@ -12,7 +12,7 @@ public interface PendingOutput<T extends SimTime, S> extends PDevsInterface<T, S
 
     public void clearPendingOutput();
 
-    public void hasPendingOutput();
+    public boolean hasPendingOutput();
 
     public void pendingInternalStateTransitionFunction(T currentTime);
 

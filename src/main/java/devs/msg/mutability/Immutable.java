@@ -68,6 +68,11 @@ import java.lang.reflect.Modifier;
  */
 public interface Immutable<M extends Mutable> extends MutableImmutable {
 
+  default <I extends Immutable<M>> I deepCopy() {
+    M mutable = toMutable();
+    return mutable.toImmutable();
+  }
+
   /**
    * Converts the current immutable instance to its corresponding mutable version.
    * The method identifies the mutable class associated with the immutable class,
