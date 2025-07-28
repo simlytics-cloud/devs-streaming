@@ -21,37 +21,44 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Represents a marker interface for mutable objects that can be converted into an immutable
- * representation. Classes implementing this interface are expected to adhere to a naming
- * convention where their corresponding immutable counterparts have a prefix "Immutable" added
- * to their class name.
- * <p>
- * Classes implementing this interface are required to provide logic that ensures mutability
- * is converted into an immutable form via the {@code toImmutable()} method. This involves
- * utilizing reflection to inspect fields and invoking the builder methods of the corresponding
- * immutable class.
+ * Represents an interface for mutable objects that can be converted into their immutable
+ * counterparts. Classes implementing this interface should provide logic to facilitate
+ * transformations between mutable and immutable representations. It supports deep copying
+ * and conversion processes that are typically reflection-based, ensuring compatibility
+ * between corresponding mutable and immutable classes.
  *
- * The generic type parameter {@code I} extends {@code Immutable<?>} and represents the target
- * immutable type that the implementing class can convert into.
- * <p>
- * Key points:
- * - The {@code toImmutable()} method creates an immutable instance by identifying the appropriate
- *   immutable class corresponding to the mutable class and using its builder pattern methods.
- * - Field values in the mutable instance are transformed into their immutable representations
- *   before assigning them to the immutable object.
- * - Reflection is used to access fields of the class, including private ones.
- * - Convention dictates that the corresponding immutable class should have a "Builder" inner
- *   class, a static "builder" method, and a "build" method for constructing instances.
- * <p>
- * Exceptions:
- * - If the conversion process fails due to any reason (e.g., class not found, field access
- *   issues, missing builder methods), a {@code RuntimeException} is thrown.
- * <p>
- * Note that the implementing classes must ensure their mutability is appropriately implemented
- * to enable seamless conversion to their immutable counterparts.
+ * Key Features:
+ * - Enables conversion of mutable objects to their immutable counterparts using the
+ *   {@code toImmutable()} method.
+ * - Provides a {@code deepCopy()} method for creating deep-copied instances of
+ *   mutable objects.
+ * - Handles nested transformations of contained objects when applicable, ensuring
+ *   mutability and immutability compatibility.
+ *
+ * Requirements:
+ * - The class implementing this interface must adhere to naming conventions where
+ *   the immutable class has the same name as the mutable class, prefixed with "Immutable".
+ * - Implementation of {@code toImmutable()} relies on proper adherence to these naming
+ *   conventions and ensures all fields are correctly mapped between mutable and immutable
+ *   representations.
+ * - Classes implementing this interface must ensure all relevant fields are compatible
+ *   for transformation between mutable and immutable instances.
+ *
+ * Methods:
+ * - {@link #deepCopy()} Creates a deep copy of the current mutable instance.
+ * - {@link #toImmutable()} Converts the current mutable instance into its corresponding
+ *   immutable version.
  */
 public interface Mutable extends MutableImmutable {
 
+  /**
+   * Creates a deep copy of the current mutable object.
+   * The method first converts the object to its immutable version using {@code toImmutable()},
+   * and then converts it back to a mutable version using the immutable's {@code toMutable()} method.
+   * This ensures that all the field values are deeply copied, including nested mutable structures.
+   *
+   * @return A deep copy of the current mutable object.
+   */
   default <M extends Mutable> M deepCopy() {
     Immutable<M> immutable = toImmutable();
     return immutable.toMutable();

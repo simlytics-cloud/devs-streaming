@@ -25,12 +25,28 @@ import java.util.stream.Collectors;
 
 
 /**
- * Utility class providing methods for handling mutability and immutability of objects, collections,
- * and maps. Includes functionality for retrieving field info, converting objects to immutable and
- * mutable counterparts, and managing annotations with their parameters.
+ * The MutabilityUtil class provides a set of utility methods for converting objects between mutable
+ * and immutable representations, as well as retrieving metadata such as fields and annotations from
+ * classes. It aims to facilitate working with collections, maps, and annotated classes in a manner
+ * that ensures immutability or mutability based on desired use cases.
  */
 public class MutabilityUtil {
 
+  /**
+   * Converts an object to its mutable representation if applicable. If the input object implements
+   * the {@link Immutable} interface, its {@code toMutable()} method is invoked to obtain a mutable
+   * version. If the object already implements the {@link Mutable} interface, it is cast to the
+   * desired class type. Otherwise, an {@link IllegalArgumentException} is thrown if the object
+   * cannot be converted to a mutable type.
+   *
+   * @param <I>    the general type of the input object
+   * @param <M>    the specific mutable type to which the object should be converted, must extend or
+   *               implement {@code I}
+   * @param object the object to be converted; must be either {@code Immutable} or {@code Mutable}
+   * @param clazz  the class representation of {@code M} against which the object is cast
+   * @return a mutable instance of the input object cast to type {@code M}
+   * @throws IllegalArgumentException if the object cannot be converted to a mutable type
+   */
   public static <I, M extends I> M objectToMutable(I object, Class<M> clazz) {
     if (object instanceof Immutable immutable) {
       return clazz.cast(immutable.toMutable());
@@ -38,7 +54,7 @@ public class MutabilityUtil {
       return clazz.cast(object);
     } else {
       throw new IllegalArgumentException("Object of type " + object.getClass().getCanonicalName()
-        + " cannot be converted to Mubable");
+          + " cannot be converted to Mubable");
     }
   }
 
@@ -103,7 +119,9 @@ public class MutabilityUtil {
    */
   @SuppressWarnings("unchecked")
   public static <T> T toImmutable(Object obj) {
-    if (obj == null) return null;
+    if (obj == null) {
+      return null;
+    }
 
     if (obj instanceof Immutable) {
       return (T) obj;

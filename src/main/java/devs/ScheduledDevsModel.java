@@ -24,25 +24,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * An abstract base class for creating models in the PDEVS (Parallel Discrete Event System)
- * framework that require scheduled event handling. The class facilitates the management of a
- * schedule that maintains a list of events and their corresponding simulation times.
+ * The ScheduledDevsModel interface represents a DEVS (Discrete Event System Specification) model
+ * with a schedule-driven simulation workflow. This interface extends the PDevsInterface and
+ * enforces methods for handling scheduled state transitions, internal and confluent state
+ * transitions, and output processing within the DEVS framework. The design provides default
+ * implementations for the DEVS formalism's time-advance, output, internal, and confluent state
+ * transition functions.
  *
- * @param <T> The type representing simulation time, extending the SimTime class.
- * @param <S> The type representing the state of the model.
+ * @param <T> A type parameter representing the simulation time type, which must extend the abstract
+ *            SimTime class.
+ * @param <S> A type parameter representing the state type of the DEVS model.
  */
 public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface<T, S> {
 
 
-
+  /**
+   * Retrieves the schedule associated with this DEVS model. The schedule stores events mapped to
+   * their respective time points and is used for managing state transitions and outputs within the
+   * simulation.
+   *
+   * @return the {@code Schedule<T>} containing events and their associated time points for this
+   * DEVS model.
+   */
   public abstract Schedule<T> getSchedule();
 
   /**
-   * A DEVS simulator calls the output function immediately prior to an internal state transition.
-   * So, for a scheduled DEVS model, the internal state transition must remove the scheduled
-   * outputs that were added to the Bag in the output function.  This method clears the scheduled
-   * output then calls the abstract scheduledInternalStateTransition function to implement 
-   * additional state transition.
+   * Executes the internal state transition function for the DEVS model at the specified simulation
+   * time. This method clears any pending output events from the internal schedule and delegates to
+   * the implementation of the scheduled internal state transition logic defined by the subclass.
+   *
+   * @param currentTime the current simulation time at which the internal state transition occurs
    */
   @Override
   default public void internalStateTransitionFunction(T currentTime) {
@@ -51,10 +62,39 @@ public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface
   }
 
 
+  /**
+   * Executes the scheduled internal state transition logic for the DEVS model at the specified
+   * simulation time. This abstract method is invoked during the internal state transition process
+   * when a scheduled state change is due. The implementation should define the specific behavior
+   * and changes to the model's state at the given time.
+   *
+   * @param currentTime the current simulation time at which the scheduled internal state transition
+   *                    occurs
+   */
   public abstract void scheduledInternalStateTransitionFunction(T currentTime);
 
+  /**
+   * Executes the scheduled confluent state transition logic for the DEVS (Discrete Event System
+   * Specification) model at the given simulation time. This abstract method is invoked when a
+   * confluent state transition is required, which occurs when both an external and internal state
+   * transition are scheduled to occur simultaneously. The method processes the provided external
+   * inputs (if any) along with managing the internal state of the model.
+   *
+   * @param currentTime the current simulation time at which the confluent state transition occurs
+   * @param bag         a Bag containing external input events received by the model at the
+   *                    specified simulation time
+   */
   public abstract void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag);
 
+  /**
+   * Executes the confluent state transition function for the DEVS model at the specified simulation
+   * time. This method clears any pending output events from the schedule and delegates the actual
+   * confluent state transition logic to the scheduled implementation defined by the subclass.
+   *
+   * @param currentTime the current simulation time at which the confluent state transition occurs
+   * @param bag         a Bag containing external input events received by the model at the
+   *                    specified simulation time
+   */
   @Override
   default void confluentStateTransitionFunction(T currentTime, Bag bag) {
     clearScheduledOutput();

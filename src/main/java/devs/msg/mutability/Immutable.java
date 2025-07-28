@@ -20,70 +20,63 @@ import java.lang.reflect.Modifier;
 
 
 /**
- * Represents an interface for immutable objects that can be converted into their mutable
- * counterparts. Classes implementing this interface are expected to provide logic that enables the
- * conversion from an immutable instance to its corresponding mutable instance. This typically
- * involves reflection-based field copying, as well as ensuring compatibility regarding nested
- * mutability where necessary.
- * <p>
- * The concept hinges upon a naming convention where the mutable and immutable classes share a
- * similar structure, differing primarily by the use of the Immutable prefix in the immutable
- * class's name.
- * <p>
- * Type Parameter:
+ * Defines an interface for immutable objects that can be converted back into their
+ * corresponding mutable counterparts. Classes implementing this interface are expected
+ * to provide mechanisms for deep-copied transformations between mutable and immutable forms.
  *
- * M - The type of the mutable object that the implementing immutable class can convert into.
- * <p>
- * Key Points:
- * - The {@code toMutable()} method is responsible for creating a mutable instance from the
- *   immutable one.
- * - The method relies on reflection to inspect and copy fields from the immutable class to the
- *   mutable class.
- * - Deep copying is handled for nested fields that also support mutability and immutability
- *   transformations.
- * - Static fields are ignored during the conversion process.
- * - The mutable class must define a parameterless constructor to be instantiated via reflection.
- * <p>
- * Default Implementation:
- * The default implementation of {@code toMutable()} identifies the target mutable class by its
- * naming convention, initializes it using the no-argument constructor, and copies field values
- * using reflection. Nested transformations (e.g., from nested immutable objects to their mutable
- * counterparts) are recursively applied as needed.
- * <p>
- * Exceptions:
- * The {@code toMutable()} method throws a {@code RuntimeException} in cases where the
- * transformation process fails due to factors such as missing constructors, inaccessible fields,
- * or class mismatches.
- * <p>
- * Requirements:
- * Classes implementing this interface must:
- * - Define a corresponding mutable class adhering to the naming convention.
- * - Ensure field compatibility between the mutable and immutable versions, both in terms of name
- *   and type.
- * - Handle nested mutability transformations where applicable.
- * <p>
+ * Responsibilities:
+ * - Provide a mechanism to convert an immutable object to its corresponding mutable version.
+ * - Facilitate deep copy operations through the {@code deepCopy()} method.
+ * - Ensure compatibility between mutable and immutable representations, with nested
+ *   structural transformations handled when applicable.
+ *
+ * Features:
+ * - The {@code deepCopy()} method ensures that a deep-copied instance of the immutable
+ *   object is produced, including nested fields and their respective transformations.
+ * - The {@code toMutable()} method relies on reflection to locate the associated mutable class
+ *   and to map field values appropriately between the immutable and mutable forms.
+ *
+ * Conventions:
+ * - Naming of classes assumes a pairing between mutable and immutable counterparts:
+ *   the mutable class name is a prefix of the immutable class name, with the "Immutable"
+ *   suffix appended to designate the immutable variant.
+ *
+ * Implementing Restrictions:
+ * - This interface assumes that all implementing classes follow naming conventions for
+ *   correct mapping between immutable and mutable forms.
+ *
  * Methods:
- * - {@link #toMutable()} Converts this immutable instance to a mutable version, handling field
- *   copying and nested transformations.
+ * - {@code deepCopy()}: Produces a deep copy of the current immutable object, using
+ *   internal mutable-to-immutable-to-mutable workflow.
+ * - {@code toMutable()}: Converts the current immutable instance into its corresponding
+ *   mutable representation by utilizing reflection techniques to map fields.
  */
 public interface Immutable<M extends Mutable> extends MutableImmutable {
 
+  /**
+   * Creates a deep copy of the current immutable instance.
+   * This method first converts the immutable instance to its mutable counterpart
+   * using the {@code toMutable()} method. Then, it converts the mutable instance back
+   * to an immutable instance by invoking the {@code toImmutable()} method on the
+   * mutable instance. This ensures the creation of a new immutable instance with
+   * equivalent field values while preserving immutability.
+   *
+   * @param <I> the immutable type extending the current immutable class
+   * @return a deep copy of the current immutable instance
+   */
   default <I extends Immutable<M>> I deepCopy() {
     M mutable = toMutable();
     return mutable.toImmutable();
   }
 
   /**
-   * Converts the current immutable instance to its corresponding mutable version.
-   * The method identifies the mutable class associated with the immutable class,
-   * creates an instance of the mutable class, and copies all compatible field values
-   * from the immutable instance to the new mutable instance.
-   * This process includes handling nested mutability transformations where applicable.
+   * Converts the current immutable instance to its mutable counterpart.
+   * The method utilizes reflection to create an instance of the associated mutable class
+   * and copies all non-static fields from the current immutable instance to the mutable instance.
+   * Any nested immutable objects within the fields are also converted to their mutable counterparts.
    *
-   * @return the mutable version of the current immutable instance
-   * @throws RuntimeException if the conversion process fails due to reflection issues,
-   *                          such as inaccessible fields, missing constructors, or
-   *                          incompatible class definitions.
+   * @return the mutable instance corresponding to the current immutable instance
+   *         with all field values copied and transformed to mutable objects if applicable
    */
   default M toMutable() {
     
