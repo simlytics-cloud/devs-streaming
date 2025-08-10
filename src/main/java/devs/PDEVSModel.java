@@ -17,8 +17,12 @@
 package devs;
 
 import devs.msg.Bag;
+import devs.msg.DevsExternalMessage;
+import devs.msg.DevsMessage;
 import devs.msg.PortValue;
 import devs.msg.time.SimTime;
+
+import org.apache.pekko.actor.typed.Behavior;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +38,7 @@ public abstract class PDEVSModel<T extends SimTime, S> implements PDevsInterface
   protected Logger logger;
 
   protected PDevsSimulator<T, S, ?> simulator;
+  protected boolean transitionDone = true;
   protected final String modelIdentifier;
 
   /**
@@ -62,6 +67,35 @@ public abstract class PDEVSModel<T extends SimTime, S> implements PDevsInterface
 
   public DevsSimulatorProvider<T> getDevsSimulatorProvider() {
     return new DevsSimulatorProvider<>(this);
+  }
+
+  /**
+   * A flag to indiate if a PDEVSModel has completed its state transition.  A typical reason for it
+   * to be false is when the model is awaiting a response from an external actor or API call
+   */
+  public boolean isTransitionDone() {
+    return transitionDone;
+  }
+
+  /**
+   * A method to allow a PDEVSModel to interact with external actors with the 
+   * {@link https://pekko.apache.org/docs/pekko/current/typed/interaction-patterns.html#fire-and-forget
+   * Pekko fire and forget interaction pattern}, sending messages to external actors and receive
+   * responses as a DevsExternalMessage via the PDEVSSimulator.  A typical pattern is, when executing
+   * a state transition, the model needs to call an external actor to support calculation of state.
+   * It sends a request to the external actor via a tell message, with a replyTo field set to 
+   * the PDEVSSimulator's ActorRef, obatined by the call similator.getActorRef();  It then sets the
+   * transitionDone field to false so that the simulator knows not to send a TransitionDone yet.
+   * When the simulator receives the response via a DevsExternalMessage, it will pass it to this
+   * method.  The model can override this method and  now use the data in the response to complete 
+   * state transition.  Note that is possible to need data from multiple external sources prior to 
+   * completion of state transition.  Once all expected data has been received, the model should set
+   * the transitionDone value to true to indicate to the PDEVSSimulator that it is now time to send
+   * a TransitionDone message and continue the advance of time.
+   * @param externalMessage
+   */
+  protected void processExternalMessage(DevsExternalMessage externalMessage) {
+    transitionDone = true;
   }
 
 }

@@ -24,6 +24,7 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import devs.msg.Bag;
+import devs.msg.DevsExternalMessage;
 import devs.msg.DevsMessage;
 import devs.msg.ExecuteTransition;
 import devs.msg.InitSimMessage;
@@ -50,6 +51,7 @@ public class PDevsSimulator<T extends SimTime, S,
 
   protected T timeLast;
   protected T timeNext;
+  protected T transitionTime;
   protected ActorRef<DevsMessage> parent;
 
   protected final M devsModel;
@@ -85,7 +87,6 @@ public class PDevsSimulator<T extends SimTime, S,
     devsModel.setSimulator(this);
   }
 
-
   protected ReceiveBuilder<DevsMessage> createReceiveBuilder() {
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
 
@@ -93,6 +94,7 @@ public class PDevsSimulator<T extends SimTime, S,
     builder.onMessage(SendOutput.class, this::onSendOutputMessage);
     builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
     builder.onMessage(SimulationDone.class, this::onSimulationDone);
+    builder.onMessage(DevsExternalMessage.class, this::processExternalMessage);
     return builder;
   }
 
@@ -184,6 +186,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> onExecuteTransitionMessage(
       ExecuteTransition<T> executeTransition) {
+    transitionTime = executeTransition.getTime();
     if (executeTransition.getTime().compareTo(timeLast) < 0
         || executeTransition.getTime().compareTo(timeNext) > 0) {
       throw new RuntimeException("Bad synchronization.  " + devsModel.modelIdentifier
@@ -215,11 +218,13 @@ public class PDevsSimulator<T extends SimTime, S,
    *
    * @param time the current simulation time at which the transition occurs, of type T
    */
-  protected void transitionDome(T time) {
-    timeLast = time;
-    timeNext = timeAdvance(time);
-    parent.tell(TransitionDone.builder().nextTime(timeNext).time(time)
-        .sender(devsModel.getModelIdentifier()).build());
+  protected void transitionDone(T time) {
+    if (devsModel.isTransitionDone()) {
+      timeLast = time;
+      timeNext = timeAdvance(time);
+      parent.tell(TransitionDone.builder().nextTime(timeNext).time(time)
+          .sender(devsModel.getModelIdentifier()).build());
+    }
   }
 
   /**
@@ -234,7 +239,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> internalStateTransition(T time) {
     devsModel.internalStateTransitionFunction(time);
-    transitionDome(time);
+    transitionDone(time);
     return this;
   }
 
@@ -252,7 +257,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> confluentStateTransition(T time, Bag input) {
     devsModel.confluentStateTransitionFunction(time, input);
-    transitionDome(time);
+    transitionDone(time);
     return this;
   }
 
@@ -269,7 +274,13 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> externalStateTransition(T time, Bag input) {
     devsModel.externalStateTransitionFunction(time, input);
-    transitionDome(time);
+    transitionDone(time);
+    return this;
+  }
+
+  protected Behavior<DevsMessage> processExternalMessage(DevsExternalMessage externalMessage) {
+    devsModel.processExternalMessage(externalMessage);
+    transitionDone(transitionTime);
     return this;
   }
 
@@ -286,6 +297,10 @@ public class PDevsSimulator<T extends SimTime, S,
     parent.tell(ModelDone.builder().time(simulationDone.getTime())
         .sender(devsModel.getModelIdentifier()).build());
     return Behaviors.stopped();
+  }
+
+  protected ActorRef<DevsMessage> getActorRef() {
+    return getContext().getSelf();
   }
 
 

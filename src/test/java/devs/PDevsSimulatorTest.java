@@ -17,6 +17,7 @@
 package devs;
 
 import devs.msg.Bag;
+import devs.msg.DevsExternalMessage;
 import devs.msg.DevsMessage;
 import devs.msg.ExecuteTransition;
 import devs.msg.InitSim;
@@ -30,7 +31,13 @@ import example.generator.GeneratorModel;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
+import org.apache.pekko.actor.typed.Behavior;
+import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
+import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.javadsl.Receive;
+import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.checkerframework.checker.units.qual.g;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,6 +61,99 @@ import org.junit.jupiter.api.Test;
  * proper resource management.
  */
 public class PDevsSimulatorTest {
+
+  static class GeneratorServiceRequest {
+    private final int value;
+    private final ActorRef<DevsMessage> generatorSimulatorRef;
+
+    public GeneratorServiceRequest(int value, ActorRef<DevsMessage> generatorSimulatorRef) {
+      this.value = value;
+      this.generatorSimulatorRef = generatorSimulatorRef;
+    }
+
+    public int getValue() {
+      return value;
+    }
+
+    public ActorRef<DevsMessage> getGeneratorSimulatorRef() {
+      return generatorSimulatorRef;
+    }
+  }
+
+  static class GeneratorServiceResponse implements DevsExternalMessage {
+    private final int value;
+
+    public GeneratorServiceResponse(int value) {
+      this.value = value;
+    }
+
+    public int getValue() {
+      return value;
+    }
+    
+  }
+
+  static class GeneratorService extends AbstractBehavior<GeneratorServiceRequest> {
+
+    public GeneratorService(ActorContext<GeneratorServiceRequest> context) {
+      super(context);
+    }
+
+    @Override
+    public Receive<GeneratorServiceRequest> createReceive() {
+      ReceiveBuilder<GeneratorServiceRequest> builder = newReceiveBuilder();
+      builder.onMessage(GeneratorServiceRequest.class, this::onRequest);
+      return builder.build();
+    }
+
+    Behavior<GeneratorServiceRequest> onRequest(GeneratorServiceRequest request) throws InterruptedException {
+      System.out.println("Calculating for one second...");
+      Thread.sleep(1000);
+      Integer modelState = request.getValue();
+      if (modelState == 0) {
+        modelState = 1;
+      } else {
+        modelState = 0;
+      }
+      request.getGeneratorSimulatorRef().tell(new GeneratorServiceResponse(modelState));
+      return Behaviors.same();
+    }
+  }
+
+  static class CalculatingGeneratorModel extends GeneratorModel {
+    private final ActorRef<GeneratorServiceRequest> generatorService;
+
+    public CalculatingGeneratorModel(Integer initialState, ActorRef<GeneratorServiceRequest> generatorService) {
+      super(initialState);
+      this.generatorService = generatorService;
+    }
+
+    
+
+    @Override
+    public void internalStateTransitionFunction(LongSimTime currentTime) {
+      transitionDone = false;
+      generatorService.tell(new GeneratorServiceRequest(modelState, simulator.getActorRef()));
+    }
+
+
+
+    @Override
+    protected void processExternalMessage(DevsExternalMessage externalMessage) {
+      if (externalMessage instanceof GeneratorServiceResponse generatorServiceResponse) {
+        System.out.println("Received calculation.  Transition is now done");
+        this.modelState = generatorServiceResponse.getValue();
+        transitionDone = true;
+      } else {
+        throw new IllegalArgumentException("Received unexpected external message of type " 
+          + externalMessage.getClass().getCanonicalName());
+      }
+
+    }
+
+    
+    
+  }
 
   /**
    * A static and final variable representing an instance of {@code ActorTestKit}. This test kit is
@@ -97,8 +197,9 @@ public class PDevsSimulatorTest {
   @DisplayName("Test PDEVS Simulator")
   void parallelDevsSimulatorTest() {
     TestProbe<DevsMessage> probe = testKit.createTestProbe();
+    GeneratorModel generatorModel = new GeneratorModel(0);
     ActorRef<DevsMessage> simulator = testKit.spawn(Behaviors.setup(
-        context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(new GeneratorModel(0),
+        context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(generatorModel,
             LongSimTime.builder().t(0L).build(), context)));
 
     // Initialize and expect next sim time to be 1
@@ -153,5 +254,70 @@ public class PDevsSimulatorTest {
     Bag generatorOutput6 = modelOutputMessage6.getModelOutput();
     assert ((Integer) generatorOutput6.getPortValueList().get(0).getValue() == 0);
   }
+
+  @Test
+  @DisplayName("Test PDEVS Simulator ability to use an external service")
+  void extenalServiceTest() {
+    TestProbe<DevsMessage> probe = testKit.createTestProbe();
+    ActorRef<GeneratorServiceRequest> generatorService = testKit.spawn(Behaviors.setup(
+      context -> new GeneratorService(context)));
+    CalculatingGeneratorModel generatorModel = new CalculatingGeneratorModel(0, 
+      generatorService);
+    ActorRef<DevsMessage> simulator = testKit.spawn(Behaviors.setup(
+        context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(generatorModel,
+            LongSimTime.builder().t(0L).build(), context)));
+
+    // Initialize and expect next sim time to be 1
+    simulator.tell(new InitSimMessage(
+        InitSim.builder().time(LongSimTime.builder().t(0L).build()).build(), probe.getRef()));
+    DevsMessage receivedMessage = probe.receiveMessage();
+    assert (receivedMessage instanceof NextTime<?>);
+    NextTime nextTime = (NextTime) receivedMessage;
+    assert (nextTime.getTime() instanceof LongSimTime);
+    assert (((LongSimTime) nextTime.getTime()).getT() == 1L);
+    assert ("generator".equals(nextTime.getSender()));
+
+    // Get output and expect it to be 0
+    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    DevsMessage message2 = probe.receiveMessage();
+    assert (message2 instanceof ModelOutputMessage<?>);
+    ModelOutputMessage<LongSimTime> modelOutputMessage = (ModelOutputMessage<LongSimTime>) message2;
+    assert (modelOutputMessage.getNextTime().getT() == 1L);
+    Bag generatorOutput = modelOutputMessage.getModelOutput();
+    assert ((Integer) generatorOutput.getPortValueList().get(0).getValue() == 0);
+
+    // Execute transition and expect next time to be 1
+    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    DevsMessage message3 = probe.receiveMessage();
+    assert (message3 instanceof TransitionDone<?>);
+    TransitionDone<LongSimTime> transitionDone = (TransitionDone<LongSimTime>) message3;
+    assert (transitionDone.getTime().getT() == 1L);
+
+    // Get output and expect it to be 1
+    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    DevsMessage message4 = probe.receiveMessage();
+    assert (message4 instanceof ModelOutputMessage<?>);
+    ModelOutputMessage<LongSimTime> modelOutputMessage4 =
+        (ModelOutputMessage<LongSimTime>) message4;
+    Bag generatorOutput4 = modelOutputMessage4.getModelOutput();
+    assert ((Integer) generatorOutput4.getPortValueList().get(0).getValue() == 1);
+
+    // Execute transition and expect next time to be 2
+    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    DevsMessage message5 = probe.receiveMessage();
+    assert (message5 instanceof TransitionDone<?>);
+    TransitionDone<LongSimTime> transitionDone2 = (TransitionDone<LongSimTime>) message5;
+    assert (transitionDone2.getNextTime().getT() == 2L);
+    assert (transitionDone2.getTime().getT() == 1L);
+
+    // Get output and expect it to be 0
+    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(2L).build()).build());
+    DevsMessage message6 = probe.receiveMessage();
+    assert (message6 instanceof ModelOutputMessage<?>);
+    ModelOutputMessage<LongSimTime> modelOutputMessage6 =
+        (ModelOutputMessage<LongSimTime>) message6;
+    Bag generatorOutput6 = modelOutputMessage6.getModelOutput();
+    assert ((Integer) generatorOutput6.getPortValueList().get(0).getValue() == 0);
+  }  
 
 }
