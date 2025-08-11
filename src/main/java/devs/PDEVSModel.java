@@ -79,8 +79,8 @@ public abstract class PDEVSModel<T extends SimTime, S> implements PDevsInterface
 
   /**
    * A method to allow a PDEVSModel to interact with external actors with the 
-   * {@link https://pekko.apache.org/docs/pekko/current/typed/interaction-patterns.html#fire-and-forget
-   * Pekko fire and forget interaction pattern}, sending messages to external actors and receive
+   * <a href="https://pekko.apache.org/docs/pekko/current/typed/interaction-patterns.html#fire-and-forget">
+   * Pekko fire and forget interaction pattern</a>, sending messages to external actors and receive
    * responses as a DevsExternalMessage via the PDEVSSimulator.  A typical pattern is, when executing
    * a state transition, the model needs to call an external actor to support calculation of state.
    * It sends a request to the external actor via a tell message, with a replyTo field set to 

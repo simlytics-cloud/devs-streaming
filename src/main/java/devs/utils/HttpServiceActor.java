@@ -1,20 +1,3 @@
-/*
- * MCA Acquire Sensors Library Copyright (C) 2025 simlytics.cloud LLC and
- * MCA Acquire Sensors Library contributors.  All rights reserved.
- *
- * This software is provided to the US Army by simlytics.cloud, LLC
- * to use and to create non-commercial content.  Any commercial use is
- * prohibited without permission.
- *
- *  The U.S. Government has Government Purpose Rights (GPR) to the software.
- *
- *  DISTRIBUTION STATEMENT C:
- *  Distribution is authorized to U.S. Government Agencies and their contractors.
- *  Other requests for this document shall be referred to US Army DEVCOM - Soldier Center
- *
- * Unless required by applicable law or agreed to in writing, software is distributed on an
- */
-
 package devs.utils;
 
 import devs.msg.DevsExternalMessage;
