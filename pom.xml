@@ -31,8 +31,9 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <scala.binary.version>3</scala.binary.version>
-        <jackson.version>2.17.1</jackson.version>
+        <jackson.version>2.17.3</jackson.version>
         <pekko.version>1.1.4</pekko.version>
+        <pekko.httpversion>1.2.0</pekko.httpversion>
         <kafka.version>3.7.0</kafka.version>
     </properties>
 
@@ -151,6 +152,16 @@
             <groupId>org.apache.pekko</groupId>
             <artifactId>pekko-stream_${scala.binary.version}</artifactId>
             <version>${pekko.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-http_${scala.binary.version}</artifactId>
+            <version>${pekko.httpversion}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-http-jackson_${scala.binary.version}</artifactId>
+            <version>${pekko.httpversion}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.pekko</groupId>
