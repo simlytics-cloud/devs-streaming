@@ -40,7 +40,7 @@ public abstract class HttpServiceActor<T1, T2> extends AbstractBehavior<HttpServ
 
   }
 
-  public record Request<T1>(String requestData,
+  public record Request<T1>(T1 requestData,
                             ActorRef<DevsMessage> requester,
                             String requestId) implements Command {
 

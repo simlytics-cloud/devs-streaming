@@ -23,6 +23,8 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
+import org.apache.pekko.actor.typed.receptionist.Receptionist;
+
 import devs.msg.Bag;
 import devs.msg.DevsExternalMessage;
 import devs.msg.DevsMessage;
@@ -34,6 +36,7 @@ import devs.msg.NextTime;
 import devs.msg.SendOutput;
 import devs.msg.SimulationDone;
 import devs.msg.TransitionDone;
+import devs.msg.log.PekkoReceptionistListingResponse;
 import devs.msg.time.SimTime;
 
 /**
@@ -55,6 +58,7 @@ public class PDevsSimulator<T extends SimTime, S,
   protected ActorRef<DevsMessage> parent;
 
   protected final M devsModel;
+  protected final ActorRef<Receptionist.Listing> listingResponseAdapter;
 
 
   /**
@@ -84,7 +88,9 @@ public class PDevsSimulator<T extends SimTime, S,
     this.devsModel = devsModel;
     this.timeLast = initialTime;
     this.timeNext = initialTime;
-    devsModel.setSimulator(this);
+    this.listingResponseAdapter =
+      context.messageAdapter(Receptionist.Listing.class, PekkoReceptionistListingResponse::new);
+    devsModel.initialize(this);
   }
 
   protected ReceiveBuilder<DevsMessage> createReceiveBuilder() {
@@ -95,6 +101,8 @@ public class PDevsSimulator<T extends SimTime, S,
     builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
     builder.onMessage(SimulationDone.class, this::onSimulationDone);
     builder.onMessage(DevsExternalMessage.class, this::processExternalMessage);
+    builder.onMessage(PekkoReceptionistListingResponse.class,
+      this::onPekkoReceptionistListingResponse);
     return builder;
   }
 
@@ -284,6 +292,15 @@ public class PDevsSimulator<T extends SimTime, S,
     return this;
   }
 
+  protected Behavior<DevsMessage> onPekkoReceptionistListingResponse(PekkoReceptionistListingResponse receptionistListing) {
+    devsModel.processReceptionistListing(receptionistListing);
+    return this;
+  }
+
+  public ActorRef<Receptionist.Listing> getListingResponseAdapter() {
+    return listingResponseAdapter;
+  }
+
   /**
    * Handles the SimulationDone message to finalize the simulation process. This method notifies the
    * parent actor of the simulation's completion and the time at which it concluded by sending a
@@ -299,7 +316,7 @@ public class PDevsSimulator<T extends SimTime, S,
     return Behaviors.stopped();
   }
 
-  protected ActorRef<DevsMessage> getActorRef() {
+  public ActorRef<DevsMessage> getActorRef() {
     return getContext().getSelf();
   }
 

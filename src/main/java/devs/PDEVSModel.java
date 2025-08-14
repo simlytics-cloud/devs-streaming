@@ -20,6 +20,7 @@ import devs.msg.Bag;
 import devs.msg.DevsExternalMessage;
 import devs.msg.DevsMessage;
 import devs.msg.PortValue;
+import devs.msg.log.PekkoReceptionistListingResponse;
 import devs.msg.time.SimTime;
 
 import org.apache.pekko.actor.typed.Behavior;
@@ -61,7 +62,7 @@ public abstract class PDEVSModel<T extends SimTime, S> implements PDevsInterface
     return modelState;
   }
 
-  public void setSimulator(PDevsSimulator<T, S, ?> simulator) {
+  public void initialize(PDevsSimulator<T, S, ?> simulator) {
     this.simulator = simulator;
   }
 
@@ -96,6 +97,17 @@ public abstract class PDEVSModel<T extends SimTime, S> implements PDevsInterface
    */
   protected void processExternalMessage(DevsExternalMessage externalMessage) {
     transitionDone = true;
+  }
+
+  /**
+   * Override this method to process receptionist lising for any actors in the actor system that
+   * this actor needs to commmunicate with.  See
+   * <a href="https://pekko.apache.org/docs/pekko/current/typed/actor-discovery.html#receptionist">
+   * Pekko actor discovery</a>.
+   * @param receptionistListing
+   */
+  protected void processReceptionistListing(PekkoReceptionistListingResponse receptionistListing) {
+
   }
 
 }

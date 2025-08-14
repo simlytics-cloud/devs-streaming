@@ -59,7 +59,6 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
       ServiceKey.create(DevsLogMessage.class, "devsLoggingService");
 
   ActorRef<DevsLogMessage> loggingActor;
-  private final ActorRef<Receptionist.Listing> listingResponseAdapter;
   final Serialization serialization;
   final ObjectMapper objectMapper;
 
@@ -96,9 +95,6 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
     super(devsModel, initialTime, context);
     this.serialization = SerializationExtension.get(context.getSystem());
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
-    this.listingResponseAdapter =
-        context.messageAdapter(Receptionist.Listing.class, PekkoReceptionistListingResponse::new);
-
     context.getSystem().receptionist()
         .tell(Receptionist.subscribe(stateLoggerKey, listingResponseAdapter));
   }
@@ -149,8 +145,10 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
     }
   }
 
+  @Override
   protected Behavior<DevsMessage> onPekkoReceptionistListingResponse(
       PekkoReceptionistListingResponse listingResponse) {
+    super.onPekkoReceptionistListingResponse(listingResponse);
     Set<ActorRef<DevsLogMessage>> loggingActors =
         listingResponse.getListing().getAllServiceInstances(stateLoggerKey);
     if (!loggingActors.isEmpty()) {
