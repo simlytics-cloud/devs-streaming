@@ -16,6 +16,7 @@
 
 package devs.utils;
 
+import devs.Port;
 import devs.msg.time.SimTime;
 import java.util.ArrayList;
 import java.util.Map;
@@ -84,6 +85,10 @@ public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
       events.add(event);
       this.put(time, events);
     }
+  }
+
+  public <P> void scheduleOutput(P value, Port<P> port, T scheduledTime) {
+    this.add(scheduledTime, port.createPortValue(value));
   }
 
   /**

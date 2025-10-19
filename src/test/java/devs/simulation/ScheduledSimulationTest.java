@@ -31,8 +31,8 @@ import devs.simulation.recorder.RecorderModel;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
-import example.generator.PendingOuputGeneratorModel;
-import example.generator.PendingOutputGeneratorModelState;
+import example.generator.ScheduledGeneratorModel;
+import example.generator.ScheduledGeneratorModelState;
 import example.storage.StorageModel;
 import example.storage.StorageState;
 import example.storage.StorageStateEnum;
@@ -68,7 +68,7 @@ import org.junit.jupiter.api.Test;
  * transitions. The test also validates that appropriate messages are sent and received throughout
  * the simulation.
  */
-public class PendingOutputSimulationTest {
+public class ScheduledSimulationTest {
 
   /**
    * A static and final instance of {@link ActorTestKit} initialized via its factory method. This
@@ -124,11 +124,11 @@ public class PendingOutputSimulationTest {
   @Test
   @DisplayName("Test PDEVS Simulation with RootCoordinator, PDEVSCoordinator, CoupledModelFactory, "
       + "and PDEVSSimulators working together")
-  void parallelDevsSimulationTest() throws InterruptedException {
+  void scheduleldDevsSimulationTest() throws InterruptedException {
 
     ActorRef<DevsMessage> generatorSim = testKit.spawn(
-        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, PendingOutputGeneratorModelState, PendingOuputGeneratorModel>(
-            new PendingOuputGeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
+        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, ScheduledGeneratorModelState, ScheduledGeneratorModel>(
+            new ScheduledGeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
 
     ActorRef<DevsMessage> storageSim = testKit.spawn(Behaviors
         .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(

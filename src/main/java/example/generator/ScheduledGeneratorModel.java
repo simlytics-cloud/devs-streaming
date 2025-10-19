@@ -1,18 +1,17 @@
 package example.generator;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import devs.PDEVSModel;
-import devs.PendingOutput;
 import devs.Port;
+import devs.ScheduledDevsModel;
 import devs.msg.Bag;
-import devs.msg.PortValue;
 import devs.msg.time.LongSimTime;
+import devs.utils.Schedule;
 
-public class PendingOuputGeneratorModel 
-    extends PDEVSModel<LongSimTime, PendingOutputGeneratorModelState> 
-    implements PendingOutput<LongSimTime, PendingOutputGeneratorModelState> {
+public class ScheduledGeneratorModel 
+    extends PDEVSModel<LongSimTime, ScheduledGeneratorModelState> 
+    implements ScheduledDevsModel<LongSimTime, ScheduledGeneratorModelState> {
 public static String identifier = "generator";
 
 
@@ -28,6 +27,8 @@ public static String identifier = "generator";
    * The data shared through this port is encapsulated in instances of PortValue.
    */
   public static final Port<Integer> generatorOutputPort = new Port<>("OUTPUT", Integer.class);
+  protected final Schedule<LongSimTime> schedule = new Schedule<>();
+
 
   /**
    * Constructs a new instance of the GeneratorModel with the given initial state.
@@ -36,8 +37,9 @@ public static String identifier = "generator";
    *                     of the model, either 0 or 1, and sets up the behavior of the periodic state
    *                     transitions.
    */
-  public PendingOuputGeneratorModel(int initialState) {
-    super(new PendingOutputGeneratorModelState(initialState), identifier);
+  public ScheduledGeneratorModel(int initialState) {
+    super(new ScheduledGeneratorModelState(initialState), identifier);
+    schedule.add(LongSimTime.create(1L), new FlipState());
   }
 
   /**
@@ -49,13 +51,20 @@ public static String identifier = "generator";
    *                    the transition is occurring.
    */
   @Override
-  public void pendingInternalStateTransitionFunction(LongSimTime currentTime) {
-    if (modelState.getiState() == 0) {
-      this.modelState.setiState(1);
-    } else {
-      this.modelState.setiState(0);
+  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
+    ArrayList<Object> events = new ArrayList<>(schedule.get(currentTime));
+    for (Object event: events) {
+      if (event instanceof FlipState flipState) {
+        if (modelState.getiState() == 0) {
+          this.modelState.setiState(1);
+        } else {
+          this.modelState.setiState(0);
+        }
+        schedule.scheduleOutput(modelState.getiState(), generatorOutputPort, currentTime);
+        schedule.add(LongSimTime.create(currentTime.getT() + 1), new FlipState());
+      }
     }
-    modelState.getPendingIStateOutput().add(modelState.getiState());
+
   }
 
   /**
@@ -84,45 +93,18 @@ public static String identifier = "generator";
    *                    processed in conjunction with the internal transition logic.
    */
   @Override
-  public void pendingConfluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
 
   }
 
-  /**
-   * Determines the next time advance value of the model based on its current state and simulation
-   * time. This method computes the time duration until the next event or state transition in the
-   * model.
-   *
-   * @param currentTime the current simulation time provided by the simulation environment.
-   *                    Represents the point in simulated time at which the time advance is being
-   *                    calculated.
-   * @return a LongSimTime instance representing the time until the next state transition. If the
-   * model's state is 1, the same current time is returned. Otherwise, it returns the current time
-   * incremented by 1.
-   */
-  @Override
-  public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
-    if (modelState.getiState() == 1) {
-      return LongSimTime.create(0L);
-    } else {
-      return LongSimTime.create(1L);
-    }
-  }
 
   @Override
-  public void clearPendingOutput() {
-    modelState.getPendingIStateOutput().clear();
+  public Schedule<LongSimTime> getSchedule() {
+    return schedule;
   }
 
-  @Override
-  public List<PortValue<?>> getPendingOutput() {
-    return new ArrayList<>(List.of(generatorOutputPort.createPortValue(modelState.getiState())));
-  }
 
-  @Override
-  public boolean hasPendingOutput() {
-    return !modelState.getPendingIStateOutput().isEmpty();
-  }
+
 
   
 }

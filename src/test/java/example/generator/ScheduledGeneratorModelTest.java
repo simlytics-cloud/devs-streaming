@@ -35,7 +35,7 @@ import org.junit.jupiter.api.Test;
  * provided by the {@code DevsObjectMapper} utility for JSON serialization and deserialization.
  */
 @DisplayName("Generator Model Test")
-public class PendingOutputGeneratorModelTest {
+public class ScheduledGeneratorModelTest {
 
 
   ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -63,16 +63,21 @@ public class PendingOutputGeneratorModelTest {
   @Test
   @DisplayName("Test state transition")
   void stateTransitionTest() throws JsonProcessingException {
-
-    PendingOuputGeneratorModel generatorModel = new PendingOuputGeneratorModel(0);
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
-    // Output should be 1 after state transition
+    // Schedule is in initial state f 0 with a FlipState scheduled for t=1
+    ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0);
+    LongSimTime nextTime = generatorModel.timeAdvanceFunction(LongSimTime.create(0));
+    assert nextTime.getT() == 1L;
+    // Output should be 1 at current time after state transition
     Bag o = generatorModel.outputFunction();
     String outputJson = objectMapper.writeValueAsString(o);
     Bag output = objectMapper.readValue(outputJson, Bag.class);
-    assert ((Integer) output.getPortValueList().get(0).getValue() == 1);
+    assert (output.getPortValueList().isEmpty());
 
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(2L).build());
+    // The internal state transition adds the correct value to the port
+    generatorModel.internalStateTransitionFunction(nextTime);
+    nextTime = generatorModel.timeAdvanceFunction(nextTime);
+    assert nextTime.getT() == 1L;
+
     // Output should be 0 after second state transition
     assert ((Integer) generatorModel.outputFunction().getPortValueList().get(0).getValue() == 0);
   }
@@ -98,7 +103,7 @@ public class PendingOutputGeneratorModelTest {
   @DisplayName("Test time advance")
   void timeAdvanceTest() {
 
-    PendingOuputGeneratorModel generatorModel = new PendingOuputGeneratorModel(0);
+    ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0);
     // Time advance should be 1 if state is 0
     assert (generatorModel.timeAdvanceFunction(LongSimTime.builder().t(0L).build()).getT() == 1L);
     generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
