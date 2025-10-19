@@ -51,7 +51,7 @@ import java.lang.reflect.Modifier;
  * - {@code toMutable()}: Converts the current immutable instance into its corresponding
  *   mutable representation by utilizing reflection techniques to map fields.
  */
-public interface Immutable<M extends Mutable> extends MutableImmutable {
+public interface Immutable extends MutableImmutable {
 
   /**
    * Creates a deep copy of the current immutable instance.
@@ -64,8 +64,8 @@ public interface Immutable<M extends Mutable> extends MutableImmutable {
    * @param <I> the immutable type extending the current immutable class
    * @return a deep copy of the current immutable instance
    */
-  default <I extends Immutable<M>> I deepCopy() {
-    M mutable = toMutable();
+  default <I extends Immutable> I deepCopy() {
+    Mutable mutable = toMutable();
     return mutable.toImmutable();
   }
 
@@ -78,7 +78,7 @@ public interface Immutable<M extends Mutable> extends MutableImmutable {
    * @return the mutable instance corresponding to the current immutable instance
    *         with all field values copied and transformed to mutable objects if applicable
    */
-  default M toMutable() {
+  default <M extends Mutable> M toMutable() {
     
     try {
       // 1. Figure out the target mutable class

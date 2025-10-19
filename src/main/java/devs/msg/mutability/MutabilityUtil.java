@@ -404,8 +404,8 @@ public class MutabilityUtil {
 
     if (obj instanceof Mutable) {
       return (T) obj;
-    } else if (obj instanceof Immutable<?>) {
-      return (T) ((Immutable<?>) obj).toMutable();
+    } else if (obj instanceof Immutable) {
+      return (T) ((Immutable) obj).toMutable();
     } else if (obj instanceof Collection<?>) {
       return toMutableCollection(obj);
     } else if (obj instanceof Map<?, ?>) {

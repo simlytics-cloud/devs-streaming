@@ -60,7 +60,7 @@ public interface Mutable extends MutableImmutable {
    * @return A deep copy of the current mutable object.
    */
   default <M extends Mutable> M deepCopy() {
-    Immutable<M> immutable = toImmutable();
+    Immutable immutable = toImmutable();
     return immutable.toMutable();
   }
 
@@ -77,7 +77,7 @@ public interface Mutable extends MutableImmutable {
    *         or illegal access.
    */
   @SuppressWarnings("unchecked")
-  default <I> I toImmutable() {
+  default <I extends Immutable> I toImmutable() {
     
     try {
       // 1. Resolve Immutable class name by convention
@@ -100,7 +100,7 @@ public interface Mutable extends MutableImmutable {
         field.setAccessible(true);
         Object fieldValue = MutabilityUtil.toImmutable(field.get(this));
         String setterMethodName = field.getName();
-        Optional<Method> methoOption = Arrays.asList(builderClass.getDeclaredMethods()).stream()
+        Optional<Method> methoOption = Arrays.asList(builderClass.getMethods()).stream()
           .filter(method -> method.getName().equals(setterMethodName))
           .findFirst();
 
