@@ -54,7 +54,7 @@ public class DevsObjectMapper {
     PortValueDeserializer portValueDeserializer = new PortValueDeserializer();
     SimpleModule portValueModule =
         new SimpleModule("PortValueDeserializer", new Version(1, 0, 0, null));
-    portValueModule.addDeserializer(PortValue.class, portValueDeserializer);
+    //portValueModule.addDeserializer(PortValue.class, portValueDeserializer);
     return new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule())
         .registerModule(new JavaTimeModule()).registerModule(portValueModule)
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
