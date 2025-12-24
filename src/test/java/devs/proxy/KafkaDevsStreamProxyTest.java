@@ -23,15 +23,16 @@ import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.PDevsSimulator;
 import devs.RootCoordinator;
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.NextTime;
-import devs.msg.PortValue;
-import devs.msg.SimulationDone;
-import devs.msg.time.LongSimTime;
+import devs.iso.DevsMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.ModelIdPayload;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.PortValue;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.SimulationTerminatePayload;
+import devs.iso.time.LongSimTime;
 import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
 import devs.utils.ConfigUtils;
@@ -48,6 +49,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -149,25 +151,36 @@ public class KafkaDevsStreamProxyTest {
             new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
 
     // Initialize and expect next sim time to be 1
-    InitSim initSim = InitSim.builder().time(LongSimTime.builder().t(0L).build()).build();
-    String initSimString = objectMapper.writeValueAsString(initSim);
+    SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId("generator").build())
+        .simulationId("KafkaDevsStreamProxyTest")
+        .messageId("SimulationInit")
+        .senderId("Proxy")
+        .build();
+    String initSimString = objectMapper.writeValueAsString(simulationInit);
     final Long start = System.currentTimeMillis();
     producer.send(new ProducerRecord<>(generatorInputTopic, 0L, initSimString));
     DevsMessage devsMessageFromKafka = toSimulatorProbe.receiveMessage(Duration.ofSeconds(10));
-    assert (devsMessageFromKafka instanceof InitSimMessage<?>);
-    InitSimMessage<LongSimTime> initSimFromKafka =
-        (InitSimMessage<LongSimTime>) devsMessageFromKafka;
-    assert (initSimFromKafka.getInitSim().getTime().getT() == 0L);
+    assert (devsMessageFromKafka instanceof SimulationInitMessage<?>);
+    SimulationInitMessage<LongSimTime> initSimFromKafka =
+        (SimulationInitMessage<LongSimTime>) devsMessageFromKafka;
+    assert (initSimFromKafka.getSimulationInit().getEventTime().getT() == 0L);
     simulator.tell(initSimFromKafka);
     DevsMessage receivedMessage = fromSimulatorProbe.receiveMessage(Duration.ofSeconds(10));
     time = System.currentTimeMillis() - start;
-    assert (receivedMessage instanceof NextTime<?>);
-    NextTime nextTime = (NextTime) receivedMessage;
-    assert (nextTime.getTime() instanceof LongSimTime);
-    assert (((LongSimTime) nextTime.getTime()).getT() == 1L);
-    assert ("generator".equals(nextTime.getSender()));
-    generatorProxy
-        .tell(SimulationDone.builder().time(LongSimTime.builder().t(1L).build()).build());
+    assert (receivedMessage instanceof NextInternalTimeReport<?>);
+    NextInternalTimeReport<LongSimTime> nextTime = (NextInternalTimeReport<LongSimTime>) receivedMessage;
+    assert (nextTime.getNextInternalTime() instanceof LongSimTime);
+    assert (((LongSimTime) nextTime.getNextInternalTime()).getT() == 1L);
+    assert ("generator".equals(nextTime.getSenderId()));
+    generatorProxy.tell(SimulationTerminate.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(SimulationTerminatePayload.builder().reason("Simulation terminated").build())
+        .simulationId("KafkaDevsStreamProxyTest")
+        .messageId("SimulationTerminate")
+        .senderId("Proxy")
+        .build());
     Thread.sleep(5000);
     KafkaUtils.deleteTopics(Arrays.asList(generatorInputTopic), adminClient);
     testKit.shutdownTestKit();
@@ -264,7 +277,7 @@ public class KafkaDevsStreamProxyTest {
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
             Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
-                LongSimTime.builder().t(2L).build(), coordinator)),
+                LongSimTime.builder().t(2L).build(), coordinator, "genStoreCoupled")),
             "rootCoordinator");
 
     ActorRef<DevsMessage> coordinatorReceiver =
@@ -280,13 +293,19 @@ public class KafkaDevsStreamProxyTest {
             "recorderSim");
 
     Thread.sleep(3000);
-    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId("root").build())
+        .simulationId("KafkaDevsStreamProxyTest")
+        .messageId("SimulationInit")
+        .senderId("Proxy")
+        .build());
 
     // Expect initSim message to recorder
     DevsMessage message1 = toRecorderProbe.receiveMessage();
-    assert (message1 instanceof InitSimMessage<?>);
-    InitSimMessage<LongSimTime> initSimMessage = (InitSimMessage<LongSimTime>) message1;
-    assert (initSimMessage.getInitSim().getTime().getT() == 0L);
+    assert (message1 instanceof SimulationInitMessage<?>);
+    SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
+    assert (initSimMessage.getSimulationInit().getEventTime().getT() == 0L);
     recorderSim.tell(initSimMessage);
 
     // Expect execute external transition message with generator output of 0
@@ -294,10 +313,10 @@ public class KafkaDevsStreamProxyTest {
     assert (messag2 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition =
         (ExecuteTransition<LongSimTime>) messag2;
-    assert (executeExternalTransition.getModelInputsOption().isPresent());
-    Bag modelInputs = executeExternalTransition.getModelInputsOption().get();
-    assert (modelInputs.getPortValueList().get(0).getValue().equals(0));
-    assert (executeExternalTransition.getTime().getT() == 1L);
+    assert (executeExternalTransition.getPayload().getInputs().size() > 0);
+    List<PortValue<?>> modelInputs = executeExternalTransition.getPayload().getInputs();
+    assert (modelInputs.get(0).getValue().equals(0));
+    assert (executeExternalTransition.getEventTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition);
 
     // Expect execute external transition message with generator output of 1 and a storage
@@ -307,15 +326,15 @@ public class KafkaDevsStreamProxyTest {
     assert (message3 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition2 =
         (ExecuteTransition<LongSimTime>) message3;
-    assert (executeExternalTransition2.getModelInputsOption().isPresent());
-    Bag recorderBag = executeExternalTransition2.getModelInputsOption().get();
-    PortValue<?> generatorPort = recorderBag.getPortValueList().stream()
-        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    assert (executeExternalTransition2.getPayload().getInputs().size() > 0);
+    List<PortValue<?>> recorderBag = executeExternalTransition2.getPayload().getInputs();
+    PortValue<?> generatorPort = recorderBag.stream()
+        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert (generatorPort.getValue().equals(1));
-    PortValue<?> storagePort = recorderBag.getPortValueList().stream()
-        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    PortValue<?> storagePort = recorderBag.stream()
+        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert (storagePort.getValue().equals(StorageStateEnum.S0));
-    assert (executeExternalTransition2.getTime().getT() == 1L);
+    assert (executeExternalTransition2.getEventTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition2);
 
     // Expect execute external transition message with no generator output and a storage output
@@ -324,15 +343,15 @@ public class KafkaDevsStreamProxyTest {
     assert (messag2 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition3 =
         (ExecuteTransition<LongSimTime>) messag4;
-    assert (executeExternalTransition3.getModelInputsOption().isPresent());
-    Bag recorderBag4 = executeExternalTransition3.getModelInputsOption().get();
-    Optional<PortValue<?>> generatorPort4 = recorderBag4.getPortValueList().stream()
-        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortIdentifier())).findFirst();
+    assert (executeExternalTransition3.getPayload().getInputs().size() == 0);
+    List<PortValue<?>> recorderBag4 = executeExternalTransition3.getPayload().getInputs();
+    Optional<PortValue<?>> generatorPort4 = recorderBag4.stream()
+        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortName())).findFirst();
     assert (generatorPort4.isEmpty());
-    PortValue<?> storagePort4 = recorderBag4.getPortValueList().stream()
-        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    PortValue<?> storagePort4 = recorderBag4.stream()
+        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert (storagePort4.getValue().equals(StorageStateEnum.S1));
-    assert (executeExternalTransition2.getTime().getT() == 1L);
+    assert (executeExternalTransition2.getEventTime().getT() == 1L);
     testKit.shutdownTestKit();
     KafkaUtils.deleteTopics(
         Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
@@ -440,7 +459,7 @@ public class KafkaDevsStreamProxyTest {
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
             Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
-                LongSimTime.builder().t(2L).build(), coordinator)),
+                LongSimTime.builder().t(2L).build(), coordinator, "genStoreCoupled")),
             "rootCoordinator");
 
     ActorRef<DevsMessage> coordinatorReceiver =
@@ -448,7 +467,13 @@ public class KafkaDevsStreamProxyTest {
             kafkaConsumerConfig, coordinatorInputTopic), "coordinatorReceiver");
 
     Thread.sleep(3000);
-    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId("root").build())
+        .simulationId("KafkaDevsStreamProxyTest")
+        .messageId("SimulationInit")
+        .senderId("Proxy")
+        .build());
     Thread.sleep(5000);
     testKit.shutdownTestKit();
     KafkaUtils.deleteTopics(

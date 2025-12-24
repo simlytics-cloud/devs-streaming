@@ -18,9 +18,9 @@ package example.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.Bag;
-import devs.msg.time.LongSimTime;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -60,7 +60,7 @@ public class StorageModelTest {
     StorageState initialState = objectMapper.readValue(internalStateJson, StorageState.class);
     StorageModel storageModel = new StorageModel(initialState);
     // Output should be the initial state of 0
-    assert (storageModel.outputFunction().getPortValueList().get(0)
+    assert (storageModel.outputFunction().get(0)
         .getValue().equals("S0"));
   }
 
@@ -94,19 +94,16 @@ public class StorageModelTest {
 
     // Internal state transition does not change state
     storageModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
-    Bag o1 = storageModel.outputFunction();
-    String outputJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(o1);
-    Bag output = objectMapper.readValue(outputJson, Bag.class);
     // Enum has serialized to a JSON string
-    assert (o1.getPortValueList().get(0).getValue().equals("S0"));
+    assert (storageModel.outputFunction().get(0).getValue().equals("S0"));
 
     // External state transition function changes state value to match input
     // and time advance will yield zero
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(2L).build(),
-        Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(0)).build());
+        List.of(StorageModel.storageInputPort.createPortValue(0)));
     assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(2L).build()).getT() == 0L);
-    assert (storageModel.outputFunction().getPortValueList().get(0)
+    assert (storageModel.outputFunction().get(0)
         .getValue().equals("S0"));
 
     // After internal state transition, time advance will be max long minus current time
@@ -115,9 +112,8 @@ public class StorageModelTest {
         .getT() == Long.MAX_VALUE - 3L);
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(3L).build(),
-        Bag.builder().addPortValueList(StorageModel.storageInputPort.createPortValue(1)).build());
-    Bag storageOutput = storageModel.outputFunction();
-    assert (storageOutput.getPortValueList().get(0).getValue() == "S1");
+        List.of(StorageModel.storageInputPort.createPortValue(1)));
+    assert (storageModel.outputFunction().get(0).getValue() == "S1");
 
   }
 

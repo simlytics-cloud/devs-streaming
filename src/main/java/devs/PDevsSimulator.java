@@ -16,6 +16,18 @@
 
 package devs;
 
+import devs.iso.DevsExternalMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.ModelIdPayload;
+import devs.iso.ModelTerminated;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.OutputReport;
+import devs.iso.OutputReportPayload;
+import devs.iso.PortValue;
+import devs.iso.RequestOutput;
+import devs.iso.SimulationTerminate;
+import devs.iso.TransitionComplete;
+import java.util.List;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
@@ -25,19 +37,10 @@ import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
-import devs.msg.Bag;
-import devs.msg.DevsExternalMessage;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.TransitionDone;
-import devs.msg.log.PekkoReceptionistListingResponse;
-import devs.msg.time.SimTime;
+import devs.iso.DevsMessage;
+import devs.iso.SimulationInitMessage;
+import devs.iso.log.PekkoReceptionistListingResponse;
+import devs.iso.time.SimTime;
 
 /**
  * {@code PDevsSimulator} is a generic simulation actor that implements the Parallel Discrete Event
@@ -56,6 +59,7 @@ public class PDevsSimulator<T extends SimTime, S,
   protected T timeNext;
   protected T transitionTime;
   protected ActorRef<DevsMessage> parent;
+  protected String simulationId;
 
   protected final M devsModel;
   protected final ActorRef<Receptionist.Listing> listingResponseAdapter;
@@ -96,10 +100,10 @@ public class PDevsSimulator<T extends SimTime, S,
   protected ReceiveBuilder<DevsMessage> createReceiveBuilder() {
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
 
-    builder.onMessage(InitSimMessage.class, this::onInitSimMessage);
-    builder.onMessage(SendOutput.class, this::onSendOutputMessage);
-    builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
-    builder.onMessage(SimulationDone.class, this::onSimulationDone);
+    builder.onMessage(SimulationInitMessage.class, this::onSimulationInitMessage);
+    builder.onMessage(RequestOutput.class, this::onRequestOutput);
+    builder.onMessage(ExecuteTransition.class, this::onExecuteTransition);
+    builder.onMessage(SimulationTerminate.class, this::onSimulationTerminate);
     builder.onMessage(DevsExternalMessage.class, this::processExternalMessage);
     builder.onMessage(PekkoReceptionistListingResponse.class,
       this::onPekkoReceptionistListingResponse);
@@ -138,19 +142,31 @@ public class PDevsSimulator<T extends SimTime, S,
     return time;
   }
 
+  protected String generateMessageId(String messageType) {
+    return devsModel.getModelIdentifier() + "_" + messageType + "_" + simulationId + "_" + timeLast.toString();
+  }
+
   /**
    * Handles an InitSimMessage to initialize the simulation. This method sets the parent actor,
    * calculates the time for the next internal state transition using the model's time advance
    * function, and notifies the parent actor of the next scheduled transition time.
    *
-   * @param initSimMessage the initialization message containing the parent actor reference and
+   * @param simulationInitMessage the initialization message containing the parent actor reference and
    *                       initial simulation settings
    * @return the updated behavior of the simulator to handle subsequent messages
    */
-  protected Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
-    this.parent = initSimMessage.getParent();
-    timeNext = timeAdvance(initSimMessage.getInitSim().getTime());
-    parent.tell(NextTime.builder().time(timeNext).sender(devsModel.getModelIdentifier()).build());
+  protected Behavior<DevsMessage> onSimulationInitMessage(SimulationInitMessage<T> simulationInitMessage) {
+    this.parent = simulationInitMessage.getParent();
+    this.simulationId = simulationInitMessage.getSimulationInit().getSimulationId();
+    timeNext = timeAdvance(simulationInitMessage.getSimulationInit().getEventTime());
+    parent.tell(
+        NextInternalTimeReport.builder()
+            .eventTime(simulationInitMessage.getSimulationInit().getEventTime())
+            .simulationId(simulationId)
+            .messageId(generateMessageId("NextInternalTimeReport"))
+            .senderId(devsModel.getModelIdentifier())
+            .nextInternalTime(timeNext)
+            .build());
     return this;
   }
 
@@ -159,21 +175,27 @@ public class PDevsSimulator<T extends SimTime, S,
    * synchronization of the simulation time, invokes the DEVS model's output function, and sends
    * the output to the parent actor encapsulated in a ModelOutputMessage.
    *
-   * @param sendOutput the SendOutput message containing the current simulation time and context
+   * @param requestOutput the SendOutput message containing the current simulation time and context
    *                   for generating and sending the model's output
    * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's 
    *                    current state
    * @throws RuntimeException if the simulation time in the SendOutput message does not match the
    *                          expected next simulation time
    */
-  protected Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
-    if (sendOutput.getTime().compareTo(timeNext) != 0) {
+  protected Behavior<DevsMessage> onRequestOutput(RequestOutput<T> requestOutput) {
+    if (requestOutput.getEventTime().compareTo(timeNext) != 0) {
       throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
-          + sendOutput.getTime() + " did not equal " + timeNext);
+          + requestOutput.getEventTime() + " did not equal " + timeNext);
     }
-    Bag modelOutput = devsModel.outputFunction();
-    parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
-        .sender(devsModel.getModelIdentifier()).build());
+    List<PortValue<?>> modelOutput = devsModel.outputFunction();
+    parent.tell(OutputReport.<T>builder()
+        .eventTime(requestOutput.getEventTime())
+        .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
+        .simulationId(simulationId)
+        .messageId(generateMessageId("OutputReport"))
+        .senderId(devsModel.getModelIdentifier())
+        .nextInternalTime(timeNext)
+        .build());
     return this;
   }
 
@@ -192,30 +214,30 @@ public class PDevsSimulator<T extends SimTime, S,
    * @throws IllegalArgumentException if an external transition for the DEVS model is empty but
    *                                  model inputs are required
    */
-  protected Behavior<DevsMessage> onExecuteTransitionMessage(
+  protected Behavior<DevsMessage> onExecuteTransition(
       ExecuteTransition<T> executeTransition) {
-    transitionTime = executeTransition.getTime();
-    if (executeTransition.getTime().compareTo(timeLast) < 0
-        || executeTransition.getTime().compareTo(timeNext) > 0) {
+    transitionTime = executeTransition.getEventTime();
+    if (executeTransition.getEventTime().compareTo(timeLast) < 0
+        || executeTransition.getEventTime().compareTo(timeNext) > 0) {
       throw new RuntimeException("Bad synchronization.  " + devsModel.modelIdentifier
-          + " received ExecuteTransitionMessage where time " + executeTransition.getTime()
+          + " received ExecuteTransitionMessage where time " + executeTransition.getEventTime()
           + " is not between " + timeLast + " and " + timeNext + "inclusive");
     }
-    if (executeTransition.getTime().compareTo(timeNext) == 0) {
-      if (executeTransition.getModelInputsOption().isEmpty()) {
-        return internalStateTransition(executeTransition.getTime());
+    if (executeTransition.getEventTime().compareTo(timeNext) == 0) {
+      if (executeTransition.getPayload().getInputs().isEmpty()) {
+        return internalStateTransition(executeTransition.getEventTime());
       } else {
-        return confluentStateTransition(executeTransition.getTime(),
-            executeTransition.getModelInputsOption().get());
+        return confluentStateTransition(executeTransition.getEventTime(),
+            executeTransition.getPayload().getInputs());
       }
     } else {
-      if (executeTransition.getModelInputsOption().isEmpty()) {
+      if (executeTransition.getPayload().getInputs().isEmpty()) {
         throw new IllegalArgumentException("External transition for model "
             + devsModel.getModelIdentifier() + " is empty.  Transition time is "
-            + executeTransition.getTime() + ".  Next time is " + timeNext);
+            + executeTransition.getEventTime() + ".  Next time is " + timeNext);
       } else {
-        return externalStateTransition(executeTransition.getTime(),
-            executeTransition.getModelInputsOption().get());
+        return externalStateTransition(executeTransition.getEventTime(),
+            executeTransition.getPayload().getInputs());
       }
     }
   }
@@ -230,8 +252,13 @@ public class PDevsSimulator<T extends SimTime, S,
     if (devsModel.isTransitionDone()) {
       timeLast = time;
       timeNext = timeAdvance(time);
-      parent.tell(TransitionDone.builder().nextTime(timeNext).time(time)
-          .sender(devsModel.getModelIdentifier()).build());
+      parent.tell(TransitionComplete.<T>builder()
+          .eventTime(time)
+          .simulationId(simulationId)
+          .messageId(generateMessageId("TransitionComplete"))
+          .senderId(devsModel.getModelIdentifier())
+          .nextInternalTime(timeNext)
+          .build());
     }
   }
 
@@ -263,7 +290,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's new
    * state
    */
-  protected Behavior<DevsMessage> confluentStateTransition(T time, Bag input) {
+  protected Behavior<DevsMessage> confluentStateTransition(T time, List<PortValue<?>> input) {
     devsModel.confluentStateTransitionFunction(time, input);
     transitionDone(time);
     return this;
@@ -280,7 +307,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * @return the updated {@link Behavior} of {@link DevsMessage} representing the simulator's new
    * state
    */
-  protected Behavior<DevsMessage> externalStateTransition(T time, Bag input) {
+  protected Behavior<DevsMessage> externalStateTransition(T time, List<PortValue<?>> input) {
     devsModel.externalStateTransitionFunction(time, input);
     transitionDone(time);
     return this;
@@ -306,13 +333,16 @@ public class PDevsSimulator<T extends SimTime, S,
    * parent actor of the simulation's completion and the time at which it concluded by sending a
    * ModelDone message. The behavior transitions to a stopped state after processing the message.
    *
-   * @param simulationDone the message indicating that the simulation has been completed, containing
+   * @param simulationTerminate the message indicating that the simulation has been completed, containing
    *                       the simulation end time
    * @return the updated {@link Behavior} of {@link DevsMessage}, which is set to a stopped state
    */
-  protected Behavior<DevsMessage> onSimulationDone(SimulationDone<T> simulationDone) {
-    parent.tell(ModelDone.builder().time(simulationDone.getTime())
-        .sender(devsModel.getModelIdentifier()).build());
+  protected Behavior<DevsMessage> onSimulationTerminate(SimulationTerminate<T> simulationTerminate) {
+    parent.tell(ModelTerminated.builder()
+        .simulationId(simulationId)
+        .messageId(generateMessageId("ModelTerminated"))
+        .senderId(devsModel.getModelIdentifier())
+        .build());
     return Behaviors.stopped();
   }
 

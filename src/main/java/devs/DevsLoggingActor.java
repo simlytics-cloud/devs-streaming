@@ -16,6 +16,8 @@
 
 package devs;
 
+import devs.iso.log.RunIdMessage;
+import devs.iso.log.StopLogger;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import org.apache.pekko.actor.typed.Behavior;
@@ -28,9 +30,7 @@ import org.apache.pekko.actor.typed.receptionist.Receptionist;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import devs.msg.log.DevsLogMessage;
-import devs.msg.log.RunIdMessage;
-import devs.msg.log.StopLogger;
+import devs.iso.log.DevsLogMessage;
 import devs.utils.DevsObjectMapper;
 
 /**

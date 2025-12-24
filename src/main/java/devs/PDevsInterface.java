@@ -1,8 +1,8 @@
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.SimTime;
+import devs.iso.PortValue;
+import devs.iso.time.SimTime;
+import java.util.List;
 
 public interface PDevsInterface<T extends SimTime, S> {
 
@@ -18,14 +18,14 @@ public interface PDevsInterface<T extends SimTime, S> {
   /**
    * The DEVS external state transition function. This function is called when an external event
    * arrives at one of the model's input ports. Note two important considerations. First, the type
-   * of event is not known in advance, so this function will have to use the {@link PortValue
-   * PortValue} contained in the input {@link devs.msg.Bag Bag} to identify the type of event and
+   * of event is not known in advance, so this function will have to use the {@link devs.iso.PortValue
+   * PortValue} contained in the input list to identify the type of event and
    * process it appropriately. In addition, more than one input is possible at an intant in time.
    *
    * @param currentTime the current time of the transition
-   * @param bag the bag of inputs that has arrived at the current time
+   * @param inputs the list of inputs that has arrived at the current time
    */
-  public void externalStateTransitionFunction(T currentTime, Bag bag);
+  public void externalStateTransitionFunction(T currentTime, List<PortValue<?>> inputs);
 
   /**
    * The parallel DEVS (PDEVS) confluent transition function. This function is called if an external
@@ -35,9 +35,9 @@ public interface PDevsInterface<T extends SimTime, S> {
    * event received.
    *
    * @param currentTime the current time of the transition
-   * @param bag the bag of inputs that has arrived at the current time
+   * @param inputs the list of inputs that has arrived at the current time
    */
-  public void confluentStateTransitionFunction(T currentTime, Bag bag);
+  public void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs);
 
   /**
    * This is the DEVS time advance function. The DEVS simulator calls this method to determine the
@@ -50,12 +50,11 @@ public interface PDevsInterface<T extends SimTime, S> {
 
   /**
    * The DEVS output function. The simulator calls this function immediately prior to an internal
-   * state transition. Its implementation adds any outputs from this model to the
-   * {@link devs.msg.Bag Bag}.
+   * state transition. 
    *
-   * @return the {@link devs.msg.Bag Bag} of outputs
+   * @return the list of outputs
    */
-  public Bag outputFunction();
+  public List<PortValue<?>> outputFunction();
 
 
 }

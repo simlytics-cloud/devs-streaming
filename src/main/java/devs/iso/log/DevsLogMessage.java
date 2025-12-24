@@ -1,5 +1,5 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java Copyright (C) 2025 simlytics.cloud LLC and
  * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,9 +14,19 @@
  *
  */
 
+package devs.iso.log;
+
+
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
+
 /**
- * In DEVS, there can be different ways to represent time. It can b using integers, floating point
- * numbers, or even constructs with multiple values. The classes in this package support the ssnding
- * of time values as json serializable messages.
+ * Class used to serialize messages by a DevsLoggingActor.
  */
-package devs.msg.time;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonSubTypes({@Type(value = DevsModelLogMessage.class), @Type(value = StateMessage.class)})
+public abstract interface DevsLogMessage {
+
+}

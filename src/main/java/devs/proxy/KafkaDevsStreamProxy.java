@@ -16,16 +16,16 @@
 
 package devs.proxy;
 
+import devs.iso.DevsMessage;
+import devs.iso.ModelTerminated;
+import devs.iso.SimulationTerminate;
 import java.util.Properties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.typesafe.config.Config;
-import devs.msg.DevsMessage;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.SimulationDone;
-import devs.msg.time.SimTime;
+import devs.iso.SimulationInitMessage;
+import devs.iso.time.SimTime;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaUtils;
@@ -130,8 +130,8 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
     String record = null;
     try {
-      if (devsMessage instanceof InitSimMessage<?> initSimMessage) {
-        record = objectMapper.writeValueAsString(initSimMessage.getInitSim());
+      if (devsMessage instanceof SimulationInitMessage<?> initSimMessage) {
+        record = objectMapper.writeValueAsString(initSimMessage.getSimulationInit());
       } else {
         record = objectMapper.writeValueAsString(devsMessage);
       }
@@ -153,7 +153,7 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
       }
     });
     index = index + 1;
-    if (devsMessage instanceof SimulationDone<?> || devsMessage instanceof ModelDone<?>) {
+    if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
       this.producer.close();
       return Behaviors.stopped();
     }

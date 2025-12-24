@@ -16,15 +16,15 @@
 
 package devs.proxy;
 
+import devs.iso.DevsMessage;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.typesafe.config.Config;
 import devs.SimulatorProvider;
-import devs.msg.DevsMessage;
-import devs.msg.InitSimMessage;
-import devs.msg.time.SimTime;
+import devs.iso.SimulationInitMessage;
+import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import devs.utils.ModelUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -171,20 +171,20 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
 
   /**
    * Handles an incoming {@link DevsMessage} and performs specific actions based on the message
-   * type. If the message is an instance of {@link InitSimMessage}, it sets the local parent
+   * type. If the message is an instance of {@link SimulationInitMessage}, it sets the local parent
    * coordinator. The method then passes the message to the superclass for Kafka-related
    * processing.
    *
    * @param devsMessage the incoming DEVS message to process. This can be any instance implementing
    *                    the {@code DevsMessage} interface, including specialized messages such as
-   *                    {@link InitSimMessage}.
+   *                    {@link SimulationInitMessage}.
    * @return a {@code Behavior<DevsMessage>} representing the next behavior of the actor, which is
    * the same behavior in this case to continue processing messages.
    */
   @Override
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
     // Set the local coordinator
-    if (devsMessage instanceof InitSimMessage initSimMessage) {
+    if (devsMessage instanceof SimulationInitMessage initSimMessage) {
       this.localParentCoordinator = Optional.of(initSimMessage.getParent());
     }
     // Then pass the message to super to be sent to Kafka

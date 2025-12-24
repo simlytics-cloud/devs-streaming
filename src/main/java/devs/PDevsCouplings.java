@@ -16,8 +16,7 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +64,7 @@ public class PDevsCouplings {
    * @return An instance of OutputCouplingMessages which encapsulates the processed output message
    * in a Bag and the internal messages mapped to Bags by their keys.
    */
-  public OutputCouplingMessages handleOutputBag(Map<String, Optional<Bag>> outputMap) {
+  public OutputCouplingMessages handleOutputBag(Map<String, Optional<List<PortValue<?>>>> outputMap) {
     Map<String, List<PortValue<?>>> receiverMap = new HashMap<>();
     List<PortValue<?>> outputMessages = new ArrayList<>();
 
@@ -73,16 +72,15 @@ public class PDevsCouplings {
       outputHandler.handleOutputs(outputMap, receiverMap, outputMessages);
     }
 
-    // Create input bags for all of the internal messages
-    Map<String, Bag> internalMessages = new HashMap<>();
+    // Create input lists for all of the internal messages
+    Map<String, List<PortValue<?>>> internalMessages = new HashMap<>();
     for (String key : receiverMap.keySet()) {
       List<PortValue<?>> portValues = receiverMap.get(key);
-      internalMessages.put(key, Bag.builder().addAllPortValueList(portValues).build());
+      internalMessages.put(key, portValues);
     }
 
-    // Create an output bag because this coupling does not product output messages
-    Bag outputBag = Bag.builder().addAllPortValueList(outputMessages).build();
-    return new OutputCouplingMessages(outputBag, internalMessages);
+    // Create an output list because this coupling does not product output messages
+    return new OutputCouplingMessages(outputMessages, internalMessages);
   }
 
   /**
@@ -93,7 +91,7 @@ public class PDevsCouplings {
    * @return A map where the keys are identifiers for target models or components, and the values
    * are Bags containing processed input messages intended for those targets.
    */
-  public Map<String, Bag> handleInputMessage(Bag modelInput) {
+  public Map<String, List<PortValue<?>>> handleInputMessage(List<PortValue<?>> modelInput) {
     Map<String, List<PortValue<?>>> receiverMap = new HashMap<>();
 
     for (InputCouplingHandler inputHandler : inputHandlers) {
@@ -101,10 +99,10 @@ public class PDevsCouplings {
     }
 
     // Create input bags for all of the internal messages
-    Map<String, Bag> internalMessages = new HashMap<>();
+    Map<String, List<PortValue<?>>> internalMessages = new HashMap<>();
     for (String key : receiverMap.keySet()) {
       List<PortValue<?>> portValues = receiverMap.get(key);
-      internalMessages.put(key, Bag.builder().addAllPortValueList(portValues).build());
+      internalMessages.put(key, portValues);
     }
     return internalMessages;
   }

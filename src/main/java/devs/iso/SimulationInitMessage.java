@@ -1,5 +1,5 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java Copyright (C) 2025 simlytics.cloud LLC and
  * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,9 +14,9 @@
  *
  */
 
-package devs.msg;
+package devs.iso;
 
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 
 /**
@@ -27,27 +27,27 @@ import org.apache.pekko.actor.typed.ActorRef;
  *
  * @param <T> the type of simulation time associated with the initialization.
  */
-public class InitSimMessage<T extends SimTime> implements DevsMessage {
+public class SimulationInitMessage<T extends SimTime> implements DevsMessage {
 
   private final ActorRef<DevsMessage> parent;
-  private final InitSim<T> initSim;
+  private final SimulationInit<T> simulationInit;
 
   /**
    * Constructs an InitSimMessage instance to initialize a simulation.
    *
-   * @param initSim the initialization configuration for the simulation.
+   * @param simulationInit the initialization configuration for the simulation.
    * @param parent  the reference to the parent actor for communication.
    */
-  public InitSimMessage(InitSim<T> initSim, ActorRef<DevsMessage> parent) {
+  public SimulationInitMessage(SimulationInit<T> simulationInit, ActorRef<DevsMessage> parent) {
     this.parent = parent;
-    this.initSim = initSim;
+    this.simulationInit = simulationInit;
   }
 
   public ActorRef<DevsMessage> getParent() {
     return parent;
   }
 
-  public InitSim<T> getInitSim() {
-    return initSim;
+  public SimulationInit<T> getSimulationInit() {
+    return simulationInit;
   }
 }

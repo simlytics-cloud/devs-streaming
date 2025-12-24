@@ -18,17 +18,19 @@ package devs;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.time.LongSimTime;
+import devs.iso.DevsMessage;
+import devs.iso.ModelIdPayload;
+import devs.iso.ModelTerminated;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.OutputReport;
+import devs.iso.OutputReportPayload;
+import devs.iso.RequestOutput;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
+import example.generator.GeneratorModel;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -103,6 +105,8 @@ public class RootCoordinatorTest {
     testKit.shutdownTestKit();
   }
 
+  private static final String simulationId = "RootCoordinatorTest";
+
   /**
    * Tests the behavior and interaction of the RootCoordinator actor within the DEVS streaming
    * framework.
@@ -131,39 +135,63 @@ public class RootCoordinatorTest {
     TestProbe<DevsMessage> probe = testKit.createTestProbe();
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
-            LongSimTime.builder().t(10L).build(), probe.getRef())));
-    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+            LongSimTime.builder().t(10L).build(), probe.getRef(), "child")));
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("SimulationInit")
+        .senderId("TestActor")
+        .build());
 
     DevsMessage message1 = probe.receiveMessage();
-    assert (message1 instanceof InitSimMessage<?>);
-    InitSimMessage<LongSimTime> initSimMessage = (InitSimMessage<LongSimTime>) message1;
-    String initSimJson = objectMapper.writeValueAsString(initSimMessage.getInitSim());
-    InitSim<LongSimTime> initSimDeserialized = objectMapper.readValue(initSimJson, InitSim.class);
-    assert (initSimDeserialized.getTime().getT() == 0L);
-    rootCoordinator
-        .tell(NextTime.builder().time(LongSimTime.builder().t(2L).build()).sender("child").build());
+    assert (message1 instanceof SimulationInitMessage<?>);
+    SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
+    String initSimJson = objectMapper.writeValueAsString(initSimMessage.getSimulationInit());
+    SimulationInit<LongSimTime> initSimDeserialized = objectMapper.readValue(initSimJson, SimulationInit.class);
+    assert (initSimDeserialized.getEventTime().getT() == 0L);
+    rootCoordinator.tell(NextInternalTimeReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .simulationId(simulationId)
+        .messageId("NextInternalTimeReport")
+        .senderId("TestActor")
+        .nextInternalTime(LongSimTime.create(2))
+        .build());
 
     DevsMessage message2 = probe.receiveMessage();
-    assert (message2 instanceof SendOutput<?>);
-    SendOutput<LongSimTime> sendOutput = (SendOutput<LongSimTime>) message2;
-    assert (sendOutput.getTime().getT() == 2L);
-    rootCoordinator.tell(ModelOutputMessage.builder().modelOutput(Bag.builder().build())
-        .nextTime(LongSimTime.builder().t(5L).build())
-        .sender("child").build());
+    assert (message2 instanceof RequestOutput<?>);
+    RequestOutput<LongSimTime> sendOutput = (RequestOutput<LongSimTime>) message2;
+    assert (sendOutput.getEventTime().getT() == 2L);
+    rootCoordinator.tell(OutputReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(2))
+        .payload(OutputReportPayload.builder().build())
+        .simulationId(simulationId)
+        .messageId("OutputReport")
+        .senderId("child")
+        .nextInternalTime(LongSimTime.create(5))
+        .build());
 
     DevsMessage message3 = probe.receiveMessage();
-    assert (message3 instanceof SendOutput<?>);
-    SendOutput<LongSimTime> sendOutput2 = (SendOutput<LongSimTime>) message3;
-    assert (sendOutput2.getTime().getT() == 5L);
-    rootCoordinator.tell(ModelOutputMessage.builder().modelOutput(Bag.builder().build())
-        .nextTime(LongSimTime.builder().t(11L).build()).sender("child")
+    assert (message3 instanceof RequestOutput<?>);
+    RequestOutput<LongSimTime> sendOutput2 = (RequestOutput<LongSimTime>) message3;
+    assert (sendOutput2.getEventTime().getT() == 5L);
+    rootCoordinator.tell(OutputReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(5))
+        .payload(OutputReportPayload.builder().build())
+        .simulationId(simulationId)
+        .messageId("OutputReport")
+        .senderId("child")
+        .nextInternalTime(LongSimTime.create(11))
         .build());
 
     DevsMessage message4 = probe.receiveMessage();
-    assert (message4 instanceof SimulationDone<?>);
-    SimulationDone<LongSimTime> simulationDone = (SimulationDone<LongSimTime>) message4;
-    assert (simulationDone.getTime().getT() == 5L);
-    rootCoordinator
-        .tell(ModelDone.builder().time(simulationDone.getTime()).sender("child").build());
+    assert (message4 instanceof SimulationTerminate<?>);
+    SimulationTerminate<LongSimTime> simulationDone = (SimulationTerminate<LongSimTime>) message4;
+    assert (simulationDone.getEventTime().getT() == 5L);
+    rootCoordinator.tell(ModelTerminated.<LongSimTime>builder()
+        .simulationId(simulationId)
+        .messageId("ModelTerminated")
+        .senderId("child")
+        .build());
   }
 }

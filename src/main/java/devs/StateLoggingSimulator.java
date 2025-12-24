@@ -16,20 +16,22 @@
 
 package devs;
 
+import devs.iso.DevsMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.OutputReport;
+import devs.iso.OutputReportPayload;
+import devs.iso.PortValue;
+import devs.iso.RequestOutput;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelOutputMessage;
-import devs.msg.SendOutput;
-import devs.msg.log.DevsLogMessage;
-import devs.msg.log.DevsModelLogMessage;
-import devs.msg.log.PekkoReceptionistListingResponse;
-import devs.msg.log.StateMessage;
-import devs.msg.time.SimTime;
+import devs.iso.SimulationInitMessage;
+import devs.iso.log.DevsLogMessage;
+import devs.iso.log.DevsModelLogMessage;
+import devs.iso.log.PekkoReceptionistListingResponse;
+import devs.iso.log.StateMessage;
+import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
@@ -162,37 +164,42 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
   }
 
   @Override
-  protected Behavior<DevsMessage> onExecuteTransitionMessage(
+  protected Behavior<DevsMessage> onExecuteTransition(
       ExecuteTransition<T> executeTransition) {
-    Behavior<DevsMessage> behavior = super.onExecuteTransitionMessage(executeTransition);
+    Behavior<DevsMessage> behavior = super.onExecuteTransition(executeTransition);
     DevsModelLogMessage<?> devsModelLogMessage =
-        DevsModelLogMessage.builder().time(executeTransition.getTime())
+        DevsModelLogMessage.builder().time(executeTransition.getEventTime())
             .modelId(devsModel.getModelIdentifier()).devsMessage(executeTransition).build();
     sendLogMessage(devsModelLogMessage);
-    logState(executeTransition.getTime());
+    logState(executeTransition.getEventTime());
     return behavior;
   }
 
   @Override
-  protected Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
-    Behavior<DevsMessage> behavior = super.onInitSimMessage(initSimMessage);
-    logState(initSimMessage.getInitSim().getTime());
+  protected Behavior<DevsMessage> onSimulationInitMessage(SimulationInitMessage<T> simulationInitMessage) {
+    Behavior<DevsMessage> behavior = super.onSimulationInitMessage(simulationInitMessage);
+    logState(simulationInitMessage.getSimulationInit().getEventTime());
     return behavior;
   }
 
   @Override
-  protected Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
-    if (sendOutput.getTime().compareTo(timeNext) != 0) {
+  protected Behavior<DevsMessage> onRequestOutput(RequestOutput<T> requestOutput) {
+    if (requestOutput.getEventTime().compareTo(timeNext) != 0) {
       throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
-          + sendOutput.getTime() + " did not equal " + timeNext);
+          + requestOutput.getEventTime() + " did not equal " + timeNext);
     }
-    Bag modelOutput = devsModel.outputFunction();
-    ModelOutputMessage<?> modelOutputMessage = ModelOutputMessage.builder().modelOutput(modelOutput)
-        .nextTime(timeNext).sender(devsModel.getModelIdentifier()).build();
-    parent.tell(modelOutputMessage);
+    List<PortValue<?>> modelOutput = devsModel.outputFunction();
+    OutputReport<?> outputReport = OutputReport.<T>builder()
+        .eventTime(timeLast)
+        .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
+        .simulationId(requestOutput.getSimulationId())
+        .messageId(generateMessageId("OutputReport"))
+        .senderId(devsModel.getModelIdentifier())
+        .nextInternalTime(timeNext).build();
+    parent.tell(outputReport);
     DevsModelLogMessage<?> devsModelLogMessage =
-        DevsModelLogMessage.builder().time(sendOutput.getTime())
-            .modelId(devsModel.getModelIdentifier()).devsMessage(modelOutputMessage).build();
+        DevsModelLogMessage.builder().time(requestOutput.getEventTime())
+            .modelId(devsModel.getModelIdentifier()).devsMessage(outputReport).build();
     sendLogMessage(devsModelLogMessage);
     return this;
   }

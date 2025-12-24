@@ -19,9 +19,10 @@ package devs.experimentalframe;
 import devs.PDEVSModel;
 import devs.Port;
 import devs.ScheduledDevsModel;
-import devs.msg.Bag;
-import devs.msg.time.SimTime;
+import devs.iso.PortValue;
+import devs.iso.time.SimTime;
 import devs.utils.Schedule;
+import java.util.List;
 import java.util.Map;
 
 
@@ -61,18 +62,18 @@ public abstract class Generator<T extends SimTime> extends PDEVSModel<T, Void> i
   protected abstract Map<String, Port<?>> buildPorts();
 
   @Override
-  public void externalStateTransitionFunction(T currentTime, Bag bag) {
+  public void externalStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
     // No external events
     throw new IllegalArgumentException("Generator does not expect external events.  \n"
         + "Got event with port identifier of "
-        + bag.getPortValueList().get(0).getPortIdentifier());
+        + inputs.get(0).getPortName());
 
   }
 
   @Override
-  public void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag) {
+  public void scheduledConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
     // Will trhow an error.  No external events allowed to a generator
-    externalStateTransitionFunction(currentTime, bag);
+    externalStateTransitionFunction(currentTime, inputs);
   }
 
   

@@ -18,8 +18,8 @@ package devs.experimentalframe;
 
 
 import devs.Port;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -101,12 +101,12 @@ public class GeneratorTest {
       LongSimTime timeAdvance = generator.timeAdvanceFunction(simTime);
       assert (timeAdvance.equals(t0));
       // Test the output
-      for (PortValue<?> pv : generator.outputFunction().getPortValueList()) {
-        if ("number".equals(pv.getPortIdentifier())) {
+      for (PortValue<?> pv : generator.outputFunction()) {
+        if ("number".equals(pv.getPortName())) {
           Port<Integer> integerPort = (Port<Integer>) generator.getPorts().get("number");
           Integer i = integerPort.getValue(pv);
           assert (i == t);
-        } else if ("words".equals(pv.getPortIdentifier())) {
+        } else if ("words".equals(pv.getPortName())) {
           Port<String> wordPort = (Port<String>) generator.getPorts().get("words");
           String word = wordPort.getValue(pv);
           String expectedWord = switch ((int) t) {

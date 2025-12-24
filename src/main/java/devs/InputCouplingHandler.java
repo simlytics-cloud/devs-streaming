@@ -16,8 +16,7 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,11 +40,11 @@ public abstract class InputCouplingHandler {
    * Handles the input bag coming to the coupled model.
    *
    * @param inputs      the input bag sent to the coupled model
-   * @param receiverMap a map of model identifiers and the {@link devs.msg.PortValue}s routed to
+   * @param receiverMap a map of model identifiers and the {@link devs.iso.PortValue}s routed to
    *                    those models.
    */
-  public void handleInputs(Bag inputs, Map<String, List<PortValue<?>>> receiverMap) {
-    for (PortValue<?> portValue : inputs.getPortValueList()) {
+  public void handleInputs(List<PortValue<?>> inputs, Map<String, List<PortValue<?>>> receiverMap) {
+    for (PortValue<?> portValue : inputs) {
       if (classFilter.isPresent() && !classFilter.get().isInstance(portValue.getValue())) {
         // do nothing
       } else {
@@ -57,19 +56,19 @@ public abstract class InputCouplingHandler {
   /**
    * This method should be overridden to specify handling on inputs.
    *
-   * @param portValue   the {@link devs.msg.PortValue} to handle
-   * @param receiverMap a map of model identifiers and the {@link devs.msg.PortValue}s routed to
+   * @param portValue   the {@link devs.iso.PortValue} to handle
+   * @param receiverMap a map of model identifiers and the {@link devs.iso.PortValue}s routed to
    *                    those models.
    */
   public abstract void handlePortValue(PortValue<?> portValue,
                                        Map<String, List<PortValue<?>>> receiverMap);
 
   /**
-   * A utility method to add a {@link devs.msg.PortValue} the the recieverMap.
+   * A utility method to add a {@link devs.iso.PortValue} the the recieverMap.
    *
    * @param portValue   the PortValue to add
    * @param receiver    the model identifier for the receiver model
-   * @param receiverMap a map of model identifiers and the {@link devs.msg.PortValue}s routed to
+   * @param receiverMap a map of model identifiers and the {@link devs.iso.PortValue}s routed to
    *                    those models.
    */
   protected void addInputPortValue(PortValue<?> portValue, String receiver,

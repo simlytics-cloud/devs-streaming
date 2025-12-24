@@ -2,7 +2,7 @@ package devs;
 
 import java.util.ArrayList;
 import java.util.List;
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 
 /**
  * Provides a LoggingSimulator to execute the underlying DEVSModel.

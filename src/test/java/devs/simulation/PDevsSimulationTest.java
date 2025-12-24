@@ -20,12 +20,13 @@ import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.PDevsSimulator;
 import devs.RootCoordinator;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.DevsMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.ModelIdPayload;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
 import example.coordinator.GenStoreInputCouplingHandler;
@@ -151,8 +152,14 @@ public class PDevsSimulationTest {
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(Behaviors.setup(context -> new RootCoordinator<LongSimTime>(context,
-            LongSimTime.builder().t(2L).build(), coordinator)));
-    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+            LongSimTime.builder().t(2L).build(), coordinator, "genStoreCoupled")));
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId("root").build())
+        .simulationId("PDevsSimulationTest")
+        .messageId("SimulationInit")
+        .senderId("TestActor")
+        .build());
 
     ActorRef<DevsMessage> recorderSim = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Void, RecorderModel>(
@@ -161,9 +168,9 @@ public class PDevsSimulationTest {
 
     // Expect initSim message to recorder
     DevsMessage message1 = toRecorderProbe.receiveMessage();
-    assert (message1 instanceof InitSimMessage<?>);
-    InitSimMessage<LongSimTime> initSimMessage = (InitSimMessage<LongSimTime>) message1;
-    assert (initSimMessage.getInitSim().getTime().getT() == 0L);
+    assert (message1 instanceof SimulationInitMessage<?>);
+    SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
+    assert (initSimMessage.getSimulationInit().getEventTime().getT() == 0L);
     recorderSim.tell(initSimMessage);
 
     // Expect execute external transition message with generator output of 0
@@ -171,10 +178,10 @@ public class PDevsSimulationTest {
     assert (messag2 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition =
         (ExecuteTransition<LongSimTime>) messag2;
-    assert (executeExternalTransition.getModelInputsOption().isPresent());
-    assert ((Integer) executeExternalTransition.getModelInputsOption().get().getPortValueList()
+    assert (executeExternalTransition.getPayload().getInputs().size() > 0);
+    assert ((Integer) executeExternalTransition.getPayload().getInputs()
         .get(0).getValue() == 0);
-    assert (executeExternalTransition.getTime().getT() == 1L);
+    assert (executeExternalTransition.getEventTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition);
 
     // Expect execute external transition message with generator output of 1 and a storage
@@ -184,16 +191,16 @@ public class PDevsSimulationTest {
     assert (messag3 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition2 =
         (ExecuteTransition<LongSimTime>) messag3;
-    assert (executeExternalTransition2.getModelInputsOption().isPresent());
-    PortValue<?> generatorPortValue = executeExternalTransition2.getModelInputsOption().get()
-        .getPortValueList().stream()
-        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    assert (executeExternalTransition2.getPayload().getInputs().size() > 0);
+    PortValue<?> generatorPortValue = executeExternalTransition2.getPayload().getInputs()
+        .stream()
+        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert ((Integer) generatorPortValue.getValue() == 1);
-    PortValue<?> storagePortValue = executeExternalTransition2.getModelInputsOption().get()
-        .getPortValueList().stream()
-        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    PortValue<?> storagePortValue = executeExternalTransition2.getPayload().getInputs()
+        .stream()
+        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert (storagePortValue.getValue().equals("S0"));
-    assert (executeExternalTransition2.getTime().getT() == 1L);
+    assert (executeExternalTransition2.getEventTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition2);
 
     // Expect execute external transition message with no generator output and a storage output
@@ -202,14 +209,14 @@ public class PDevsSimulationTest {
     assert (messag4 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition3 =
         (ExecuteTransition<LongSimTime>) messag4;
-    assert (executeExternalTransition3.getModelInputsOption().isPresent());
+    assert (executeExternalTransition3.getPayload().getInputs().size() > 0);
     Optional<PortValue<?>> generatorPortOption = executeExternalTransition3
-        .getModelInputsOption().get().getPortValueList().stream()
-        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortIdentifier())).findFirst();
+        .getPayload().getInputs().stream()
+        .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortName())).findFirst();
     assert (generatorPortOption.isEmpty());
-    PortValue<?> storagePortValue4 = executeExternalTransition3.getModelInputsOption().get()
-        .getPortValueList().stream()
-        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortIdentifier())).findFirst().get();
+    PortValue<?> storagePortValue4 = executeExternalTransition3.getPayload().getInputs()
+        .stream()
+        .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
     assert (storagePortValue4.getValue().equals("S1"));
 
   }

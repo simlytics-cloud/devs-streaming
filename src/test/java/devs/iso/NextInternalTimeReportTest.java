@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.time.LongSimTime;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -33,14 +33,12 @@ public class NextInternalTimeReportTest {
   public void createNextInternalTimeReport() {
     NextInternalTimeReport<LongSimTime> nextInternalTimeReport = NextInternalTimeReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
         .nextInternalTime(LongSimTime.create(3))
         .build();
     assert nextInternalTimeReport.getEventTime().getT() == 0L;
-    assert nextInternalTimeReport.getPayload().getModelId().equals("vehicle");
     assert nextInternalTimeReport.getSimulationId().equals("run1");
     assert nextInternalTimeReport.getMessageId().equals("id");
     assert nextInternalTimeReport.getSenderId().equals("irp");
@@ -52,7 +50,6 @@ public class NextInternalTimeReportTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     NextInternalTimeReport<LongSimTime> nextInternalTimeReport = NextInternalTimeReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
@@ -68,7 +65,6 @@ public class NextInternalTimeReportTest {
     NextInternalTimeReport<LongSimTime> deserializedNextInternalTime = (NextInternalTimeReport<LongSimTime>)
         deserializedSimMessage;
     assert deserializedNextInternalTime.getEventTime().getT() == 0L;
-    assert deserializedNextInternalTime.getPayload().getModelId().equals("vehicle");
     assert deserializedNextInternalTime.getSimulationId().equals("run1");
     assert deserializedNextInternalTime.getMessageId().equals("id");
     assert deserializedNextInternalTime.getSenderId().equals("irp");

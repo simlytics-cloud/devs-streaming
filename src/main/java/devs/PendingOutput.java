@@ -1,10 +1,9 @@
 package devs;
 
+import devs.iso.PortValue;
 import java.util.List;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 
 /**
  * The PendingOutput interface extends the PDevsInterface and provides functionality related
@@ -62,9 +61,9 @@ public interface PendingOutput<T extends SimTime, S> extends PDevsInterface<T, S
      * at the same simulation time.
      *
      * @param currentTime the current simulation time at which the confluent state transition occurs
-     * @param bag         the set of external inputs provided to the model during the confluent transition
+     * @param inputs         the set of external inputs provided to the model during the confluent transition
      */
-    public void pendingConfluentStateTransitionFunction(T currentTime, Bag bag);
+    public void pendingConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs);
 
     /**
      * Handles the confluent state transition function as part of the DEVS model's simulation lifecycle.
@@ -72,12 +71,12 @@ public interface PendingOutput<T extends SimTime, S> extends PDevsInterface<T, S
      * state transition logic when external and internal events coincide at the same simulation time.
      *
      * @param currentTime the current simulation time at which the confluent state transition occurs
-     * @param bag         the set of external inputs provided to the model during the confluent transition
+     * @param inputs         the set of external inputs provided to the model during the confluent transition
      */
     @Override
-    default void confluentStateTransitionFunction(T currentTime, Bag bag) {
+    default void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
         clearPendingOutput();
-        pendingConfluentStateTransitionFunction(currentTime, bag);
+        pendingConfluentStateTransitionFunction(currentTime, inputs);
     }
 
     /**
@@ -105,10 +104,8 @@ public interface PendingOutput<T extends SimTime, S> extends PDevsInterface<T, S
      * @return a {@code Bag} containing all pending outputs of the DEVS model.
      */
     @Override
-    default public Bag outputFunction() {
-        Bag.Builder bagBuilder = Bag.builder();
-        bagBuilder.addAllPortValueList(getPendingOutput());
-        return bagBuilder.build();
+    default public List<PortValue<?>> outputFunction() {
+        return getPendingOutput();
     }
 
 

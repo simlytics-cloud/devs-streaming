@@ -16,7 +16,8 @@
 
 package devs;
 
-import devs.msg.Bag;
+import devs.iso.PortValue;
+import java.util.List;
 import java.util.Map;
 
 
@@ -33,19 +34,19 @@ import java.util.Map;
  */
 public class OutputCouplingMessages {
 
-  final Bag outputMessage;
-  final Map<String, Bag> internalMessages;
+  final List<PortValue<?>> outputMessages;
+  final Map<String, List<PortValue<?>>> internalMessages;
 
-  public OutputCouplingMessages(Bag outputMessage, Map<String, Bag> internalMessages) {
-    this.outputMessage = outputMessage;
+  public OutputCouplingMessages(List<PortValue<?>> outputMessages, Map<String, List<PortValue<?>>> internalMessages) {
+    this.outputMessages = outputMessages;
     this.internalMessages = internalMessages;
   }
 
-  public Bag getOutputMessage() {
-    return outputMessage;
+  public List<PortValue<?>> getOutputMessages() {
+    return outputMessages;
   }
 
-  public Map<String, Bag> getInternalMessages() {
+  public Map<String, List<PortValue<?>>> getInternalMessages() {
     return internalMessages;
   }
 }

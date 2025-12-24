@@ -17,7 +17,7 @@
 package example.coordinator;
 
 import devs.OutputCouplingHandler;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import java.util.List;

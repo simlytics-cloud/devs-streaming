@@ -16,6 +16,8 @@
 
 package example;
 
+import devs.iso.ModelIdPayload;
+import devs.iso.SimulationInit;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,11 +36,10 @@ import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.RootCoordinator;
 import devs.StateLoggingSimulator;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.log.DevsLogMessage;
-import devs.msg.log.StopLogger;
-import devs.msg.time.LongSimTime;
+import devs.iso.DevsMessage;
+import devs.iso.log.DevsLogMessage;
+import devs.iso.log.StopLogger;
+import devs.iso.time.LongSimTime;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
@@ -182,11 +183,17 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
         PDevsCoordinator.create("coupled", modelSimulators, genStoreCoupling), "coordinator");
 
     ActorRef<DevsMessage> rootCoordinator = context
-        .spawn(RootCoordinator.create(LongSimTime.builder().t(3L).build(), coordinator), "root");
+        .spawn(RootCoordinator.create(LongSimTime.builder().t(3L).build(), coordinator, "coupled"), "root");
 
     context.watch(rootCoordinator);
 
-    rootCoordinator.tell(InitSim.builder().time(LongSimTime.builder().t(0L).build()).build());
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0L))
+        .payload(ModelIdPayload.builder().modelId("root").build())
+        .simulationId("GenStoreSimulation")
+        .messageId("App-SimStoreInit")
+        .senderId("App")
+        .build());
 
     return Behaviors.same();
   }

@@ -16,8 +16,7 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -76,13 +75,12 @@ public abstract class OutputCouplingHandler {
    * @param outputMessages A list to which processed port values are appended for further handling
    *                       or dispatching.
    */
-  public void handleOutputs(Map<String, Optional<Bag>> modelOutputs,
+  public void handleOutputs(Map<String, Optional<List<PortValue<?>>>> modelOutputs,
       Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
-    for (Map.Entry<String, Optional<Bag>> entry : modelOutputs.entrySet()) {
+    for (Map.Entry<String, Optional<List<PortValue<?>>>> entry : modelOutputs.entrySet()) {
       if (entry.getValue().isPresent()) {
         String sender = entry.getKey();
-        Bag bag = entry.getValue().get();
-        for (PortValue<?> portValue : bag.getPortValueList()) {
+        for (PortValue<?> portValue : entry.getValue().get()) {
           if (filterEntry(sender, portValue)) {
             handlePortValue(sender, portValue, receiverMap, outputMessages);
           }
@@ -127,7 +125,7 @@ public abstract class OutputCouplingHandler {
       return false;
     }
     if (portIdentifierFilter.isPresent()
-        && !portValue.getPortIdentifier().equals(portIdentifierFilter.get())) {
+        && !portValue.getPortName().equals(portIdentifierFilter.get())) {
       return false;
     }
     if (classFilter.isPresent() && !classFilter.get().isInstance(portValue.getValue())) {

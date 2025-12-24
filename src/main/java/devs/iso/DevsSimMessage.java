@@ -33,7 +33,7 @@ import org.jspecify.annotations.Nullable;
     @Type(value = OutputReport.class),
     @Type(value = ExecuteTransition.class)
 })
-public abstract class DevsSimMessage {
+public abstract class DevsSimMessage implements DevsMessage {
   public abstract String getSimulationId();
   public abstract String getMessageId();
   @Value.Derived

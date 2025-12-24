@@ -1,5 +1,5 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java Copyright (C) 2025 simlytics.cloud LLC and
  * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,13 +14,13 @@
  *
  */
 
-package devs.msg.log;
+package devs.iso.log;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import devs.msg.DevsMessage;
-import devs.msg.time.SimTime;
-import devs.msg.time.TimedDevsMessage;
+import devs.iso.DevsMessage;
+import devs.iso.time.SimTime;
+import devs.iso.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
 
@@ -36,7 +36,7 @@ import org.immutables.value.Value;
  *            representation.
  *            <p>
  *            Implements: - {@link DevsLogMessage}: A base interface for any log message used within
- *            the DEVS framework. - {@link devs.msg.time.TimedDevsMessage}: Adds time-related
+ *            the DEVS framework. - TimedDevsMessage: Adds time-related
  *            information, associating the message with a specific simulation time.
  *            <p>
  *            Key Features: - Encapsulation of the model's unique identifier, simulation time, and

@@ -19,24 +19,28 @@ package devs;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import devs.msg.Bag;
-import devs.msg.DevsExternalMessage;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.TransitionDone;
-import devs.msg.time.LongSimTime;
+
+import devs.iso.DevsExternalMessage;
+import devs.iso.DevsMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.ExecuteTransitionPayload;
+import devs.iso.ModelIdPayload;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.OutputReport;
+import devs.iso.PortValue;
+import devs.iso.RequestOutput;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+
+import devs.iso.TransitionComplete;
+import devs.iso.time.LongSimTime;
 import devs.utils.HttpServiceActor;
 import devs.utils.HttpServiceActor.Command;
 import devs.utils.HttpServiceActor.ErrorResponse;
 import devs.utils.HttpServiceActor.Request;
-import devs.utils.HttpServiceActor.Response;
 import devs.utils.HttpServiceActor.SucceffulResponse;
 import example.generator.GeneratorModel;
+import java.util.List;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
@@ -323,6 +327,7 @@ public class ExternalServiceTest {
    * The test environment is shut down during cleanup to release resources.
    */
   static final ActorTestKit testKit = ActorTestKit.create();
+  static final String simulationId = "external-service-test";
 
   /**
    * Cleans up resources after all tests in the test class have been executed.
@@ -348,56 +353,91 @@ public class ExternalServiceTest {
             LongSimTime.builder().t(0L).build(), context)));
 
     // Initialize and expect next sim time to be 1
-    simulator.tell(new InitSimMessage(
-        InitSim.builder().time(LongSimTime.builder().t(0L).build()).build(), probe.getRef()));
+    simulator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("SimulationInit")
+        .senderId("TestActor")
+        .build(), probe.getRef()));
     DevsMessage receivedMessage = probe.receiveMessage();
-    assert (receivedMessage instanceof NextTime<?>);
-    NextTime nextTime = (NextTime) receivedMessage;
-    assert (nextTime.getTime() instanceof LongSimTime);
-    assert (((LongSimTime) nextTime.getTime()).getT() == 1L);
-    assert ("generator".equals(nextTime.getSender()));
+    assert (receivedMessage instanceof NextInternalTimeReport<?>);
+    NextInternalTimeReport nextTime = (NextInternalTimeReport) receivedMessage;
+    assert (nextTime.getNextInternalTime() instanceof LongSimTime);
+    assert (((LongSimTime) nextTime.getNextInternalTime()).getT() == 1L);
+    assert ("generator".equals(nextTime.getSenderId()));
 
     // Get output and expect it to be 0
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message2 = probe.receiveMessage();
-    assert (message2 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage = (ModelOutputMessage<LongSimTime>) message2;
-    assert (modelOutputMessage.getNextTime().getT() == 1L);
-    Bag generatorOutput = modelOutputMessage.getModelOutput();
-    assert ((Integer) generatorOutput.getPortValueList().get(0).getValue() == 0);
+    assert (message2 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage = (OutputReport<LongSimTime>) message2;
+    assert (modelOutputMessage.getNextInternalTime().getT() == 1L);
+    List<PortValue<?>> generatorOutput = modelOutputMessage.getPayload().getOutputs();
+    assert ((Integer) generatorOutput.get(0).getValue() == 0);
 
     // Execute transition and expect next time to be 1
-    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(ExecuteTransition.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("ExecuteTransition")
+        .senderId("TestActor")
+        .build());
     DevsMessage message3 = probe.receiveMessage();
-    assert (message3 instanceof TransitionDone<?>);
-    TransitionDone<LongSimTime> transitionDone = (TransitionDone<LongSimTime>) message3;
-    assert (transitionDone.getTime().getT() == 1L);
+    assert (message3 instanceof TransitionComplete<?>);
+    TransitionComplete<LongSimTime> transitionDone = (TransitionComplete<LongSimTime>) message3;
+    assert (transitionDone.getEventTime().getT() == 1L);
 
     // Get output and expect it to be 1
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message4 = probe.receiveMessage();
-    assert (message4 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage4 =
-        (ModelOutputMessage<LongSimTime>) message4;
-    Bag generatorOutput4 = modelOutputMessage4.getModelOutput();
-    assert ((Integer) generatorOutput4.getPortValueList().get(0).getValue() == 1);
+    assert (message4 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage4 =
+        (OutputReport<LongSimTime>) message4;
+    List<PortValue<?>> generatorOutput4 = modelOutputMessage4.getPayload().getOutputs();
+    assert ((Integer) generatorOutput4.get(0).getValue() == 1);
 
     // Execute transition and expect next time to be 2
-    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(ExecuteTransition.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("ExecuteTransition")
+        .senderId("TestActor")
+        .build());
     DevsMessage message5 = probe.receiveMessage();
-    assert (message5 instanceof TransitionDone<?>);
-    TransitionDone<LongSimTime> transitionDone2 = (TransitionDone<LongSimTime>) message5;
-    assert (transitionDone2.getNextTime().getT() == 2L);
-    assert (transitionDone2.getTime().getT() == 1L);
+    assert (message5 instanceof TransitionComplete<?>);
+    TransitionComplete<LongSimTime> transitionDone2 = (TransitionComplete<LongSimTime>) message5;
+    assert (transitionDone2.getNextInternalTime().getT() == 2L);
+    assert (transitionDone2.getEventTime().getT() == 1L);
 
     // Get output and expect it to be 0
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(2L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(2))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message6 = probe.receiveMessage();
-    assert (message6 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage6 =
-        (ModelOutputMessage<LongSimTime>) message6;
-    Bag generatorOutput6 = modelOutputMessage6.getModelOutput();
-    assert ((Integer) generatorOutput6.getPortValueList().get(0).getValue() == 0);
+    assert (message6 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage6 =
+        (OutputReport<LongSimTime>) message6;
+    List<PortValue<?>> generatorOutput6 = modelOutputMessage6.getPayload().getOutputs();
+    assert ((Integer) generatorOutput6.get(0).getValue() == 0);
   }
 
   @Test
@@ -481,56 +521,91 @@ public class ExternalServiceTest {
             LongSimTime.builder().t(0L).build(), context)));
 
     // Initialize and expect next sim time to be 1
-    simulator.tell(new InitSimMessage(
-        InitSim.builder().time(LongSimTime.builder().t(0L).build()).build(), probe.getRef()));
+    simulator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("SimulationInit")
+        .senderId("TestActor")
+        .build(), probe.getRef()));
     DevsMessage receivedMessage = probe.receiveMessage();
-    assert (receivedMessage instanceof NextTime<?>);
-    NextTime nextTime = (NextTime) receivedMessage;
-    assert (nextTime.getTime() instanceof LongSimTime);
-    assert (((LongSimTime) nextTime.getTime()).getT() == 1L);
-    assert ("generator".equals(nextTime.getSender()));
+    assert (receivedMessage instanceof NextInternalTimeReport<?>);
+    NextInternalTimeReport nextTime = (NextInternalTimeReport) receivedMessage;
+    assert (nextTime.getNextInternalTime() instanceof LongSimTime);
+    assert (((LongSimTime) nextTime.getNextInternalTime()).getT() == 1L);
+    assert ("generator".equals(nextTime.getSenderId()));
 
     // Get output and expect it to be 0
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message2 = probe.receiveMessage();
-    assert (message2 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage = (ModelOutputMessage<LongSimTime>) message2;
-    assert (modelOutputMessage.getNextTime().getT() == 1L);
-    Bag generatorOutput = modelOutputMessage.getModelOutput();
-    assert ((Integer) generatorOutput.getPortValueList().get(0).getValue() == 0);
+    assert (message2 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage = (OutputReport<LongSimTime>) message2;
+    assert (modelOutputMessage.getNextInternalTime().getT() == 1L);
+    List<PortValue<?>> generatorOutput = modelOutputMessage.getPayload().getOutputs();
+    assert ((Integer) generatorOutput.get(0).getValue() == 0);
 
     // Execute transition and expect next time to be 1
-    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(ExecuteTransition.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("ExecuteTransition")
+        .senderId("TestActor")
+        .build());
     DevsMessage message3 = probe.receiveMessage();
-    assert (message3 instanceof TransitionDone<?>);
-    TransitionDone<LongSimTime> transitionDone = (TransitionDone<LongSimTime>) message3;
-    assert (transitionDone.getTime().getT() == 1L);
+    assert (message3 instanceof TransitionComplete<?>);
+    TransitionComplete<LongSimTime> transitionDone = (TransitionComplete<LongSimTime>) message3;
+    assert (transitionDone.getEventTime().getT() == 1L);
 
     // Get output and expect it to be 1
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message4 = probe.receiveMessage();
-    assert (message4 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage4 =
-        (ModelOutputMessage<LongSimTime>) message4;
-    Bag generatorOutput4 = modelOutputMessage4.getModelOutput();
-    assert ((Integer) generatorOutput4.getPortValueList().get(0).getValue() == 1);
+    assert (message4 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage4 =
+        (OutputReport<LongSimTime>) message4;
+    List<PortValue<?>> generatorOutput4 = modelOutputMessage4.getPayload().getOutputs();
+    assert ((Integer) generatorOutput4.get(0).getValue() == 1);
 
     // Execute transition and expect next time to be 2
-    simulator.tell(ExecuteTransition.builder().time(LongSimTime.builder().t(1L).build()).build());
+    simulator.tell(ExecuteTransition.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(1))
+        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("ExecuteTransition")
+        .senderId("TestActor")
+        .build());
     DevsMessage message5 = probe.receiveMessage();
-    assert (message5 instanceof TransitionDone<?>);
-    TransitionDone<LongSimTime> transitionDone2 = (TransitionDone<LongSimTime>) message5;
-    assert (transitionDone2.getNextTime().getT() == 2L);
-    assert (transitionDone2.getTime().getT() == 1L);
+    assert (message5 instanceof TransitionComplete<?>);
+    TransitionComplete<LongSimTime> transitionDone2 = (TransitionComplete<LongSimTime>) message5;
+    assert (transitionDone2.getNextInternalTime().getT() == 2L);
+    assert (transitionDone2.getEventTime().getT() == 1L);
 
     // Get output and expect it to be 0
-    simulator.tell(SendOutput.builder().time(LongSimTime.builder().t(2L).build()).build());
+    simulator.tell(RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(2))
+        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
+        .simulationId(simulationId)
+        .messageId("RequestOutput")
+        .senderId("TestActor")
+        .build());
     DevsMessage message6 = probe.receiveMessage();
-    assert (message6 instanceof ModelOutputMessage<?>);
-    ModelOutputMessage<LongSimTime> modelOutputMessage6 =
-        (ModelOutputMessage<LongSimTime>) message6;
-    Bag generatorOutput6 = modelOutputMessage6.getModelOutput();
-    assert ((Integer) generatorOutput6.getPortValueList().get(0).getValue() == 0);
+    assert (message6 instanceof OutputReport<?>);
+    OutputReport<LongSimTime> modelOutputMessage6 =
+        (OutputReport<LongSimTime>) message6;
+    List<PortValue<?>> generatorOutput6 = modelOutputMessage6.getPayload().getOutputs();
+    assert ((Integer) generatorOutput6.get(0).getValue() == 0);
   }
 
 

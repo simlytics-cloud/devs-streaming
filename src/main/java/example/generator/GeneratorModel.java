@@ -18,8 +18,9 @@ package example.generator;
 
 import devs.PDEVSModel;
 import devs.Port;
-import devs.msg.Bag;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
+import java.util.List;
 
 /**
  * The GeneratorModel class represents a simple PDEVS atomic model that alternates its internal
@@ -88,7 +89,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    *                    processed to influence the model's state during this transition.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
 
   }
 
@@ -103,7 +104,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    *                    processed in conjunction with the internal transition logic.
    */
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
 
   }
 
@@ -137,7 +138,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    * state and the generator output port.
    */
   @Override
-  public Bag outputFunction() {
-    return Bag.builder().addPortValueList(generatorOutputPort.createPortValue(modelState)).build();
+  public List<PortValue<?>> outputFunction() {
+    return List.of(generatorOutputPort.createPortValue(modelState));
   }
 }

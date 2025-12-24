@@ -16,6 +16,7 @@
 
 package devs;
 
+import devs.iso.DevsMessage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,8 +25,7 @@ import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import devs.msg.DevsMessage;
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 import devs.utils.ModelUtils;
 
 /**

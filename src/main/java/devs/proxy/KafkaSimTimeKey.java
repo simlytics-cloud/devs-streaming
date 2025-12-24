@@ -18,7 +18,7 @@ package devs.proxy;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 
 /**
  * KafkaSimTimeKey is a generic key class used for message identification based on simulation time

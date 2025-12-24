@@ -16,7 +16,7 @@
 
 package devs;
 
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 import java.util.TreeMap;
 
 /**

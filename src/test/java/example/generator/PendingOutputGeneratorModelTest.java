@@ -18,8 +18,7 @@ package example.generator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.Bag;
-import devs.msg.time.LongSimTime;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
 
 import java.util.ArrayList;
@@ -67,14 +66,11 @@ public class PendingOutputGeneratorModelTest {
     PendingOuputGeneratorModel generatorModel = new PendingOuputGeneratorModel(0);
     generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
     // Output should be 1 after state transition
-    Bag o = generatorModel.outputFunction();
-    String outputJson = objectMapper.writeValueAsString(o);
-    Bag output = objectMapper.readValue(outputJson, Bag.class);
-    assert ((Integer) output.getPortValueList().get(0).getValue() == 1);
+    assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 1);
 
     generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(2L).build());
     // Output should be 0 after second state transition
-    assert ((Integer) generatorModel.outputFunction().getPortValueList().get(0).getValue() == 0);
+    assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 0);
   }
 
   /**

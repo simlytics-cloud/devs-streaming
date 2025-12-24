@@ -18,14 +18,13 @@ package devs.proxy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.typesafe.config.Config;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.SimulationDone;
-import devs.msg.time.SimTime;
+import devs.iso.DevsMessage;
+import devs.iso.ModelTerminated;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -150,11 +149,11 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   }
 
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
-    if (devsMessage instanceof InitSim<?> initSim) {
-      devsMessage = new InitSimMessage<>(initSim, sender);
+    if (devsMessage instanceof SimulationInit<?> simulationInit) {
+      devsMessage = new SimulationInitMessage<>(simulationInit, sender);
     }
     devsComponent.tell(devsMessage);
-    if (devsMessage instanceof SimulationDone<?> || devsMessage instanceof ModelDone<?>) {
+    if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
       control.shutdown();
       return Behaviors.stopped();
     } else {

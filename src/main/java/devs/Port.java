@@ -16,7 +16,7 @@
 
 package devs;
 
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 
 /**
  * Represents a port within a DEVS model. A port is identified by a unique identifier and is
@@ -26,17 +26,17 @@ import devs.msg.PortValue;
  */
 public class Port<T> {
 
-  private final String portIdentifier;
+  private final String portName;
   protected final Class<T> clazz;
 
   /**
    * Constructs a Port instance with a specified identifier and associated data type.
    *
-   * @param portIdentifier the unique identifier of the port
+   * @param portName the unique identifier of the port
    * @param clazz          the class type representing the data type associated with the port
    */
-  public Port(String portIdentifier, Class<T> clazz) {
-    this.portIdentifier = portIdentifier;
+  public Port(String portName, Class<T> clazz) {
+    this.portName = portName;
     this.clazz = clazz;
   }
 
@@ -52,10 +52,10 @@ public class Port<T> {
    * @return a new {@link PortValue} instance containing the specified value and port identifier
    */
   public PortValue<T> createPortValue(T value) {
-    return new PortValue<>(value, portIdentifier);
+    return PortValue.<T>builder().value(value).portName(portName).build();
   }
 
-  public String getPortIdentifier() {
-    return portIdentifier;
+  public String getPortName() {
+    return portName;
   }
 }

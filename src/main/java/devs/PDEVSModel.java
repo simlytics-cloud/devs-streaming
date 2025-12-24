@@ -16,14 +16,10 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.DevsExternalMessage;
-import devs.msg.DevsMessage;
-import devs.msg.PortValue;
-import devs.msg.log.PekkoReceptionistListingResponse;
-import devs.msg.time.SimTime;
+import devs.iso.DevsExternalMessage;
+import devs.iso.log.PekkoReceptionistListingResponse;
+import devs.iso.time.SimTime;
 
-import org.apache.pekko.actor.typed.Behavior;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

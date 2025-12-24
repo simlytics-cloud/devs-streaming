@@ -17,15 +17,18 @@
 package devs;
 
 
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.time.SimTime;
+
+import devs.iso.DevsMessage;
+import devs.iso.ModelIdPayload;
+import devs.iso.ModelTerminated;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.OutputReport;
+import devs.iso.RequestOutput;
+import devs.iso.SimulationInit;
+import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.SimulationTerminatePayload;
+import devs.iso.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.ChildFailed;
@@ -46,8 +49,10 @@ import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
   private T time;
+  private String simulationId;
   private final T endTime;
   private final ActorRef<DevsMessage> child;
+  private final String childModelId;
 
   /**
    * Creates a behavior for the root coordinator in a hierarchical DEVS model. The root coordinator
@@ -60,8 +65,10 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @return the root coordinator's behavior
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(TT endTime,
-                                                                  ActorRef<DevsMessage> child) {
-    return Behaviors.setup(context -> new RootCoordinator<>(context, endTime, child));
+                                                                  ActorRef<DevsMessage> child,
+      String childModelId) {
+    return Behaviors.setup(context -> new RootCoordinator<>(context,
+        endTime, child, childModelId));
   }
 
   /**
@@ -73,10 +80,11 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @param child   the reference to the child actor participating in the simulation
    */
   public RootCoordinator(ActorContext<DevsMessage> context, T endTime,
-                         ActorRef<DevsMessage> child) {
+                         ActorRef<DevsMessage> child, String childModelId) {
     super(context);
     this.endTime = endTime;
     this.child = child;
+    this.childModelId = childModelId;
   }
 
   /**
@@ -90,14 +98,18 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   @Override
   public Receive<DevsMessage> createReceive() {
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
-    builder.onMessage(InitSim.class, this::onInitSim);
-    builder.onMessage(NextTime.class, this::onNextTime);
-    builder.onMessage(ModelOutputMessage.class, this::onModelOutputMessage);
-    builder.onMessage(ModelDone.class, this::onModelDone);
+    builder.onMessage(SimulationInit.class, this::onSimulationInit);
+    builder.onMessage(NextInternalTimeReport.class, this::onNextInternalTimeReport);
+    builder.onMessage(OutputReport.class, this::onOutputReport);
+    builder.onMessage(ModelTerminated.class, this::onModelTerminated);
     builder.onSignal(ChildFailed.class, this::onChildFailed);
     builder.onSignal(Terminated.class, this::onTerminated);
 
     return builder.build();
+  }
+
+  protected String generateMessageId(String messageType) {
+    return "root" + "_" + messageType + "_" + simulationId + "_" + time.toString();
   }
 
   /**
@@ -105,14 +117,15 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * method sets the simulation start time and delegates the initialization message to the child
    * actor for further processing.
    *
-   * @param initSim the initialization message containing the start time of the simulation and
+   * @param simulationInit the initialization message containing the start time of the simulation and
    *                related data.
    * @return the updated behavior of the root coordinator after processing the initialization
    * message.
    */
-  Behavior<DevsMessage> onInitSim(InitSim<T> initSim) {
-    this.time = initSim.getTime();
-    child.tell(new InitSimMessage(initSim, getContext().getSelf()));
+  Behavior<DevsMessage> onSimulationInit(SimulationInit<T> simulationInit) {
+    this.time = simulationInit.getEventTime();
+    this.simulationId = simulationInit.getSimulationId();
+    child.tell(new SimulationInitMessage<T>(simulationInit, getContext().getSelf()));
     return this;
   }
 
@@ -121,12 +134,18 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * method processes the next scheduled simulation time by storing the time value and directing the
    * child actor to send its output for the given time step.
    *
-   * @param nextTime the message containing the next scheduled simulation time.
+   * @param nextInternalTimeReport the message containing the next scheduled simulation time.
    * @return the updated behavior of the
    */
-  Behavior<DevsMessage> onNextTime(NextTime<T> nextTime) {
-    time = nextTime.getTime();
-    child.tell(SendOutput.builder().time(time).build());
+  Behavior<DevsMessage> onNextInternalTimeReport(NextInternalTimeReport<T> nextInternalTimeReport) {
+    time = nextInternalTimeReport.getNextInternalTime();
+    child.tell(RequestOutput.<T>builder()
+        .eventTime(time)
+        .payload(ModelIdPayload.builder().modelId(childModelId).build())
+        .simulationId(simulationId)
+        .messageId(generateMessageId("RequestOutput"))
+        .senderId("root")
+        .build());
     return this;
   }
 
@@ -135,27 +154,39 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * message from a DEVS model at the specified time step, evaluates whether the simulation time
    * exceeds the
    */
-  Behavior<DevsMessage> onModelOutputMessage(ModelOutputMessage<T> modelOutputMessage) {
-    if (modelOutputMessage.getNextTime().compareTo(endTime) <= 0) {
-      time = modelOutputMessage.getNextTime();
-      child.tell(SendOutput.builder().time(time).build());
+  Behavior<DevsMessage> onOutputReport(OutputReport<T> outputReport) {
+    if (outputReport.getNextInternalTime().compareTo(endTime) <= 0) {
+      time = outputReport.getNextInternalTime();
+      child.tell(RequestOutput.<T>builder()
+          .eventTime(time)
+          .payload(ModelIdPayload.builder().modelId(childModelId).build())
+          .simulationId(simulationId)
+          .messageId(generateMessageId("RequestOutput"))
+          .senderId("root")
+          .build());
     } else {
-      child.tell(SimulationDone.builder().time(time).build());
+      child.tell(SimulationTerminate.<T>builder()
+          .eventTime(time)
+          .payload(SimulationTerminatePayload.builder().reason("Simulation completed").build())
+          .simulationId(simulationId)
+          .messageId(generateMessageId("SimulationTerminate"))
+          .senderId("root")
+          .build());
     }
     return this;
   }
 
   /**
-   * Handles the {@code ModelDone} message in the simulation. This method processes the completion
+   * Handles the {@code ModelTerminated} message in the simulation. This method processes the completion
    * event of a DEVS model's execution, typically signaling that the model has finished its
    * computation or has reached its terminal state.
    *
-   * @param modelDone the message indicating the completion of the model's execution, encapsulating
+   * @param modelTerminated the message indicating the completion of the model's execution, encapsulating
    *                  necessary details about the completed model.
    * @return the behavior indicating the termination of the root coordinator's actor after
-   * processing the {@code ModelDone} message.
+   * processing the {@code ModelTerminated} message.
    */
-  Behavior<DevsMessage> onModelDone(ModelDone<T> modelDone) {
+  Behavior<DevsMessage> onModelTerminated(ModelTerminated<T> modelTerminated) {
     return Behaviors.stopped();
   }
 

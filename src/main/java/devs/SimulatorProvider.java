@@ -1,7 +1,7 @@
 package devs;
 
-import devs.msg.DevsMessage;
-import devs.msg.time.SimTime;
+import devs.iso.DevsMessage;
+import devs.iso.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 

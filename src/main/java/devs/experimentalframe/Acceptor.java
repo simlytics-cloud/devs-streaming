@@ -17,8 +17,10 @@
 package devs.experimentalframe;
 
 import devs.PDEVSModel;
-import devs.msg.Bag;
-import devs.msg.time.SimTime;
+import devs.iso.PortValue;
+import devs.iso.time.SimTime;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The Acceptor class is an abstract DEVS (Discrete Event System Specification) model that
@@ -45,8 +47,8 @@ public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
 
 
   @Override
-  public void confluentStateTransitionFunction(T currentTime, Bag bag) {
-    externalStateTransitionFunction(currentTime, bag);
+  public void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
+    externalStateTransitionFunction(currentTime, inputs);
     internalStateTransitionFunction(currentTime);
 
   }
@@ -57,9 +59,9 @@ public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
   }
 
   @Override
-  public Bag outputFunction() {
+  public List<PortValue<?>> outputFunction() {
     // No output from Acceptor
-    return Bag.builder().build();
+    return Collections.emptyList();
   }
 
 }

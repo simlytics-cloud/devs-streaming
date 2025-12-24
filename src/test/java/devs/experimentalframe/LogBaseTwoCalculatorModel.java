@@ -19,10 +19,10 @@ package devs.experimentalframe;
 import devs.PDEVSModel;
 import devs.Port;
 import devs.ScheduledDevsModel;
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import devs.utils.Schedule;
+import java.util.List;
 
 /**
  * Model to compute base-2 logarithms for numeric and textual inputs in a discrete event system
@@ -109,15 +109,15 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
    * @param currentTime The current simulation time represented as a {@code LongSimTime} instance.
    *                    This parameter provides the time context in which the external event
    *                    processing occurs.
-   * @param bag         A {@code Bag} containing external inputs to the model. This parameter
+   * @param inputs      A list containing external inputs to the model. This parameter
    *                    includes port-value pairs that represent the input events arriving at this
    *                    simulation time.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
     simulator.getContext().getLog().info("Generating roots at {}", currentTime);
-    for (PortValue<?> pv : bag.getPortValueList()) {
-      if (pv.getPortIdentifier().equals(numberIn.getPortIdentifier())) {
+    for (PortValue<?> pv : inputs) {
+      if (pv.getPortName().equals(numberIn.getPortName())) {
         int number = numberIn.getValue(pv);
         double log = 0.0;
         if (number != 1) {
@@ -125,9 +125,12 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
         }
         System.out.println("Log for " + number + " is " + log);
         Integer outValue = (int) Math.round(log);
-        PortValue<?> outPortValue = new PortValue<Integer>(outValue, numberOut.getPortIdentifier());
+        PortValue<?> outPortValue = PortValue.builder()
+            .value(outValue)
+            .portName(numberOut.getPortName())
+            .build();
         schedule.add(currentTime, outPortValue);
-      } else if (pv.getPortIdentifier().equals(wordIn.getPortIdentifier())) {
+      } else if (pv.getPortName().equals(wordIn.getPortName())) {
         String word = wordIn.getValue(pv);
         String outWord = switch (word) {
           case "One" -> "Zero";
@@ -137,12 +140,15 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
           default -> "N/A";
         };
         System.out.println("Log for word " + word + " is " + outWord);
-        PortValue<?> outPortValue = new PortValue<String>(outWord, wordOut.getPortIdentifier());
+        PortValue<?> outPortValue = PortValue.builder()
+            .value(outWord)
+            .portName(wordOut.getPortName())
+            .build();
         schedule.add(currentTime, outPortValue);
       } else {
         throw new IllegalArgumentException(
             "LogBaseTwoCalculatorModel did not expect port value with identifier"
-                + pv.getPortIdentifier());
+                + pv.getPortName());
       }
     }
 
@@ -161,13 +167,13 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
    *
    * @param currentTime The current simulation time represented as a {@code LongSimTime} instance.
    *                    This parameter provides the time context in which the transition occurs.
-   * @param bag         A {@code Bag} containing external inputs to the model. This parameter
+   * @param inputs      A list containing external inputs to the model. This parameter
    *                    includes port-value pairs representing the input events arriving at this
    *                    simulation time.
    */
   @Override
-  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime, Bag bag) {
-    externalStateTransitionFunction(currentTime, bag);
+  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+    externalStateTransitionFunction(currentTime, inputs);
     scheduledInternalStateTransitionFunction(currentTime);
 
   }

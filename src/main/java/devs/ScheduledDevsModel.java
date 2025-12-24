@@ -16,9 +16,8 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.SimTime;
+import devs.iso.PortValue;
+import devs.iso.time.SimTime;
 import devs.utils.Schedule;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,10 +80,10 @@ public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface
    * inputs (if any) along with managing the internal state of the model.
    *
    * @param currentTime the current simulation time at which the confluent state transition occurs
-   * @param bag         a Bag containing external input events received by the model at the
+   * @param inputs         a List containing external input events received by the model at the
    *                    specified simulation time
    */
-  public abstract void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag);
+  public abstract void scheduledConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs);
 
   /**
    * Executes the confluent state transition function for the DEVS model at the specified simulation
@@ -92,13 +91,13 @@ public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface
    * confluent state transition logic to the scheduled implementation defined by the subclass.
    *
    * @param currentTime the current simulation time at which the confluent state transition occurs
-   * @param bag         a Bag containing external input events received by the model at the
+   * @param inputs         a List containing external input events received by the model at the
    *                    specified simulation time
    */
   @Override
-  default void confluentStateTransitionFunction(T currentTime, Bag bag) {
+  default void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
     clearScheduledOutput();
-    scheduledConfluentStateTransitionFunction(currentTime, bag);
+    scheduledConfluentStateTransitionFunction(currentTime, inputs);
   }
 
   /**
@@ -212,10 +211,8 @@ public interface ScheduledDevsModel<T extends SimTime, S> extends PDevsInterface
    * there are no pending outputs, an empty Bag is returned.
    */
   @Override
-  default public Bag outputFunction() {
-    Bag.Builder bagBuilder = Bag.builder();
-    bagBuilder.addAllPortValueList(getScheduledOutput());
-    return bagBuilder.build();
+  default public List<PortValue<?>> outputFunction() {
+    return getScheduledOutput();
   }
 
 

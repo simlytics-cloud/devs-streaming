@@ -1,5 +1,5 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java Copyright (C) 2025 simlytics.cloud LLC and
  * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,19 +14,25 @@
  *
  */
 
-package devs.msg.log;
+package devs.iso.log;
 
-
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
+import devs.iso.DevsMessage;
+import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
 /**
- * Class used to serialize messages by a DevsLoggingActor.
+ * Returns the Apache Pekko Receptionist listing identifying models that have registered
+ * with the receptionist.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-@JsonSubTypes({@Type(value = DevsModelLogMessage.class), @Type(value = StateMessage.class)})
-public abstract interface DevsLogMessage {
+public class PekkoReceptionistListingResponse implements DevsMessage {
+  final Receptionist.Listing listing;
+
+  public PekkoReceptionistListingResponse(Receptionist.Listing listing) {
+    this.listing = listing;
+  }
+
+  public Receptionist.Listing getListing() {
+    return listing;
+  }
+
 
 }

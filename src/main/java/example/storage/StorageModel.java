@@ -18,9 +18,9 @@ package example.storage;
 
 import devs.PDEVSModel;
 import devs.Port;
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
+import java.util.List;
 
 /**
  * Represents a DEVS model implementation for simulating storage behavior. This model processes
@@ -72,11 +72,11 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * the input and transitions the internal state accordingly.
    *
    * @param currentTime  the current simulation time represented as a {@link LongSimTime} object
-   * @param storageInput the {@link Bag} containing input values for the model's state transition
+   * @param storageInput the list containing input values for the model's state transition
    * @throws IllegalArgumentException if the input value is not 0 or 1
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag storageInput) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> storageInput) {
     int storageValue = getInputValue(storageInput);
 
     if (storageValue == 0) {
@@ -95,12 +95,12 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * @param storageInput the bag of inputs
    * @return In this case, the integer value for the INPUT (only) port
    */
-  int getInputValue(Bag storageInput) {
+  int getInputValue(List<PortValue<?>> storageInput) {
     // Check to make sure only one input come in
-    if (storageInput.getPortValueList().size() == 1) {
-      PortValue<?> pv = storageInput.getPortValueList().get(0);
+    if (storageInput.size() == 1) {
+      PortValue<?> pv = storageInput.get(0);
       // Check to ensure the PortValue identifier is "INPUT"
-      if (pv.getPortIdentifier().equals(storageInputPort.getPortIdentifier())) {
+      if (pv.getPortName().equals(storageInputPort.getPortName())) {
         return storageInputPort.getValue(pv);
       } else {
         throw new IllegalArgumentException(
@@ -119,10 +119,10 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * internal transition. It combines the effects of both internal and external state transitions.
    *
    * @param currentTime   the current simulation time represented as a {@link LongSimTime} object
-   * @param storageInputs the {@link Bag} containing input values for the model's state transition
+   * @param storageInputs the List containing input values for the model's state transition
    */
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, Bag storageInputs) {
+  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> storageInputs) {
     this.externalStateTransitionFunction(currentTime, storageInputs);
   }
 
@@ -146,15 +146,13 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
 
   /**
    * Generates the output of the StorageModel when the output function is invoked. This method
-   * constructs a {@link Bag} containing the port-value pairs based on the current state of the
+   * constructs a List containing the port-value pairs based on the current state of the
    * model.
    *
-   * @return a {@link Bag} object containing the output values for the storage output port
+   * @return a List containing the output values for the storage output port
    */
   @Override
-  public Bag outputFunction() {
-    return Bag.builder()
-        .addPortValueList(storageOutputPort.createPortValue(modelState.getStateValue().name()))
-        .build();
+  public List<PortValue<?>> outputFunction() {
+    return List.of(storageOutputPort.createPortValue(modelState.getStateValue().name()));
   }
 }

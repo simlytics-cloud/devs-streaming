@@ -16,17 +16,21 @@
 
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.DevsMessage;
-import devs.msg.ExecuteTransition;
-import devs.msg.InitSimMessage;
-import devs.msg.ModelDone;
-import devs.msg.ModelOutputMessage;
-import devs.msg.NextTime;
-import devs.msg.SendOutput;
-import devs.msg.SimulationDone;
-import devs.msg.TransitionDone;
-import devs.msg.time.SimTime;
+
+import devs.iso.DevsMessage;
+import devs.iso.ExecuteTransition;
+import devs.iso.ExecuteTransitionPayload;
+import devs.iso.ModelIdPayload;
+import devs.iso.ModelTerminated;
+import devs.iso.NextInternalTimeReport;
+import devs.iso.OutputReport;
+import devs.iso.OutputReportPayload;
+import devs.iso.PortValue;
+import devs.iso.RequestOutput;
+import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.TransitionComplete;
+import devs.iso.time.SimTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -60,6 +64,7 @@ public class PDevsCoordinator<T extends SimTime>
     extends AbstractBehavior<DevsMessage> {
 
   final String modelIdentifier;
+  String simulationId;
   ActorRef<DevsMessage> parent;
   final Map<String, ActorRef<DevsMessage>> modelSimulators;
   private final PDevsCouplings couplings;
@@ -67,10 +72,10 @@ public class PDevsCoordinator<T extends SimTime>
   private T timeNext;
   private final Map<String, T> nextTimeMap = new HashMap<>();
   private List<String> imminentModels = new ArrayList<>();
-  private Map<String, Optional<Bag>> outputMap = new HashMap<>();
+  private Map<String, Optional<List<PortValue<?>>>> outputMap = new HashMap<>();
 
-  Map<String, Bag> receivers = new HashMap<>();
-  Bag modelOutput;
+  Map<String, List<PortValue<?>>> receivers = new HashMap<>();
+  List<PortValue<?>> modelOutput;
   private List<String> awaitingTransition = new ArrayList<>();
   private boolean generatingOutput;
 
@@ -157,14 +162,14 @@ public class PDevsCoordinator<T extends SimTime>
   public Receive<DevsMessage> createReceive() {
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
 
-    builder.onMessage(InitSimMessage.class, this::onInitSimMessage);
-    builder.onMessage(SendOutput.class, this::onSendOutputMessage);
-    builder.onMessage(ExecuteTransition.class, this::onExecuteTransitionMessage);
-    builder.onMessage(NextTime.class, this::onNextTimeMessage);
-    builder.onMessage(ModelOutputMessage.class, this::onModelOutputs);
-    builder.onMessage(TransitionDone.class, this::onTransitionDone);
-    builder.onMessage(SimulationDone.class, this::onSimulationDone);
-    builder.onMessage(ModelDone.class, this::onModelDone);
+    builder.onMessage(SimulationInitMessage.class, this::onSimulationInit);
+    builder.onMessage(RequestOutput.class, this::onRequestOutput);
+    builder.onMessage(ExecuteTransition.class, this::onExecuteTransition);
+    builder.onMessage(NextInternalTimeReport.class, this::onNextInternalTimeReport);
+    builder.onMessage(OutputReport.class, this::onOutputReport);
+    builder.onMessage(TransitionComplete.class, this::onTransitionComplete);
+    builder.onMessage(SimulationTerminate.class, this::onSimulationTerminate);
+    builder.onMessage(ModelTerminated.class, this::onModelTerminated);
     builder.onSignal(Terminated.class, this::onTerminated);
     builder.onSignal(ChildFailed.class, this::onChildFailed);
 
@@ -172,20 +177,21 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   /**
-   * Handles an {@link InitSimMessage} to initialize the simulation. This includes updating the
+   * Handles an {@link SimulationInitMessage} to initialize the simulation. This includes updating the
    * `parent` reference, saving the initial simulation time, and propagating the initialization
    * message to all registered model simulators.
    *
-   * @param initSimMessage The {@code InitSimMessage} containing the initial simulation
+   * @param tSimulationInitMessage The {@code InitSimMessage} containing the initial simulation
    *                       configuration and the reference to the parent actor.
    * @return The updated behavior of the actor after processing the initialization message.
    */
-  private Behavior<DevsMessage> onInitSimMessage(InitSimMessage<T> initSimMessage) {
-    this.parent = initSimMessage.getParent();
-    timeLast = initSimMessage.getInitSim().getTime();
+  private Behavior<DevsMessage> onSimulationInit(SimulationInitMessage<T> tSimulationInitMessage) {
+    this.parent = tSimulationInitMessage.getParent();
+    this.simulationId = tSimulationInitMessage.getSimulationInit().getSimulationId();
+    timeLast = tSimulationInitMessage.getSimulationInit().getEventTime();
     // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
     modelSimulators.values().forEach(
-        s -> s.tell(new InitSimMessage<>(initSimMessage.getInitSim(), getContext().getSelf())));
+        s -> s.tell(new SimulationInitMessage<>(tSimulationInitMessage.getSimulationInit(), getContext().getSelf())));
     return this;
   }
 
@@ -198,6 +204,10 @@ public class PDevsCoordinator<T extends SimTime>
    */
   T getNextTime() {
     return nextTimeMap.values().stream().min(T::compareTo).get();
+  }
+
+  protected String generateMessageId(String messageType) {
+    return modelIdentifier + "_" + messageType + "_" + simulationId + "_" + timeLast.toString();
   }
 
   /**
@@ -223,20 +233,25 @@ public class PDevsCoordinator<T extends SimTime>
    * <p>If all next times have been received, the method determines the global next simulation time
    * and notifies the parent actor.
    *
-   * @param nextTime The {@code NextTime} message containing the sender's identifier and the next
+   * @param nextInternalTimeReport The {@code NextTime} message containing the sender's identifier and the next
    *                 simulation time determined by the sender model's simulator.
    * @return The updated behavior of this actor after processing the {@code NextTime} message.
    */
-  Behavior<DevsMessage> onNextTimeMessage(NextTime<T> nextTime) {
-    // System.out.println("Next time for " + nextTime.getSender() + " is " + nextTime.getTime());
-    nextTimeMap.put(nextTime.getSender(), nextTime.getTime());
+  Behavior<DevsMessage> onNextInternalTimeReport(NextInternalTimeReport<T> nextInternalTimeReport) {
+    nextTimeMap.put(nextInternalTimeReport.getSenderId(), nextInternalTimeReport.getNextInternalTime());
 
     // If we have all next time messages from models, the next time if the min
     if (nextTimeMap.size() == modelSimulators.size()) {
       timeNext = getNextTime();
       // System.out.println("In onNextTimeMessage, Next time for " + modelIdentifier + " is " +
       // timeNext);
-      parent.tell(NextTime.builder().time(timeNext).sender(modelIdentifier).build());
+      parent.tell(NextInternalTimeReport.<T>builder()
+          .eventTime(nextInternalTimeReport.getEventTime())
+          .simulationId(simulationId)
+          .messageId(generateMessageId("NextTime"))
+          .senderId(modelIdentifier)
+          .nextInternalTime(timeNext)
+          .build());
     }
     return this;
   }
@@ -246,16 +261,16 @@ public class PDevsCoordinator<T extends SimTime>
    * PDevsCoordinator. This involves verifying synchronization, building imminent models, and
    * notifying the simulators of the imminent models to generate outputs.
    *
-   * @param sendOutput The `SendOutput` message containing the current simulation time and a signal
+   * @param requestOutput The `SendOutput` message containing the current simulation time and a signal
    *                   to trigger output generation for imminent models.
    * @return The updated behavior of this actor after processing the `SendOutput` message.
    * @throws RuntimeException if the simulation time in the `SendOutput` message does not match the
    *                          expected next simulation time (`timeNext`).
    */
-  Behavior<DevsMessage> onSendOutputMessage(SendOutput<T> sendOutput) {
-    if (sendOutput.getTime().compareTo(timeNext) != 0) {
+  Behavior<DevsMessage> onRequestOutput(RequestOutput<T> requestOutput) {
+    if (requestOutput.getEventTime().compareTo(timeNext) != 0) {
       throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
-          + sendOutput.getTime() + " did not equal " + timeNext);
+          + requestOutput.getEventTime() + " did not equal " + timeNext);
     }
     generatingOutput = true;
     buildImminentModels();
@@ -264,7 +279,15 @@ public class PDevsCoordinator<T extends SimTime>
     }
     outputMap = new HashMap<>();
     imminentModels.forEach(m -> {
-      modelSimulators.get(m).tell(sendOutput);
+      modelSimulators.get(m).tell(RequestOutput.<T>builder()
+          .eventTime(requestOutput.getEventTime())
+          .payload(ModelIdPayload.builder().modelId(m).build())
+              .simulationId(simulationId)
+              .messageId(generateMessageId("SendOutput"))
+              .senderId(modelIdentifier)
+              .build()
+
+          );
       outputMap.put(m, Optional.empty());
     });
     return this;
@@ -283,45 +306,49 @@ public class PDevsCoordinator<T extends SimTime>
 
   /**
    * Handles the model output messages, processes them, and coordinates the next steps
-   * such as forwarding messages to child models, sending outputs to parent models,
-   * and executing transitions. This method ensures that all outputs are received
+   * such as forwarding messages to child models, sending outputReport to parent models,
+   * and executing transitions. This method ensures that all outputReport are received
    * and processed appropriately before proceeding.
    *
-   * @param outputs the {@link ModelOutputMessage} containing the outputs from a model,
+   * @param outputReport the {@link OutputReport} containing the outputReport from a model,
    *                including the sender, the next simulation time, and the associated
    *                port-value list.
    * @return the current behavior of the actor, allowing for further processing.
    */
-  Behavior<DevsMessage> onModelOutputs(ModelOutputMessage<T> outputs) {
+  Behavior<DevsMessage> onOutputReport(OutputReport<T> outputReport) {
     if (getContext().getLog().isDebugEnabled()) {
       log(Level.DEBUG,
-          "Got model outputs at " + timeNext + " from " + outputs.getSender() + ": "
-              + Arrays.toString(outputs.getModelOutput().getPortValueList().stream()
-              .map(pv -> pv.getPortIdentifier()).toArray()));
+          "Got model outputReport at " + timeNext + " from " + outputReport.getSenderId() + ": "
+              + Arrays.toString(outputReport.getPayload().getOutputs().stream()
+              .map(pv -> pv.getPortName()).toArray()));
     }
-    // outputs.getModelOutput().getPortValueList().forEach(portValue -> getContext().getLog().debug(
+    // outputReport.getModelOutput().getPortValueList().forEach(portValue -> getContext().getLog().debug(
     // " " + portValue.getPortIdentifier() + ": " + portValue.getValue()));
-    outputMap.put(outputs.getSender(), Optional.of(outputs.getModelOutput()));
+    outputMap.put(outputReport.getSenderId(), Optional.of(outputReport.getPayload().getOutputs()));
     if (getContext().getLog().isDebugEnabled()) {
-      log(Level.DEBUG, "Have outputs from " + Arrays.toString(outputMap.keySet().toArray()));
+      log(Level.DEBUG, "Have outputReport from " + Arrays.toString(outputMap.keySet().toArray()));
     }
 
     if (haveAllOutputs()) {
-      // Send outputs to parent based on mappings and translations
+      // Send outputReport to parent based on mappings and translations
       // Send inputs to children based on mappings and translations
-      log(Level.DEBUG, "We have all outputs.");
+      log(Level.DEBUG, "We have all outputReport.");
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
-      modelOutput = outputCouplingMessages.getOutputMessage();
+      modelOutput = outputCouplingMessages.getOutputMessages();
       receivers = outputCouplingMessages.getInternalMessages();
 
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
-        modelSimulators.get(key).tell(
-            ExecuteTransition.builder().time(timeNext).modelInputsOption(value)
-                .build());
+        modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
+            .eventTime(timeNext)
+            .payload(ExecuteTransitionPayload.builder().modelId(key).addAllInputs(value).build())
+            .simulationId(simulationId)
+            .messageId(generateMessageId("ExecuteTransition"))
+            .senderId(modelIdentifier)
+            .build());
         if (getContext().getLog().isDebugEnabled()) {
-          log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value.getPortValueList()
+          log(Level.DEBUG, "Sending input to " + key + ": " + Arrays.asList(value
               .stream().map(input -> input.getClass().getName()).toArray()));
         }
       });
@@ -335,13 +362,18 @@ public class PDevsCoordinator<T extends SimTime>
       }
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
-        modelSimulators.get(modelId)
-            .tell(ExecuteTransition.builder().time(timeNext).build());
+        modelSimulators.get(modelId).tell(ExecuteTransition.<T>builder()
+            .eventTime(timeNext)
+            .payload(ExecuteTransitionPayload.builder().modelId(modelId).build())
+            .simulationId(simulationId)
+            .messageId(generateMessageId("ExecuteTransition"))
+            .senderId(modelIdentifier)
+            .build());
       });
-      // If the model outputs have not generated any transitions, output is done. Send output
+      // If the model outputReport have not generated any transitions, output is done. Send output
       // message.
       if (awaitingTransition.isEmpty()) {
-        sendOutputs();
+        sendOutputs(outputReport.getEventTime());
       }
     }
     return this;
@@ -354,9 +386,15 @@ public class PDevsCoordinator<T extends SimTime>
    * and the identifier of the sender. The message is built using the ModelOutputMessage builder
    * and sent to the parent using the `tell` method.
    */
-  void sendOutputs() {
-    parent.tell(ModelOutputMessage.builder().modelOutput(modelOutput).nextTime(timeNext)
-        .sender(modelIdentifier).build());
+  void sendOutputs(T eventTime) {
+    parent.tell(OutputReport.<T>builder()
+        .eventTime(eventTime)
+        .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
+        .simulationId(simulationId)
+        .messageId(generateMessageId("OutputReport"))
+        .senderId(modelIdentifier)
+        .nextInternalTime(timeNext)
+        .build());
   }
 
   /**
@@ -371,26 +409,31 @@ public class PDevsCoordinator<T extends SimTime>
    * message.
    * @throws RuntimeException if the message's time is not within the expected time range.
    */
-  Behavior<DevsMessage> onExecuteTransitionMessage(ExecuteTransition<T> executeTransition) {
-    if (executeTransition.getTime().compareTo(timeLast) < 0
-        || executeTransition.getTime().compareTo(timeNext) > 0) {
+  Behavior<DevsMessage> onExecuteTransition(ExecuteTransition<T> executeTransition) {
+    if (executeTransition.getEventTime().compareTo(timeLast) < 0
+        || executeTransition.getEventTime().compareTo(timeNext) > 0) {
       throw new RuntimeException("Bad synchronization.  " + modelIdentifier
-          + " received ExecuteTransitionMessage where time " + executeTransition.getTime()
+          + " received ExecuteTransitionMessage where time " + executeTransition.getEventTime()
           + " is not between " + timeLast + " and " + timeNext + "inclusive");
     }
-    if (executeTransition.getModelInputsOption().isEmpty()) {
+    if (executeTransition.getPayload().getInputs().isEmpty()) {
       // Inputs are empty, so nothing to do
-      sendTransitionDone(executeTransition.getTime());
+      sendTransitionDone(executeTransition.getEventTime());
     } else {
-      Map<String, Bag> receivers =
-          couplings.handleInputMessage(executeTransition.getModelInputsOption().get());
+      Map<String, List<PortValue<?>>> receivers =
+          couplings.handleInputMessage(executeTransition.getPayload().getInputs());
       awaitingTransition = new ArrayList<>();
       // Send execute transition messages to those models with input generated from the coordinator
       // input
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
-        modelSimulators.get(key).tell(ExecuteTransition.builder().time(executeTransition.getTime())
-            .modelInputsOption(value).build());
+        modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
+            .eventTime(executeTransition.getEventTime())
+            .payload(ExecuteTransitionPayload.builder().modelId(key).addAllInputs(value).build())
+            .simulationId(simulationId)
+            .messageId(generateMessageId("ExecuteTransition"))
+            .senderId(modelIdentifier)
+            .build());
       });
     }
     return this;
@@ -404,7 +447,13 @@ public class PDevsCoordinator<T extends SimTime>
    */
   void sendTransitionDone(T time) {
     parent.tell(
-        TransitionDone.builder().nextTime(timeNext).time(time).sender(modelIdentifier).build());
+        TransitionComplete.<T>builder()
+                .eventTime(time)
+                    .simulationId(simulationId)
+                        .messageId(generateMessageId("TransitionComplete"))
+                            .senderId(modelIdentifier)
+                                .nextInternalTime(timeNext)
+                                    .build());
   }
 
   /**
@@ -413,30 +462,30 @@ public class PDevsCoordinator<T extends SimTime>
    * transitions have completed, it advances the simulation's state and triggers the next actions,
    * such as sending outputs or notifying the parent of transition completion.
    *
-   * @param transitionDone the {@code TransitionDone} message containing the identifier of the
+   * @param transitionComplete the {@code TransitionDone} message containing the identifier of the
    *                       sender, its next simulation time, and the time of completion for the
    *                       transition.
    * @return the updated behavior of the coordinator after processing the {@code TransitionDone}
    * message.
    */
-  Behavior<DevsMessage> onTransitionDone(TransitionDone<T> transitionDone) {
-    log(Level.DEBUG, transitionDone.getSender() + " sent TransitionDone with next time of "
-        + transitionDone.getNextTime());
-    nextTimeMap.put(transitionDone.getSender(), transitionDone.getNextTime());
-    awaitingTransition.remove(transitionDone.getSender());
+  Behavior<DevsMessage> onTransitionComplete(TransitionComplete<T> transitionComplete) {
+    log(Level.DEBUG, transitionComplete.getSenderId() + " sent TransitionDone with next time of "
+        + transitionComplete.getNextInternalTime());
+    nextTimeMap.put(transitionComplete.getSenderId(), transitionComplete.getNextInternalTime());
+    awaitingTransition.remove(transitionComplete.getSenderId());
     if (awaitingTransition.isEmpty()) {
-      timeLast = transitionDone.getTime();
+      timeLast = transitionComplete.getEventTime();
       // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
       timeNext = getNextTime();
       // System.out.println("In onTransitionDone, Next time for " + modelIdentifier + " is " +
       // timeNext);
       if (!generatingOutput) {
         log(Level.DEBUG, "Sending transiton done.");
-        sendTransitionDone(transitionDone.getTime());
+        sendTransitionDone(transitionComplete.getEventTime());
       } else {
         log(Level.DEBUG, "Sending outputs.");
         generatingOutput = false;
-        sendOutputs();
+        sendOutputs(transitionComplete.getEventTime());
       }
     }
     return this;
@@ -447,14 +496,22 @@ public class PDevsCoordinator<T extends SimTime>
    * all registered model simulators. This method updates the internal state to prepare for the next
    * stage of simulation or finalization.
    *
-   * @param simulationDone The {@code SimulationDone} message indicating that the simulation process
+   * @param simulationTerminate The {@code SimulationDone} message indicating that the simulation process
    *                       has concluded.
    * @return The updated behavior of the coordinator, maintaining its current state.
    */
-  Behavior<DevsMessage> onSimulationDone(SimulationDone<T> simulationDone) {
+  Behavior<DevsMessage> onSimulationTerminate(SimulationTerminate<T> simulationTerminate) {
     awaitingTransition = new ArrayList<>();
-    modelSimulators.keySet().forEach(key -> awaitingTransition.add(key));
-    modelSimulators.values().forEach(modelSimulator -> modelSimulator.tell(simulationDone));
+    for (String key : modelSimulators.keySet()) {
+      awaitingTransition.add(key);
+      modelSimulators.get(key).tell(SimulationTerminate.<T>builder()
+          .eventTime(simulationTerminate.getEventTime())
+          .payload(simulationTerminate.getPayload())
+          .simulationId(simulationId)
+          .messageId(generateMessageId("SimulationTerminate"))
+          .senderId(modelIdentifier)
+          .build());
+    }
     return this;
   }
 
@@ -464,14 +521,18 @@ public class PDevsCoordinator<T extends SimTime>
    * models are awaiting transitions, it notifies the parent actor of the completion and stops the
    * actor's behavior. Otherwise, it maintains the current behavior.
    *
-   * @param modelDone The `ModelDone` message containing the sender's identifier and completion
+   * @param modelTerminated The `ModelDone` message containing the sender's identifier and completion
    *                  information, including the simulation time.
    * @return The updated behavior of the actor after processing the `ModelDone` message.
    */
-  Behavior<DevsMessage> onModelDone(ModelDone<T> modelDone) {
-    awaitingTransition.remove(modelDone.getSender());
+  Behavior<DevsMessage> onModelTerminated(ModelTerminated<T> modelTerminated) {
+    awaitingTransition.remove(modelTerminated.getSenderId());
     if (awaitingTransition.isEmpty()) {
-      parent.tell(ModelDone.builder().time(modelDone.getTime()).sender(modelIdentifier).build());
+      parent.tell(ModelTerminated.<T>builder()
+          .simulationId(simulationId)
+          .messageId(generateMessageId("ModelTerminated"))
+          .senderId(modelIdentifier)
+          .build());
       return Behaviors.stopped();
     }
     return this;

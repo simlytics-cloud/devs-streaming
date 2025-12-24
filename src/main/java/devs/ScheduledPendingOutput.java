@@ -1,7 +1,11 @@
 package devs;
 
-import devs.msg.Bag;
-import devs.msg.time.SimTime;
+import devs.iso.PortValue;
+import devs.iso.time.SimTime;
+import devs.utils.ImmutableUtils;
+import devs.utils.ModelUtils;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The ScheduledPendingOutput interface extends the functionality of both PendingOutput and
@@ -24,11 +28,11 @@ public interface ScheduledPendingOutput<T extends SimTime, S> extends PendingOut
    * framework.
    *
    * @param currentTime the current simulation time
-   * @param bag         the input bag containing events or data to be processed
+   * @param inputs         the input inputs containing events or data to be processed
    */
   @Override
-  default void scheduledConfluentStateTransitionFunction(T currentTime, Bag bag) {
-    pendingConfluentStateTransitionFunction(currentTime, bag);
+  default void scheduledConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
+    pendingConfluentStateTransitionFunction(currentTime, inputs);
   }
 
 
@@ -52,13 +56,13 @@ public interface ScheduledPendingOutput<T extends SimTime, S> extends PendingOut
    * the state transition functionality to the scheduled confluent state transition function.
    *
    * @param currentTime the current simulation time
-   * @param bag         the input bag containing events or data to be processed
+   * @param inputs         the input inputs containing events or data to be processed
    */
   @Override
-  default void confluentStateTransitionFunction(T currentTime, Bag bag) {
+  default void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
     clearPendingOutput();
     clearScheduledOutput();
-    scheduledConfluentStateTransitionFunction(currentTime, bag);
+    scheduledConfluentStateTransitionFunction(currentTime, inputs);
   }
 
   /**
@@ -84,11 +88,11 @@ public interface ScheduledPendingOutput<T extends SimTime, S> extends PendingOut
    * @return a {@code Bag} containing the merged pending and scheduled output events.
    */
   @Override
-  default Bag outputFunction() {
-    Bag.Builder bagBuilder = Bag.builder();
-    bagBuilder.addAllPortValueList(getPendingOutput());
-    bagBuilder.addAllPortValueList(getScheduledOutput());
-    return bagBuilder.build();
+  default List<PortValue<?>> outputFunction() {
+    List<PortValue<?>> outputs = new ArrayList<>();
+    outputs.addAll(getPendingOutput());
+    outputs.addAll(getScheduledOutput());
+    return outputs;
   }
 
 }

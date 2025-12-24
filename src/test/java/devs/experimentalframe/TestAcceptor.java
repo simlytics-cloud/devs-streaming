@@ -19,9 +19,9 @@ package devs.experimentalframe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import devs.Port;
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
+import java.util.List;
 
 /**
  * TestAcceptor is a class that extends the abstract {@code Acceptor} model and validates incoming
@@ -88,14 +88,14 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
    *
    * @param currentTime The current simulation time. This parameter represents the time at which the
    *                    external event occurred.
-   * @param bag         The bag containing port values received during this external transition.
+   * @param inputs      The list containing port values received during this external transition.
    *                    Each port value is processed and validated based on its identifier and
    *                    associated data.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag bag) {
-    for (PortValue<?> pv : bag.getPortValueList()) {
-      if ("acceptNumber".equals(pv.getPortIdentifier())) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+    for (PortValue<?> pv : inputs) {
+      if ("acceptNumber".equals(pv.getPortName())) {
         double d = acceptNumber.getValue(pv);
         System.out.println("Got number " + d + " at " + currentTime);
         double expectedValue = 0.0;
@@ -103,7 +103,7 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
           expectedValue = Math.log(currentTime.getT().doubleValue()) / Math.log(2.0);
         }
         assertEquals(expectedValue, d, 0.0000001);
-      } else if ("acceptWord".equals(pv.getPortIdentifier())) {
+      } else if ("acceptWord".equals(pv.getPortName())) {
         String word = acceptWord.getValue(pv);
         System.out.println("Got word " + word + " at " + currentTime);
         String expectedWord = switch (currentTime.getT().intValue()) {
@@ -116,7 +116,7 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
         assert (word.equals(expectedWord));
       } else {
         throw new IllegalArgumentException(
-            "Test acceptor did not expect port value with identifier " + pv.getPortIdentifier());
+            "Test acceptor did not expect port value with identifier " + pv.getPortName());
       }
     }
 

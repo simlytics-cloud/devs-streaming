@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.time.LongSimTime;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -36,7 +36,7 @@ public class OutputReportTest {
   public void createOutputReport() {
     TestCustomer customer = new TestCustomer(1.0, 2.0, 3.0);
     //PortValue<Customer> pv = new PortValue<>(customer, "customerOut");
-    ImmutablePortValue<TestCustomer> immutablePortValue = ImmutablePortValue.<TestCustomer>builder()
+    PortValue<TestCustomer> immutablePortValue = PortValue.<TestCustomer>builder()
         .value(customer).portName("customerOut").build();
     OutputReport<LongSimTime> outputReport = OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
@@ -47,7 +47,7 @@ public class OutputReportTest {
         .nextInternalTime(LongSimTime.create(3L))
         .build();
     assert outputReport.getEventTime().getT() == 0L;
-    List<ImmutablePortValue<?>> outputs = outputReport.getPayload().getOutputs();
+    List<PortValue<?>> outputs = outputReport.getPayload().getOutputs();
     assert outputs.size() == 1;
     assert outputs.get(0).getPortName().equals("customerOut");
     assert outputs.get(0).getValue() instanceof TestCustomer;
@@ -63,7 +63,7 @@ public class OutputReportTest {
   public void serializeDeserializeOutputReport() throws JsonProcessingException {
     TestCustomer customer = new TestCustomer(1.0, 2.0, 3.0);
     //PortValue<Customer> pv = new PortValue<>(customer, "customerOut");
-    ImmutablePortValue<TestCustomer> immutablePortValue = ImmutablePortValue.<TestCustomer>builder()
+    PortValue<TestCustomer> immutablePortValue = PortValue.<TestCustomer>builder()
         .value(customer).portName("customerOut").build();
     OutputReport<LongSimTime> outputReport = OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
@@ -83,7 +83,7 @@ public class OutputReportTest {
     assert ((OutputReport<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
     OutputReport<LongSimTime> deserializedOutputReport = (OutputReport<LongSimTime>) deserializedSimMessage;
     assert deserializedOutputReport.getEventTime().getT() == 0L;
-    List<ImmutablePortValue<?>> outputs = deserializedOutputReport.getPayload().getOutputs();
+    List<PortValue<?>> outputs = deserializedOutputReport.getPayload().getOutputs();
     assert outputs.size() == 1;
     assert outputs.get(0).getPortName().equals("customerOut");
     assert outputs.get(0).getValue() instanceof TestCustomer;

@@ -17,7 +17,7 @@
 package devs.experimentalframe;
 
 import devs.OutputCouplingHandler;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,27 +65,27 @@ public class TestOutputCouplingHandler extends OutputCouplingHandler {
   @Override
   public void handlePortValue(String sender, PortValue<?> portValue,
       Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
-    if ("numbers".equals(portValue.getPortIdentifier())) {
+    if ("numbers".equals(portValue.getPortName())) {
       Integer number = LogBaseTwoCalculatorModel.numberIn.getValue(portValue);
       PortValue<?> pv = LogBaseTwoCalculatorModel.numberIn.createPortValue(number);
       addInputPortValue(pv, LogBaseTwoCalculatorModel.MODEL_ID, receiverMap);
-    } else if ("words".equals(portValue.getPortIdentifier())) {
+    } else if ("words".equals(portValue.getPortName())) {
       String word = LogBaseTwoCalculatorModel.wordIn.getValue(portValue);
       PortValue<?> pv = LogBaseTwoCalculatorModel.wordIn.createPortValue(word);
       addInputPortValue(pv, LogBaseTwoCalculatorModel.MODEL_ID, receiverMap);
-    } else if (portValue.getPortIdentifier()
-        .equals(LogBaseTwoCalculatorModel.numberOut.getPortIdentifier())) {
+    } else if (portValue.getPortName()
+        .equals(LogBaseTwoCalculatorModel.numberOut.getPortName())) {
       Integer number = TestAcceptor.acceptNumber.getValue(portValue);
       PortValue<?> pv = TestAcceptor.acceptNumber.createPortValue(number);
       addInputPortValue(pv, TestAcceptor.modelIdentifier, receiverMap);
-    } else if (portValue.getPortIdentifier()
-        .equals(LogBaseTwoCalculatorModel.wordOut.getPortIdentifier())) {
+    } else if (portValue.getPortName()
+        .equals(LogBaseTwoCalculatorModel.wordOut.getPortName())) {
       String word = TestAcceptor.acceptWord.getValue(portValue);
       PortValue<?> pv = TestAcceptor.acceptWord.createPortValue(word);
       addInputPortValue(pv, TestAcceptor.modelIdentifier, receiverMap);
     } else {
       throw new IllegalArgumentException(
-          "Couplings cannot handle port value with identifier " + portValue.getPortIdentifier());
+          "Couplings cannot handle port value with identifier " + portValue.getPortName());
     }
 
   }

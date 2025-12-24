@@ -25,5 +25,5 @@ import org.immutables.value.Value;
 @JsonSerialize(as = OutputReportPayload.class)
 @JsonDeserialize(as = OutputReportPayload.class)
 public abstract class AbstractOutputReportPayload extends DevsPayload {
-  public abstract List<ImmutablePortValue<?>> getOutputs();
+  public abstract List<PortValue<?>> getOutputs();
 }

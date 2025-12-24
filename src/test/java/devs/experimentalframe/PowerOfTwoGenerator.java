@@ -17,8 +17,8 @@
 package devs.experimentalframe;
 
 import devs.Port;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import devs.utils.Schedule;
 import java.util.HashMap;
 import java.util.Map;
@@ -78,17 +78,17 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
     LongSimTime t8 = LongSimTime.builder().t(8L).build();
     Schedule<LongSimTime> initialSchedule = new Schedule<>();
 
-    initialSchedule.add(t1, new PortValue<Integer>(Integer.valueOf(1), "numbers"));
-    initialSchedule.add(t1, new PortValue<String>("One", "words"));
+    initialSchedule.add(t1, PortValue.builder().value(Integer.valueOf(1)).portName("numbers").build());
+    initialSchedule.add(t1, PortValue.builder().value("One").portName("words").build());
 
-    initialSchedule.add(t2, new PortValue<Integer>(Integer.valueOf(2), "numbers"));
-    initialSchedule.add(t2, new PortValue<String>("Two", "words"));
+    initialSchedule.add(t2, PortValue.builder().value(Integer.valueOf(2)).portName("numbers").build());
+    initialSchedule.add(t2, PortValue.builder().value("Two").portName("words").build());
 
-    initialSchedule.add(t4, new PortValue<Integer>(Integer.valueOf(4), "numbers"));
-    initialSchedule.add(t4, new PortValue<String>("Four", "words"));
+    initialSchedule.add(t4, PortValue.builder().value(Integer.valueOf(4)).portName("numbers").build());
+    initialSchedule.add(t4, PortValue.builder().value("Four").portName("words").build());
 
-    initialSchedule.add(t8, new PortValue<Integer>(Integer.valueOf(8), "numbers"));
-    initialSchedule.add(t8, new PortValue<String>("Eight", "words"));
+    initialSchedule.add(t8, PortValue.builder().value(Integer.valueOf(8)).portName("numbers").build());
+    initialSchedule.add(t8, PortValue.builder().value("Eight").portName("words").build());
 
     return initialSchedule;
   }

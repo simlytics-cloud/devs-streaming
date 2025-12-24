@@ -1,7 +1,8 @@
 package devs.utils;
 
-import devs.msg.DevsExternalMessage;
-import devs.msg.DevsMessage;
+
+import devs.iso.DevsExternalMessage;
+import devs.iso.DevsMessage;
 import java.util.concurrent.CompletableFuture;
 import org.apache.pekko.NotUsed;
 import org.apache.pekko.actor.typed.ActorRef;

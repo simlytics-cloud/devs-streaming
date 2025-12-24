@@ -16,7 +16,7 @@
 package devs.msg.mutability;
 
 import devs.Port;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;

@@ -18,9 +18,11 @@ package devs.simulation.recorder;
 
 import devs.PDEVSModel;
 import devs.Port;
-import devs.msg.Bag;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import example.storage.StorageStateEnum;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * The RecorderModel class is a specialized implementation of a PDEVS (Parallel Discrete Event
@@ -79,12 +81,12 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
   }
 
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag input) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> input) {
     return;
   }
 
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, Bag input) {
+  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> input) {
     return;
   }
 
@@ -101,7 +103,7 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
   }
 
   @Override
-  public Bag outputFunction() {
-    return Bag.builder().build();
+  public List<PortValue<?>> outputFunction() {
+    return Collections.emptyList();
   }
 }

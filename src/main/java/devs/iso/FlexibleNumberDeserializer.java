@@ -18,9 +18,9 @@ package devs.iso;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import devs.msg.time.DoubleSimTime;
-import devs.msg.time.LongSimTime;
-import devs.msg.time.SimTime;
+import devs.iso.time.DoubleSimTime;
+import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
 import java.io.IOException;
 
 public class FlexibleNumberDeserializer extends JsonDeserializer<SimTime> {

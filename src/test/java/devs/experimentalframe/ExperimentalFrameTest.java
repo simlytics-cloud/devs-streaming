@@ -20,9 +20,10 @@ import devs.CoupledModelFactory;
 import devs.PDevsCouplings;
 import devs.RootCoordinator;
 import devs.SimulatorProvider;
-import devs.msg.DevsMessage;
-import devs.msg.InitSim;
-import devs.msg.time.LongSimTime;
+import devs.iso.DevsMessage;
+import devs.iso.ModelIdPayload;
+import devs.iso.SimulationInit;
+import devs.iso.time.LongSimTime;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,7 +74,8 @@ public class ExperimentalFrameTest {
     LogBaseTwoCalculatorModel logCalculator = new LogBaseTwoCalculatorModel();
     TestAcceptor testAcceptor = new TestAcceptor();
     List<SimulatorProvider<LongSimTime>> simulatorProviders =
-        Arrays.asList(generator.getDevsSimulatorProvider(), 
+        Arrays.asList(
+            generator.getDevsSimulatorProvider(),
         logCalculator.getDevsSimulatorProvider(),
         testAcceptor.getDevsSimulatorProvider());
 
@@ -123,8 +125,14 @@ public class ExperimentalFrameTest {
     ActorRef<DevsMessage> testFrame =
         testKit.spawn(coupledModelFactory.create(startTime), "experimentalFrameTest");
     ActorRef<DevsMessage> rootCoordinator =
-        testKit.spawn(RootCoordinator.create(endTime, testFrame), "root");
-    rootCoordinator.tell(InitSim.builder().time(startTime).build());
+        testKit.spawn(RootCoordinator.create(endTime, testFrame, "experimentalFrameTest"), "root");
+    rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
+        .eventTime(startTime)
+        .payload(ModelIdPayload.builder().modelId("experimentalFrameTest").build())
+        .simulationId("ExperimentalFrameTest")
+        .messageId("SimulationInit")
+        .senderId("TestActor")
+        .build());
     TestProbe<DevsMessage> testProbe = testKit.createTestProbe();
     testProbe.expectTerminated(rootCoordinator, Duration.ofSeconds(100));
     // Thread.sleep(10 * 1000);

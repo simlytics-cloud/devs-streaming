@@ -17,7 +17,7 @@
 package devs.iso;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import devs.msg.DevsMessage;
+import devs.iso.DevsMessage;
 
 /**
  * Marker interface to allow receiving external messages.  This interface is typically used to

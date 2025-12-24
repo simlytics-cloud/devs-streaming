@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.msg.time.LongSimTime;
+import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ public class ExecuteTransitionTest {
   public void createExecuteTransition() {
     TestCustomer TestCustomer = new TestCustomer(1.0, 2.0, 3.0);
     //PortValue<TestCustomer> pv = new PortValue<>(TestCustomer, "TestCustomerOut");
-    ImmutablePortValue<TestCustomer> immutablePortValue = ImmutablePortValue.<TestCustomer>builder()
+    PortValue<TestCustomer> immutablePortValue = PortValue.<TestCustomer>builder()
         .value(TestCustomer).portName("TestCustomerIn").build();
     ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
@@ -49,7 +49,7 @@ public class ExecuteTransitionTest {
         .build();
     assert executeTransition.getEventTime().getT() == 0L;
     assert executeTransition.getPayload().getModelId().equals("vehicle");
-    List<ImmutablePortValue<?>> inputs = executeTransition.getPayload().getInputs();
+    List<PortValue<?>> inputs = executeTransition.getPayload().getInputs();
     assert inputs.size() == 1;
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
     assert inputs.get(0).getValue() instanceof TestCustomer;
@@ -64,7 +64,7 @@ public class ExecuteTransitionTest {
   public void serializeDeserializeExecuteTransition() throws JsonProcessingException {
     TestCustomer TestCustomer = new TestCustomer(1.0, 2.0, 3.0);
     //PortValue<TestCustomer> pv = new PortValue<>(TestCustomer, "TestCustomerOut");
-    ImmutablePortValue<TestCustomer> immutablePortValue = ImmutablePortValue.<TestCustomer>builder()
+    PortValue<TestCustomer> immutablePortValue = PortValue.<TestCustomer>builder()
         .value(TestCustomer).portName("TestCustomerIn").build();
     ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
@@ -87,7 +87,7 @@ public class ExecuteTransitionTest {
     ExecuteTransition<LongSimTime> deserializedExecuteTransition = (ExecuteTransition<LongSimTime>) deserializedSimMessage;
     assert deserializedExecuteTransition.getEventTime().getT() == 0L;
     assert deserializedExecuteTransition.getPayload().getModelId().equals("vehicle");
-    List<ImmutablePortValue<?>> inputs = deserializedExecuteTransition.getPayload().getInputs();
+    List<PortValue<?>> inputs = deserializedExecuteTransition.getPayload().getInputs();
     assert inputs.size() == 1;
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
     assert inputs.get(0).getValue() instanceof TestCustomer;

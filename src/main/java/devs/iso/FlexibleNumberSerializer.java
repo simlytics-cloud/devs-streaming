@@ -19,9 +19,9 @@ package devs.iso;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
-import devs.msg.time.DoubleSimTime;
-import devs.msg.time.LongSimTime;
-import devs.msg.time.SimTime;
+import devs.iso.time.DoubleSimTime;
+import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
 import java.io.IOException;
 
 public class FlexibleNumberSerializer extends JsonSerializer<SimTime> {

@@ -18,14 +18,11 @@ package devs.msg.time;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import devs.iso.DevsSimMessage;
-import devs.iso.ExecuteTransition;
-import devs.iso.ExecuteTransitionPayload;
-import devs.iso.ImmutablePortValue;
-import devs.iso.SimMessageType;
-import devs.iso.TestCustomer;
+import devs.iso.PortValue;
+import devs.iso.time.DoubleSimTime;
+import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class SimTimeTest {

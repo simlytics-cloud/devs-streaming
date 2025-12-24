@@ -1,5 +1,5 @@
 /*
- * DEVS Streaming Framework Java Copyright (C) 2024 simlytics.cloud LLC and
+ * DEVS Streaming Framework Java Copyright (C) 2025 simlytics.cloud LLC and
  * DEVS Streaming Framework Java contributors.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -14,31 +14,19 @@
  *
  */
 
-package devs.msg;
+package devs.iso.log;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import devs.msg.time.SimTime;
-import devs.msg.time.TimedDevsMessage;
 import org.immutables.value.Value;
 
 /**
- * Abstract base class for output messages in a DEVS model that are associated with a specific
- * simulation time.
- *
- * @param <T> the time type, which must extend {@link SimTime}
+ * Message sent to a DevsLoggingActor to tell it to complete logging actions, clean up resources,
+ * and stop.
  */
 @Value.Immutable
-@JsonSerialize(as = SendOutput.class)
-@JsonDeserialize(as = SendOutput.class)
-public abstract class AbstractSendOutput<T extends SimTime> implements TimedDevsMessage<T> {
+@JsonSerialize(as = StopLogger.class)
+@JsonDeserialize(as = StopLogger.class)
+public class AbstractStopLogger implements DevsLogMessage {
 
-  /**
-   * Retrieves the simulation time associated with this DEVS model output message.
-   *
-   * @return the simulation time of type T, where T extends {@code SimTime}.
-   */
-  @Value.Parameter
-  @Override
-  public abstract T getTime();
 }

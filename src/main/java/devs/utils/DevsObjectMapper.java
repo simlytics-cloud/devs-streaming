@@ -16,15 +16,11 @@
 
 package devs.utils;
 
-import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import devs.msg.PortValue;
-import devs.msg.PortValueDeserializer;
 
 /**
  * Utility class for creating and configuring a custom Jackson {@code ObjectMapper} instance.
@@ -51,12 +47,8 @@ public class DevsObjectMapper {
    * scenarios, including support for custom data types.
    */
   public static ObjectMapper buildObjectMapper() {
-    PortValueDeserializer portValueDeserializer = new PortValueDeserializer();
-    SimpleModule portValueModule =
-        new SimpleModule("PortValueDeserializer", new Version(1, 0, 0, null));
-    //portValueModule.addDeserializer(PortValue.class, portValueDeserializer);
     return new ObjectMapper().registerModule(new Jdk8Module()).registerModule(new GuavaModule())
-        .registerModule(new JavaTimeModule()).registerModule(portValueModule)
+        .registerModule(new JavaTimeModule())
         .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 

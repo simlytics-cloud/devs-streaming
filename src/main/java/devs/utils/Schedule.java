@@ -16,7 +16,7 @@
 
 package devs.utils;
 
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.SortedMap;

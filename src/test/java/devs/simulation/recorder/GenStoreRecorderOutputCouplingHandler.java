@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import devs.OutputCouplingHandler;
-import devs.msg.PortValue;
+import devs.iso.PortValue;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 

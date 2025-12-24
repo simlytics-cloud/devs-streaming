@@ -16,7 +16,7 @@
 
 package devs;
 
-import devs.msg.time.SimTime;
+import devs.iso.time.SimTime;
 
 /**
  * Interface of a class to store state values over time.

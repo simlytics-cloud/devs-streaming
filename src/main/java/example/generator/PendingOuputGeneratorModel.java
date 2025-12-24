@@ -6,9 +6,8 @@ import java.util.List;
 import devs.PDEVSModel;
 import devs.PendingOutput;
 import devs.Port;
-import devs.msg.Bag;
-import devs.msg.PortValue;
-import devs.msg.time.LongSimTime;
+import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 
 public class PendingOuputGeneratorModel 
     extends PDEVSModel<LongSimTime, PendingOutputGeneratorModelState> 
@@ -65,11 +64,11 @@ public static String identifier = "generator";
    *
    * @param currentTime the current simulation time at which the external state transition occurs.
    *                    It is typically provided by the simulation environment.
-   * @param inputs      a bag of inputs received at the current simulation time. These inputs are
+   * @param inputs      a list of inputs received at the current simulation time. These inputs are
    *                    processed to influence the model's state during this transition.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
 
   }
 
@@ -80,11 +79,11 @@ public static String identifier = "generator";
    *
    * @param currentTime the current simulation time at which the confluent state transition occurs.
    *                    Typically provided by the simulation environment.
-   * @param inputs      a bag of inputs received at the current simulation time. These inputs are
+   * @param inputs      a list of inputs received at the current simulation time. These inputs are
    *                    processed in conjunction with the internal transition logic.
    */
   @Override
-  public void pendingConfluentStateTransitionFunction(LongSimTime currentTime, Bag inputs) {
+  public void pendingConfluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
 
   }
 
