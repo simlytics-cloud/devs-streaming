@@ -25,7 +25,9 @@ import org.immutables.value.Value;
 @JsonSerialize(as = PortValue.class)
 @JsonDeserialize(as = PortValue.class)
 public abstract class AbstractPortValue<T> {
-  @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+  @JsonTypeInfo(
+      use = JsonTypeInfo.Id.CLASS, 
+      include = JsonTypeInfo.As.PROPERTY,
       property = "@class")
   public abstract T getValue();
   public abstract String getPortName();

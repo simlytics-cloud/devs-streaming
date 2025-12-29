@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import devs.iso.time.SimTime;
 import org.immutables.value.Value;
 import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 @NullMarked
 @Value.Immutable
@@ -28,11 +29,13 @@ import org.jspecify.annotations.NullMarked;
 @JsonDeserialize(as = SimulationTerminate.class)
 public abstract class AbstractSimulationTerminate<T extends SimTime> extends
     DevsSimMessage implements
-    TimedMessage<T>, HasPayload<AbstractSimulationTerminatePayload> {
+    TimedMessage<T> {
 
   @Override
   public SimMessageType getMessageType() {
     return SimMessageType.SimulationTerminate;
   }
+  @Nullable
+  public abstract SimulationTerminatePayload getPayload();
 
 }

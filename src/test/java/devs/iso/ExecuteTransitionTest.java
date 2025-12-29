@@ -98,5 +98,40 @@ public class ExecuteTransitionTest {
     assert deserializedExecuteTransition.getMessageType().equals(SimMessageType.ExecuteTransition);
 }
 
+  @Test
+  public void serializeDeserializeExecuteTransitionInteger() throws JsonProcessingException {
+    PortValue<Integer> pv = PortValue.<Integer>builder().value(2).portName("TestInteger").build();
+    ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0L))
+        .payload(ExecuteTransitionPayload.builder()
+            .modelId("vehicle")
+            .addInputs(pv)
+            .build())
+        .simulationId("run1")
+        .messageId("id")
+        .senderId("irp")
+        .build();
+
+    ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+    String json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(executeTransition);
+    System.out.println(json);
+    DevsSimMessage deserializedSimMessage = objectMapper.readValue(json,
+        DevsSimMessage.class);
+    assert deserializedSimMessage instanceof ExecuteTransition<?>;
+    assert ((ExecuteTransition<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
+    ExecuteTransition<LongSimTime> deserializedExecuteTransition = (ExecuteTransition<LongSimTime>) deserializedSimMessage;
+    assert deserializedExecuteTransition.getEventTime().getT() == 0L;
+    assert deserializedExecuteTransition.getPayload().getModelId().equals("vehicle");
+    List<PortValue<?>> inputs = deserializedExecuteTransition.getPayload().getInputs();
+    assert inputs.size() == 1;
+    assert inputs.get(0).getPortName().equals("TestInteger");
+    assert inputs.get(0).getValue() instanceof Integer;
+    assert ((Integer) inputs.get(0).getValue()).equals(2);
+    assert deserializedExecuteTransition.getSimulationId().equals("run1");
+    assert deserializedExecuteTransition.getMessageId().equals("id");
+    assert deserializedExecuteTransition.getSenderId().equals("irp");
+    assert deserializedExecuteTransition.getMessageType().equals(SimMessageType.ExecuteTransition);
+  }
+
 
 }

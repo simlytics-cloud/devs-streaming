@@ -108,8 +108,8 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     return builder.build();
   }
 
-  protected String generateMessageId(String messageType) {
-    return "root" + "_" + messageType + "_" + simulationId + "_" + time.toString();
+  protected String generateMessageId() {
+    return java.util.UUID.randomUUID().toString();
   }
 
   /**
@@ -125,7 +125,14 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   Behavior<DevsMessage> onSimulationInit(SimulationInit<T> simulationInit) {
     this.time = simulationInit.getEventTime();
     this.simulationId = simulationInit.getSimulationId();
-    child.tell(new SimulationInitMessage<T>(simulationInit, getContext().getSelf()));
+    SimulationInit<T> rootInit = SimulationInit.<T>builder()
+            .eventTime(simulationInit.getEventTime())
+                .payload(ModelIdPayload.builder().modelId(childModelId).build())
+                    .simulationId(simulationInit.getSimulationId())
+                        .messageId(generateMessageId())
+                            .senderId("root")
+                                .build();
+    child.tell(new SimulationInitMessage<T>(rootInit, getContext().getSelf()));
     return this;
   }
 
@@ -143,7 +150,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
         .eventTime(time)
         .payload(ModelIdPayload.builder().modelId(childModelId).build())
         .simulationId(simulationId)
-        .messageId(generateMessageId("RequestOutput"))
+        .messageId(generateMessageId())
         .senderId("root")
         .build());
     return this;
@@ -161,16 +168,16 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
           .eventTime(time)
           .payload(ModelIdPayload.builder().modelId(childModelId).build())
           .simulationId(simulationId)
-          .messageId(generateMessageId("RequestOutput"))
+          .messageId(generateMessageId())
           .senderId("root")
           .build());
     } else {
       child.tell(SimulationTerminate.<T>builder()
           .eventTime(time)
-          .payload(SimulationTerminatePayload.builder().reason("Simulation completed").build())
           .simulationId(simulationId)
-          .messageId(generateMessageId("SimulationTerminate"))
+          .messageId(generateMessageId())
           .senderId("root")
+          .payload(SimulationTerminatePayload.builder().reason("Simulation completed").build())
           .build());
     }
     return this;

@@ -143,7 +143,7 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
   protected String generateMessageId(String messageType) {
-    return devsModel.getModelIdentifier() + "_" + messageType + "_" + simulationId + "_" + timeLast.toString();
+    return java.util.UUID.randomUUID().toString();
   }
 
   /**

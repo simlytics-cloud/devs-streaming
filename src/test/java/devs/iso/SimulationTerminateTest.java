@@ -30,13 +30,11 @@ public class SimulationTerminateTest {
   public void createSimulationTerminate() {
     SimulationTerminate<LongSimTime> simulationTerminate = SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(SimulationTerminatePayload.builder().reason("ended").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
         .build();
     assert simulationTerminate.getEventTime().getT() == 0L;
-    assert simulationTerminate.getPayload().getReason().equals("ended");
     assert simulationTerminate.getSimulationId().equals("run1");
     assert simulationTerminate.getMessageId().equals("id");
     assert simulationTerminate.getSenderId().equals("irp");
@@ -47,10 +45,10 @@ public class SimulationTerminateTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     SimulationTerminate<LongSimTime> simulationTerminate = SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(SimulationTerminatePayload.builder().reason("ended").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .payload(SimulationTerminatePayload.builder().reason("ended").build())
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();

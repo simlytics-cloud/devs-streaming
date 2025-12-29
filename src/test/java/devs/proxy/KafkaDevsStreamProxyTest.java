@@ -176,10 +176,10 @@ public class KafkaDevsStreamProxyTest {
     assert ("generator".equals(nextTime.getSenderId()));
     generatorProxy.tell(SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(SimulationTerminatePayload.builder().reason("Simulation terminated").build())
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationTerminate")
         .senderId("Proxy")
+        .payload(SimulationTerminatePayload.builder().reason("Simulation terminated").build())
         .build());
     Thread.sleep(5000);
     KafkaUtils.deleteTopics(Arrays.asList(generatorInputTopic), adminClient);

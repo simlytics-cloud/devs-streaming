@@ -27,6 +27,7 @@ import devs.iso.OutputReport;
 import devs.iso.OutputReportPayload;
 import devs.iso.PortValue;
 import devs.iso.RequestOutput;
+import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.TransitionComplete;
@@ -190,8 +191,18 @@ public class PDevsCoordinator<T extends SimTime>
     this.simulationId = tSimulationInitMessage.getSimulationInit().getSimulationId();
     timeLast = tSimulationInitMessage.getSimulationInit().getEventTime();
     // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
-    modelSimulators.values().forEach(
-        s -> s.tell(new SimulationInitMessage<>(tSimulationInitMessage.getSimulationInit(), getContext().getSelf())));
+
+    modelSimulators.forEach(
+        (modelId, model) -> {
+          SimulationInit<T> coordinatorInit = SimulationInit.<T>builder()
+              .eventTime(tSimulationInitMessage.getSimulationInit().getEventTime())
+              .payload(ModelIdPayload.builder().modelId(modelId).build())
+              .simulationId(tSimulationInitMessage.getSimulationInit().getSimulationId())
+              .messageId(generateMessageId(""))
+              .senderId(modelIdentifier)
+              .build();
+          model.tell(new SimulationInitMessage<>(coordinatorInit, getContext().getSelf()));
+        });
     return this;
   }
 
@@ -207,7 +218,7 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   protected String generateMessageId(String messageType) {
-    return modelIdentifier + "_" + messageType + "_" + simulationId + "_" + timeLast.toString();
+    return java.util.UUID.randomUUID().toString();
   }
 
   /**
@@ -506,10 +517,10 @@ public class PDevsCoordinator<T extends SimTime>
       awaitingTransition.add(key);
       modelSimulators.get(key).tell(SimulationTerminate.<T>builder()
           .eventTime(simulationTerminate.getEventTime())
-          .payload(simulationTerminate.getPayload())
           .simulationId(simulationId)
           .messageId(generateMessageId("SimulationTerminate"))
           .senderId(modelIdentifier)
+          .payload(simulationTerminate.getPayload())
           .build());
     }
     return this;

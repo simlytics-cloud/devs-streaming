@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import devs.iso.DevsMessage;
+import devs.iso.DevsSimMessage;
 import devs.iso.ModelTerminated;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
@@ -164,7 +165,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   private void processRecord(ConsumerRecord<String, String> record) {
     DevsMessage devsMessage = null;
     try {
-      devsMessage = objectMapper.readValue(record.value(), DevsMessage.class);
+      devsMessage = objectMapper.readValue(record.value(), DevsSimMessage.class);
     } catch (JsonProcessingException e) {
       logger.error("Could not deserialize JSON record " + record.value());
       e.printStackTrace();

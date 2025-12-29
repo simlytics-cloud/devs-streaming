@@ -16,15 +16,24 @@
 
 package devs.iso;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import devs.utils.DevsTypeIdResolver;
 import org.immutables.value.Value;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
 @NullMarked
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "devsType")
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.CUSTOM,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "messageType"
+)
+@JsonTypeIdResolver(DevsTypeIdResolver.class)
 @JsonSubTypes({
     @Type(value = SimulationInit.class),
     @Type(value = SimulationTerminate.class),
