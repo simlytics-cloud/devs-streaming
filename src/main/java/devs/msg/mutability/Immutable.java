@@ -86,7 +86,7 @@ public interface Immutable extends MutableImmutable {
       String mutableClassName = immutableClassName.replace("Immutable", "");
 
       Class<?> mutableClass = Class.forName(mutableClassName);
-      Object mutableInstance = mutableClass.getDeclaredConstructor().newInstance();
+      Object mutableInstance = mutableClass.getConstructor().newInstance();
 
       // 2. Copy fields using reflection
 

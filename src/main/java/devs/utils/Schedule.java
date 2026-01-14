@@ -16,10 +16,11 @@
 
 package devs.utils;
 
+import devs.Port;
+import devs.iso.PortValue;
 import devs.iso.time.SimTime;
 import java.util.ArrayList;
-import java.util.Map;
-import java.util.SortedMap;
+import java.util.List;
 import java.util.TreeMap;
 
 
@@ -33,7 +34,39 @@ import java.util.TreeMap;
  *
  * @param <T> The type of time points used, which must extend the SimTime class.
  */
-public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
+public class Schedule<T extends SimTime> {
+  
+  protected interface Event {}
+  
+  public static class ScheduledEvent implements Event {
+    protected final Object event;
+
+    protected ScheduledEvent(Object event) {
+      if (event instanceof PortValue<?>) {
+        throw new IllegalArgumentException("Cannot schedule port value event." 
+            + "Must use OutputEvent instead.");
+      }
+      this.event = event;
+    }
+    
+    protected Object getEvent() {
+      return event;
+    }
+  }
+  
+  protected static class OutputEvent implements Event {
+    protected final PortValue<?> portValue;
+    protected OutputEvent(PortValue<?> portValue) {
+      this.portValue = portValue;
+    }
+    
+    protected PortValue<?> getPortValue() {
+      return portValue;
+    }
+    
+  }
+  
+  protected TreeMap<T, ArrayList<Event>> schedule = new TreeMap<T, ArrayList<Event>>();
 
   /**
    * Default constructor for the Schedule class. Initializes an empty Schedule object that extends
@@ -44,28 +77,7 @@ public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
    */
   public Schedule() {
   }
-
-  /**
-   * Constructs a new Schedule object with the contents of the specified map. The keys and values of
-   * the provided map are used to initialize this Schedule.
-   *
-   * @param m the map whose mappings are to be placed in this Schedule. The keys must extend the
-   *          SimTime class, and the values must be lists of events.
-   */
-  public Schedule(Map<? extends T, ArrayList<Object>> m) {
-    super(m);
-  }
-
-  /**
-   * Constructs a new Schedule object with the contents of the specified sorted map. The keys and
-   * values of the provided sorted map are used to initialize this Schedule.
-   *
-   * @param m the sorted map whose mappings are to be placed in this Schedule. The keys must extend
-   *          the SimTime class, and the values must be lists of events.
-   */
-  public Schedule(SortedMap<T, ArrayList<Object>> m) {
-    super(m);
-  }
+  
 
   /**
    * Adds an event to the schedule at the specified time. If the time point already exists in the
@@ -76,14 +88,107 @@ public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
    *              extends the SimTime class.
    * @param event the event to be associated with the specified time point.
    */
-  public void add(T time, Object event) {
-    if (this.containsKey(time)) {
-      this.get(time).add(event);
-    } else {
-      ArrayList<Object> events = new ArrayList<>();
-      events.add(event);
-      this.put(time, events);
+  public void scheduleInternalEvent(T time, Object event) {
+    if (event instanceof PortValue<?> portValue) {
+      scheduleOutputEvent(time, portValue);
     }
+    ScheduledEvent scheduledEvent = new ScheduledEvent(event);
+    if (schedule.containsKey(time)) {
+      schedule.get(time).add(scheduledEvent);
+    } else {
+      ArrayList<Event> events = new ArrayList<>();
+      events.add(scheduledEvent);
+      schedule.put(time, events);
+    }
+  }
+  
+  public void scheduleOutputEvent(T time, PortValue<?> portValue) {
+    OutputEvent outputEvent = new OutputEvent(portValue);
+    if (schedule.containsKey(time)) {
+      schedule.get(time).add(outputEvent);
+    } else {
+      ArrayList<Event> events = new ArrayList<>();
+      events.add(outputEvent);
+      schedule.put(time, events);
+    }
+  }
+
+  public <P> void scheduleOutput(T scheduledTime, Port<P> port, P value) {
+    this.scheduleOutputEvent(scheduledTime, port.createPortValue(value));
+  }
+  
+  public T getFirstEventTime() {
+    return schedule.firstKey();
+  }
+  
+  public boolean isEmpty() {
+    return schedule.isEmpty();
+  }
+  
+  
+  public boolean hasCurrentOutput(T currentTime) {
+    List<Event> events = schedule.get(currentTime);
+    for (Event e : events) {
+      if (e instanceof OutputEvent) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public ArrayList<Object> removeCurrentScheduledEvents(T currentTime) {
+    if (schedule.get(currentTime) == null) {
+      return new ArrayList<>();
+    }
+    ArrayList<Event> allEvents = schedule.remove(currentTime);
+    ArrayList<ScheduledEvent> scheduledEvents = new ArrayList<>();
+    ArrayList<Event> remainingEvents = new ArrayList<>();
+
+    for (Event event : allEvents) {
+      if (event instanceof ScheduledEvent scheduledEvent) {
+        scheduledEvents.add(scheduledEvent);
+      } else {
+        remainingEvents.add(event);
+      }
+    }
+
+    if (!remainingEvents.isEmpty()) {
+      schedule.put(currentTime, remainingEvents);
+    }
+
+    ArrayList<Object> events = new ArrayList<>();
+    for (ScheduledEvent scheduledEvent : scheduledEvents) {
+      events.add(scheduledEvent.getEvent());
+    }
+    return events;
+  }
+  
+
+  public void removeCurrentScheduledOutput(T currentTime) {
+    if (schedule.get(currentTime) != null) {
+      ArrayList<Event> allEvents = new ArrayList<>(schedule.remove(currentTime));
+      allEvents.removeIf(event -> event instanceof OutputEvent outputEvent);
+      if (!allEvents.isEmpty()) {
+        schedule.put(currentTime, allEvents);
+      }
+    }
+  }
+
+  public ArrayList<PortValue<?>> getCurrentScheduledOutput() {
+    if (schedule.isEmpty()) {
+      throw new IllegalArgumentException("Called getCurrentScheduledOutput on empty schedule.");
+    }
+    List<OutputEvent> scheduledOutput = new ArrayList<>();
+    for (Event event : schedule.get(schedule.firstKey())) {
+      if (event instanceof OutputEvent outputEvent) {
+        scheduledOutput.add(outputEvent);
+      }
+    }
+    ArrayList<PortValue<?>> portValues = new ArrayList<>();
+    for (OutputEvent outputEvent : scheduledOutput) {
+      portValues.add(outputEvent.getPortValue());
+    }
+    return portValues;
   }
 
   /**
@@ -98,9 +203,9 @@ public class Schedule<T extends SimTime> extends TreeMap<T, ArrayList<Object>> {
   public String toString() {
     StringBuilder stringBuilder = new StringBuilder();
     stringBuilder.append("Scheduled Events: \n");
-    for (T key : keySet()) {
+    for (T key : schedule.keySet()) {
       stringBuilder.append("  Time:").append(key).append("\n");
-      for (Object event : get(key)) {
+      for (Object event : schedule.get(key)) {
         stringBuilder.append("    Event:").append(event).append("\n");
       }
     }

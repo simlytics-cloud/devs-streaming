@@ -17,6 +17,7 @@
 package devs;
 
 import devs.iso.PortValue;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Represents a port within a DEVS model. A port is identified by a unique identifier and is
@@ -40,6 +41,7 @@ public class Port<T> {
     this.clazz = clazz;
   }
 
+  @NonNull
   public T getValue(PortValue<?> portValue) {
     return clazz.cast(portValue.getValue());
   }

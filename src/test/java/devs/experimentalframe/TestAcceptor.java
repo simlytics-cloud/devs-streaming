@@ -49,6 +49,7 @@ import java.util.List;
  */
 public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
 
+  public static String modelIdentifier = "TestAcceptor";
   /**
    * Default constructor for the {@code TestAcceptor} class.
    * <p>
@@ -56,7 +57,7 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
    * constructor of its superclass {@code Acceptor} with an initial state value of {@code 0}.
    */
   public TestAcceptor() {
-    super(0);
+    super(0, modelIdentifier);
   }
 
   /**

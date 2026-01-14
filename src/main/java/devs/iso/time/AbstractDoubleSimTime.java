@@ -114,6 +114,11 @@ public abstract class AbstractDoubleSimTime extends SimTime {
     return DoubleSimTime.builder().t(Double.MAX_VALUE).build();
   }
 
+  @Override
+  public SimTime getTimeUntilMax() {
+    return DoubleSimTime.maxValue((DoubleSimTime) this);
+  }
+
   /**
    * Compares this {@code AbstractDoubleSimTime} instance with the specified {@code SimTime} operand
    * for order. Returns a negative integer, zero, or a positive integer if this instance is less

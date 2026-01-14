@@ -31,8 +31,8 @@ import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
 import example.coordinator.GenStoreInputCouplingHandler;
 import example.coordinator.GenStoreOutputCouplingHandler;
-import example.generator.PendingOuputGeneratorModel;
-import example.generator.PendingOutputGeneratorModelState;
+import example.generator.ScheduledGeneratorModel;
+import example.generator.ScheduledGeneratorModelState;
 import example.storage.StorageModel;
 import example.storage.StorageState;
 import example.storage.StorageStateEnum;
@@ -127,8 +127,8 @@ public class PendingOutputSimulationTest {
   void parallelDevsSimulationTest() throws InterruptedException {
 
     ActorRef<DevsMessage> generatorSim = testKit.spawn(
-        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, PendingOutputGeneratorModelState, PendingOuputGeneratorModel>(
-            new PendingOuputGeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
+        Behaviors.setup(context -> new PDevsSimulator<LongSimTime, ScheduledGeneratorModelState, ScheduledGeneratorModel>(
+            new ScheduledGeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
 
     ActorRef<DevsMessage> storageSim = testKit.spawn(Behaviors
         .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(

@@ -32,10 +32,9 @@ import java.util.List;
  * @param <S> the internal state type of the model
  */
 public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
+  
 
-  public static String modelIdentifier = "Acceptor";
-
-  public Acceptor(S initialState) {
+  public Acceptor(S initialState, String modelIdentifier) {
     super(initialState, modelIdentifier);
   }
 

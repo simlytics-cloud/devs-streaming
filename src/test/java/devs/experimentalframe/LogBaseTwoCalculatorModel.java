@@ -37,7 +37,7 @@ import java.util.List;
  * values on the `numberOut` port. - Computed string-based output of logarithmic text on the
  * `wordOut` port.
  */
-public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> implements ScheduledDevsModel<LongSimTime, Void> {
+public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, Void> {
 
   /**
    * Represents the unique identifier for the model class `LogBaseTwoCalculatorModel`.
@@ -91,12 +91,6 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
     this.schedule = new Schedule<>();
   }
 
-  @Override
-  public Schedule<LongSimTime> getSchedule() {
-    return schedule;
-  }
-
-
   /**
    * Executes the external state transition function of the DEVS model.
    * <p>
@@ -114,7 +108,7 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
    *                    simulation time.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+  public void scheduledExternalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
     simulator.getContext().getLog().info("Generating roots at {}", currentTime);
     for (PortValue<?> pv : inputs) {
       if (pv.getPortName().equals(numberIn.getPortName())) {
@@ -129,7 +123,7 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
             .value(outValue)
             .portName(numberOut.getPortName())
             .build();
-        schedule.add(currentTime, outPortValue);
+        schedule.scheduleOutputEvent(currentTime, outPortValue);
       } else if (pv.getPortName().equals(wordIn.getPortName())) {
         String word = wordIn.getValue(pv);
         String outWord = switch (word) {
@@ -144,7 +138,7 @@ public class LogBaseTwoCalculatorModel extends PDEVSModel<LongSimTime, Void> imp
             .value(outWord)
             .portName(wordOut.getPortName())
             .build();
-        schedule.add(currentTime, outPortValue);
+        schedule.scheduleOutputEvent(currentTime, outPortValue);
       } else {
         throw new IllegalArgumentException(
             "LogBaseTwoCalculatorModel did not expect port value with identifier"

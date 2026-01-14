@@ -18,11 +18,12 @@ package example.generator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
 import devs.utils.DevsObjectMapper;
 
 import java.util.ArrayList;
-
+import java.util.List;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -34,12 +35,8 @@ import org.junit.jupiter.api.Test;
  * provided by the {@code DevsObjectMapper} utility for JSON serialization and deserialization.
  */
 @DisplayName("Generator Model Test")
-public class PendingOutputGeneratorModelTest {
-
-
-  ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
-
-
+public class ScheduledGeneratorModelTest {
+  
 
   /**
    * Tests the state transition behavior of the {@code GeneratorModel} class.
@@ -62,44 +59,35 @@ public class PendingOutputGeneratorModelTest {
   @Test
   @DisplayName("Test state transition")
   void stateTransitionTest() throws JsonProcessingException {
+    // Schedule is in initial state of 0 with a FlipState scheduled for t=0
+    ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0);
+    LongSimTime nextTime = generatorModel.timeAdvanceFunction(LongSimTime.create(0));
+    assert nextTime.getT() == 1L;
 
-    PendingOuputGeneratorModel generatorModel = new PendingOuputGeneratorModel(0);
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
+    // Output should be 0 before state transition
+    List<PortValue<?>> output = generatorModel.outputFunction();
+    assert ((Integer) output.get(0).getValue() == 0);
+
+    // Execute the internal transition
+    generatorModel.internalStateTransitionFunction(nextTime);
+    assert generatorModel.getModelState().getiState() == 1;
+    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction(nextTime));
+    // Time advance should be 0 it internal state is 1
+    assert nextTime.getT() == 1L;
+
     // Output should be 1 after state transition
-    assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 1);
+    output = generatorModel.outputFunction();
+    assert ((Integer) output.get(0).getValue() == 1);
 
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(2L).build());
+
+    // Should flip state to 0L
+    generatorModel.internalStateTransitionFunction(nextTime);
+    assert generatorModel.getModelState().getiState() == 0;
+    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction(nextTime));
+    assert nextTime.getT() == 2L;
     // Output should be 0 after second state transition
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 0);
   }
 
-  /**
-   * Validates the time advance behavior of the {@code GeneratorModel} class.
-   *
-   * This test verifies the correctness of the {@code timeAdvanceFunction} implementation in
-   * relation to the model's internal state. Specifically, it ensures that:
-   * - When the model's internal state is 0, the time advance value is 1.
-   * - When the model's internal state is transitioned to 1, the time advance value is also 1.
-   *
-   * The method involves the following steps:
-   * - Initializes a {@code GeneratorModel} instance with an initial state of 0.
-   * - Asserts the time advance value is 1 when the initial state is 0.
-   * - Invokes the {@code internalStateTransitionFunction} to change the model state to 1.
-   * - Asserts the time advance value remains 1 even after the state change.
-   *
-   * This test ensures that the time advance functionality is consistent with the model's
-   * behavior and internal state transitions.
-   */
-  @Test
-  @DisplayName("Test time advance")
-  void timeAdvanceTest() {
 
-    PendingOuputGeneratorModel generatorModel = new PendingOuputGeneratorModel(0);
-    // Time advance should be 1 if state is 0
-    assert (generatorModel.timeAdvanceFunction(LongSimTime.builder().t(0L).build()).getT() == 1L);
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
-    // time advance should be 0 if state is 1
-    assert (generatorModel.timeAdvanceFunction(LongSimTime.builder().t(1L).build()).getT() == 0L);
-
-  }
 }

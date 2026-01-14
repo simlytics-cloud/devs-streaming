@@ -103,12 +103,10 @@ public class GeneratorTest {
       // Test the output
       for (PortValue<?> pv : generator.outputFunction()) {
         if ("number".equals(pv.getPortName())) {
-          Port<Integer> integerPort = (Port<Integer>) generator.getPorts().get("number");
-          Integer i = integerPort.getValue(pv);
+          Integer i = PowerOfTwoGenerator.NUMBERS_PORT.getValue(pv);
           assert (i == t);
         } else if ("words".equals(pv.getPortName())) {
-          Port<String> wordPort = (Port<String>) generator.getPorts().get("words");
-          String word = wordPort.getValue(pv);
+          String word = PowerOfTwoGenerator.WORDS_PORT.getValue(pv);
           String expectedWord = switch ((int) t) {
             case 1 -> "One";
             case 2 -> "Two";

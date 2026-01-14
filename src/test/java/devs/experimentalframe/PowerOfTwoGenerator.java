@@ -20,8 +20,6 @@ import devs.Port;
 import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
 import devs.utils.Schedule;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * PowerOfTwoGenerator is a concrete implementation of the Generator class, providing a predefined
@@ -44,6 +42,8 @@ import java.util.Map;
 public class PowerOfTwoGenerator extends Generator<LongSimTime> {
 
   public static final String MODEL_ID = "powerOfTwoGenerator";
+  public static final Port<Integer> NUMBERS_PORT = new Port<>("numbers", Integer.class);
+  public static final Port<String> WORDS_PORT = new Port<>("words", String.class);
 
   /**
    * Constructs a PowerOfTwoGenerator instance.
@@ -78,37 +78,21 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
     LongSimTime t8 = LongSimTime.builder().t(8L).build();
     Schedule<LongSimTime> initialSchedule = new Schedule<>();
 
-    initialSchedule.add(t1, PortValue.builder().value(Integer.valueOf(1)).portName("numbers").build());
-    initialSchedule.add(t1, PortValue.builder().value("One").portName("words").build());
+    initialSchedule.scheduleOutputEvent(t1, PortValue.builder().value(Integer.valueOf(1)).portName(NUMBERS_PORT.getPortName()).build());
+    initialSchedule.scheduleOutputEvent(t1, PortValue.builder().value("One").portName(WORDS_PORT.getPortName()).build());
 
-    initialSchedule.add(t2, PortValue.builder().value(Integer.valueOf(2)).portName("numbers").build());
-    initialSchedule.add(t2, PortValue.builder().value("Two").portName("words").build());
+    initialSchedule.scheduleOutputEvent(t2, PortValue.builder().value(Integer.valueOf(2)).portName(NUMBERS_PORT.getPortName()).build());
+    initialSchedule.scheduleOutputEvent(t2, PortValue.builder().value("Two").portName(WORDS_PORT.getPortName()).build());
 
-    initialSchedule.add(t4, PortValue.builder().value(Integer.valueOf(4)).portName("numbers").build());
-    initialSchedule.add(t4, PortValue.builder().value("Four").portName("words").build());
+    initialSchedule.scheduleOutputEvent(t4, PortValue.builder().value(Integer.valueOf(4)).portName(NUMBERS_PORT.getPortName()).build());
+    initialSchedule.scheduleOutputEvent(t4, PortValue.builder().value("Four").portName(WORDS_PORT.getPortName()).build());
 
-    initialSchedule.add(t8, PortValue.builder().value(Integer.valueOf(8)).portName("numbers").build());
-    initialSchedule.add(t8, PortValue.builder().value("Eight").portName("words").build());
+    initialSchedule.scheduleOutputEvent(t8, PortValue.builder().value(Integer.valueOf(8)).portName(NUMBERS_PORT.getPortName()).build());
+    initialSchedule.scheduleOutputEvent(t8, PortValue.builder().value("Eight").portName(WORDS_PORT.getPortName()).build());
 
     return initialSchedule;
   }
-
-  /**
-   * Builds and returns a mapping of ports for the PowerOfTwoGenerator model.
-   * <p>
-   * The ports include: - "numbers": A port for exchanging integer-based numerical data. - "words":
-   * A port for exchanging string-based text data.
-   *
-   * @return a map of port identifiers to their respective port objects, where the keys are the
-   * unique port names and the values are instances of the corresponding port types.
-   */
-  @Override
-  protected Map<String, Port<?>> buildPorts() {
-    Map<String, Port<?>> ports = new HashMap<>();
-    ports.put("numbers", new Port<Integer>("numbers", Integer.class));
-    ports.put("words", new Port<String>("words", String.class));
-    return ports;
-  }
+  
 
   @Override
   public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
