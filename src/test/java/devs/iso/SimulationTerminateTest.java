@@ -33,6 +33,7 @@ public class SimulationTerminateTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
     assert simulationTerminate.getEventTime().getT() == 0L;
     assert simulationTerminate.getSimulationId().equals("run1");
@@ -48,6 +49,7 @@ public class SimulationTerminateTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .payload(SimulationTerminatePayload.builder().reason("ended").build())
         .build();
 

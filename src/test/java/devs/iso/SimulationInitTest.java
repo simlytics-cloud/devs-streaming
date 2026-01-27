@@ -33,13 +33,13 @@ public class SimulationInitTest {
   public void createSimulationInit() {
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
     assert simulationInit.getEventTime().getT() == 0L;
-    assert simulationInit.getPayload().getModelId().equals("vehicle");
+    assert simulationInit.getReceiverId().equals("vehicle");
     assert simulationInit.getSimulationId().equals("run1");
     assert simulationInit.getMessageId().equals("id");
     assert simulationInit.getSenderId().equals("irp");
@@ -50,10 +50,10 @@ public class SimulationInitTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -64,7 +64,7 @@ public class SimulationInitTest {
     assert ((SimulationInit<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
     SimulationInit<LongSimTime> deserializedSimulationInit = (SimulationInit<LongSimTime>) deserializedSimMessage;
     assert deserializedSimulationInit.getEventTime().getT() == 0L;
-    assert deserializedSimulationInit.getPayload().getModelId().equals("vehicle");
+    assert deserializedSimulationInit.getReceiverId().equals("vehicle");
     assert deserializedSimulationInit.getSimulationId().equals("run1");
     assert deserializedSimulationInit.getMessageId().equals("id");
     assert deserializedSimulationInit.getSenderId().equals("irp");
@@ -72,10 +72,10 @@ public class SimulationInitTest {
     // Try with a Double value
     SimulationInit<DoubleSimTime> doubleSimulationInit = SimulationInit.<DoubleSimTime>builder()
         .eventTime(DoubleSimTime.create(0.5))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
 
     String jsonDouble = objectMapper.writerWithDefaultPrettyPrinter()
@@ -84,7 +84,7 @@ public class SimulationInitTest {
         SimulationInit.class);
     assert deserializedSimulationInitDouble.getEventTime() instanceof DoubleSimTime;
     assertEquals(0.5, doubleSimulationInit.getEventTime().getT(), 0.00000001);
-    assert deserializedSimulationInitDouble.getPayload().getModelId().equals("vehicle");
+    assert deserializedSimulationInitDouble.getReceiverId().equals("vehicle");
     assert deserializedSimulationInitDouble.getSimulationId().equals("run1");
     assert deserializedSimulationInitDouble.getMessageId().equals("id");
     assert deserializedSimulationInitDouble.getSenderId().equals("irp");

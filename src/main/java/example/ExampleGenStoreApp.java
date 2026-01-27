@@ -16,7 +16,6 @@
 
 package example;
 
-import devs.iso.ModelIdPayload;
 import devs.iso.SimulationInit;
 import java.util.Collections;
 import java.util.HashMap;
@@ -189,10 +188,10 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
 
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("root").build())
         .simulationId("GenStoreSimulation")
         .messageId("App-SimStoreInit")
         .senderId("App")
+        .receiverId("root")
         .build());
 
     return Behaviors.same();

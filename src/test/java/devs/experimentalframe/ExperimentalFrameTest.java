@@ -21,7 +21,6 @@ import devs.PDevsCouplings;
 import devs.RootCoordinator;
 import devs.SimulatorProvider;
 import devs.iso.DevsMessage;
-import devs.iso.ModelIdPayload;
 import devs.iso.SimulationInit;
 import devs.iso.time.LongSimTime;
 import java.time.Duration;
@@ -128,10 +127,10 @@ public class ExperimentalFrameTest {
         testKit.spawn(RootCoordinator.create(endTime, testFrame, "experimentalFrameTest"), "root");
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(startTime)
-        .payload(ModelIdPayload.builder().modelId("experimentalFrameTest").build())
         .simulationId("ExperimentalFrameTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId("experimentalFrameTest")
         .build());
     TestProbe<DevsMessage> testProbe = testKit.createTestProbe();
     testProbe.expectTerminated(rootCoordinator, Duration.ofSeconds(100));

@@ -34,6 +34,7 @@ public class TransitionCompleteTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
     assert transitionComplete.getEventTime().getT() == 0L;
@@ -51,6 +52,7 @@ public class TransitionCompleteTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
 

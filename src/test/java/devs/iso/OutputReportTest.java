@@ -44,6 +44,7 @@ public class OutputReportTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3L))
         .build();
     assert outputReport.getEventTime().getT() == 0L;
@@ -71,6 +72,7 @@ public class OutputReportTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
 

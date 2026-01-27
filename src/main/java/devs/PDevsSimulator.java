@@ -18,7 +18,6 @@ package devs;
 
 import devs.iso.DevsExternalMessage;
 import devs.iso.ExecuteTransition;
-import devs.iso.ModelIdPayload;
 import devs.iso.ModelTerminated;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
@@ -59,6 +58,7 @@ public class PDevsSimulator<T extends SimTime, S,
   protected T timeNext;
   protected T transitionTime;
   protected ActorRef<DevsMessage> parent;
+  protected String parentId;
   protected String simulationId;
 
   protected final M devsModel;
@@ -157,6 +157,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> onSimulationInitMessage(SimulationInitMessage<T> simulationInitMessage) {
     this.parent = simulationInitMessage.getParent();
+    this.parentId = simulationInitMessage.getSimulationInit().getSenderId();
     this.simulationId = simulationInitMessage.getSimulationInit().getSimulationId();
     timeNext = timeAdvance(simulationInitMessage.getSimulationInit().getEventTime());
     parent.tell(
@@ -165,6 +166,7 @@ public class PDevsSimulator<T extends SimTime, S,
             .simulationId(simulationId)
             .messageId(generateMessageId("NextInternalTimeReport"))
             .senderId(devsModel.getModelIdentifier())
+            .receiverId(parentId)
             .nextInternalTime(timeNext)
             .build());
     return this;
@@ -194,6 +196,7 @@ public class PDevsSimulator<T extends SimTime, S,
         .simulationId(simulationId)
         .messageId(generateMessageId("OutputReport"))
         .senderId(devsModel.getModelIdentifier())
+        .receiverId(parentId)
         .nextInternalTime(timeNext)
         .build());
     return this;
@@ -257,6 +260,7 @@ public class PDevsSimulator<T extends SimTime, S,
           .simulationId(simulationId)
           .messageId(generateMessageId("TransitionComplete"))
           .senderId(devsModel.getModelIdentifier())
+          .receiverId(parentId)
           .nextInternalTime(timeNext)
           .build());
     }
@@ -342,6 +346,7 @@ public class PDevsSimulator<T extends SimTime, S,
         .simulationId(simulationId)
         .messageId(generateMessageId("ModelTerminated"))
         .senderId(devsModel.getModelIdentifier())
+        .receiverId(parentId)
         .build());
     return Behaviors.stopped();
   }

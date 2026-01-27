@@ -24,6 +24,6 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = ExecuteTransitionPayload.class)
 @JsonDeserialize(as = ExecuteTransitionPayload.class)
-public abstract class AbstractExecuteTransitionPayload extends AbstractModelIdPayload {
+public abstract class AbstractExecuteTransitionPayload extends DevsPayload {
   public abstract List<PortValue<?>> getInputs();
 }

@@ -22,7 +22,6 @@ import devs.PDevsSimulator;
 import devs.RootCoordinator;
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
-import devs.iso.ModelIdPayload;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.PortValue;
@@ -155,10 +154,10 @@ public class PDevsSimulationTest {
             LongSimTime.builder().t(2L).build(), coordinator, "genStoreCoupled")));
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId("root").build())
         .simulationId("PDevsSimulationTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId("root")
         .build());
 
     ActorRef<DevsMessage> recorderSim = testKit.spawn(

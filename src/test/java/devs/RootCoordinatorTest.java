@@ -19,7 +19,6 @@ package devs;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.DevsMessage;
-import devs.iso.ModelIdPayload;
 import devs.iso.ModelTerminated;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
@@ -138,10 +137,10 @@ public class RootCoordinatorTest {
             LongSimTime.builder().t(10L).build(), probe.getRef(), "child")));
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId("root")
         .build());
 
     DevsMessage message1 = probe.receiveMessage();
@@ -155,6 +154,7 @@ public class RootCoordinatorTest {
         .simulationId(simulationId)
         .messageId("NextInternalTimeReport")
         .senderId("TestActor")
+        .receiverId("root")
         .nextInternalTime(LongSimTime.create(2))
         .build());
 
@@ -168,6 +168,7 @@ public class RootCoordinatorTest {
         .simulationId(simulationId)
         .messageId("OutputReport")
         .senderId("child")
+        .receiverId("root")
         .nextInternalTime(LongSimTime.create(5))
         .build());
 
@@ -181,6 +182,7 @@ public class RootCoordinatorTest {
         .simulationId(simulationId)
         .messageId("OutputReport")
         .senderId("child")
+        .receiverId("root")
         .nextInternalTime(LongSimTime.create(11))
         .build());
 
@@ -192,6 +194,7 @@ public class RootCoordinatorTest {
         .simulationId(simulationId)
         .messageId("ModelTerminated")
         .senderId("child")
+        .receiverId("root")
         .build());
   }
 }

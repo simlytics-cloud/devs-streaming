@@ -25,7 +25,6 @@ import devs.PDevsSimulator;
 import devs.RootCoordinator;
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
-import devs.iso.ModelIdPayload;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.PortValue;
 import devs.iso.SimulationInit;
@@ -90,10 +89,8 @@ import org.junit.jupiter.api.Test;
  */
 @Disabled("Requires KAFKA instance")
 public class KafkaDevsStreamProxyTest {
-
-  static final String generatorInputTopic = "generatorInput";
-  static final String coordinatorInputTopic = "coordinatorInput";
-  static final String storageInputTopic = "storageInput";
+  
+  static final String genStoreSystemTopic = "genStoreSystem";
   static final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
 
   static Long time;
@@ -129,11 +126,12 @@ public class KafkaDevsStreamProxyTest {
     // create the producer and consumer topics
     Config config = ConfigFactory.load();
     Config kafkaClusterConfig = config.getConfig("kafka-cluster");
+    Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
-    KafkaUtils.deleteTopics(Arrays.asList(generatorInputTopic), adminClient);
+    KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
     Thread.sleep(5000);
-    KafkaUtils.createTopic(generatorInputTopic, adminClient, Optional.of(1), Optional.empty());
+    KafkaUtils.createTopic(genStoreSystemTopic, adminClient, Optional.of(1), Optional.empty());
     Producer<Long, String> producer =
         KafkaUtils.createProducer(ConfigUtils.copyProperties(kafkaClusterProperties));
 
@@ -143,24 +141,27 @@ public class KafkaDevsStreamProxyTest {
     final TestProbe<DevsMessage> fromSimulatorProbe = testKit.createTestProbe("fromSimulatorProbe");
 
     final ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", generatorInputTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
         "Proxy");
-
+    
     final ActorRef<DevsMessage> simulator = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
             new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
 
+    ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(toSimulatorProbe.getRef(),
+        fromSimulatorProbe.getRef(), "generator", kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
+
     // Initialize and expect next sim time to be 1
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId("generator").build())
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
+        .receiverId("generator")
         .build();
     String initSimString = objectMapper.writeValueAsString(simulationInit);
     final Long start = System.currentTimeMillis();
-    producer.send(new ProducerRecord<>(generatorInputTopic, 0L, initSimString));
+    producer.send(new ProducerRecord<>(genStoreSystemTopic, 0L, initSimString));
     DevsMessage devsMessageFromKafka = toSimulatorProbe.receiveMessage(Duration.ofSeconds(10));
     assert (devsMessageFromKafka instanceof SimulationInitMessage<?>);
     SimulationInitMessage<LongSimTime> initSimFromKafka =
@@ -179,10 +180,11 @@ public class KafkaDevsStreamProxyTest {
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationTerminate")
         .senderId("Proxy")
+        .receiverId("generator")
         .payload(SimulationTerminatePayload.builder().reason("Simulation terminated").build())
         .build());
     Thread.sleep(5000);
-    KafkaUtils.deleteTopics(Arrays.asList(generatorInputTopic), adminClient);
+    KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
     testKit.shutdownTestKit();
   }
 
@@ -220,11 +222,11 @@ public class KafkaDevsStreamProxyTest {
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
     KafkaUtils.deleteTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
+        Arrays.asList(genStoreSystemTopic),
         adminClient);
     Thread.sleep(5000);
     KafkaUtils.createTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
+        Arrays.asList(genStoreSystemTopic),
         adminClient, Optional.of(1), Optional.empty());
     ActorTestKit testKit = ActorTestKit.create();
     ActorRef<DevsMessage> generator = testKit.spawn(
@@ -232,7 +234,7 @@ public class KafkaDevsStreamProxyTest {
             new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", generatorInputTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
         "generatorProxy");
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
@@ -241,7 +243,7 @@ public class KafkaDevsStreamProxyTest {
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("storage", storageInputTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("storage", genStoreSystemTopic, kafkaClusterConfig),
         "storageProxy");
 
     TestProbe<DevsMessage> toRecorderProbe = testKit.createTestProbe("toRecorderProbe");
@@ -264,15 +266,15 @@ public class KafkaDevsStreamProxyTest {
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =
-        testKit.spawn(KafkaDevsStreamProxy.create("coordinator", coordinatorInputTopic,
+        testKit.spawn(KafkaDevsStreamProxy.create("coordinator", genStoreSystemTopic,
             kafkaClusterConfig), "coordinatorProxy");
 
     Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
-        coordinatorProxy, kafkaConsumerConfig, storageInputTopic), "storageReceiver");
+        coordinatorProxy, "storage", kafkaConsumerConfig, genStoreSystemTopic), "storageReceiver");
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(generator,
-        coordinatorProxy, kafkaConsumerConfig, generatorInputTopic), "generatorReceiver");
+        coordinatorProxy, "generator", kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
@@ -282,7 +284,7 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> coordinatorReceiver =
         testKit.spawn(KafkaReceiver.create(coordinator, rootCoordinator,
-            kafkaConsumerConfig, coordinatorInputTopic), "coordinatorReceiver");
+            "genStoreCoupled", kafkaConsumerConfig, genStoreSystemTopic), "coordinatorReceiver");
 
     final ActorRef<DevsMessage> recorderSim =
         testKit.spawn(
@@ -295,14 +297,14 @@ public class KafkaDevsStreamProxyTest {
     Thread.sleep(3000);
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId("root").build())
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
+        .receiverId("root")
         .build());
 
     // Expect initSim message to recorder
-    DevsMessage message1 = toRecorderProbe.receiveMessage();
+    DevsMessage message1 = toRecorderProbe.receiveMessage(Duration.ofSeconds(100));
     assert (message1 instanceof SimulationInitMessage<?>);
     SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
     assert (initSimMessage.getSimulationInit().getEventTime().getT() == 0L);
@@ -333,7 +335,7 @@ public class KafkaDevsStreamProxyTest {
     assert (generatorPort.getValue().equals(1));
     PortValue<?> storagePort = recorderBag.stream()
         .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
-    assert (storagePort.getValue().equals(StorageStateEnum.S0));
+    assert (storagePort.getValue().equals("S0"));
     assert (executeExternalTransition2.getEventTime().getT() == 1L);
     recorderSim.tell(executeExternalTransition2);
 
@@ -343,18 +345,18 @@ public class KafkaDevsStreamProxyTest {
     assert (messag2 instanceof ExecuteTransition<?>);
     ExecuteTransition<LongSimTime> executeExternalTransition3 =
         (ExecuteTransition<LongSimTime>) messag4;
-    assert (executeExternalTransition3.getPayload().getInputs().size() == 0);
+    assert (executeExternalTransition3.getPayload().getInputs().size() == 1);
     List<PortValue<?>> recorderBag4 = executeExternalTransition3.getPayload().getInputs();
     Optional<PortValue<?>> generatorPort4 = recorderBag4.stream()
         .filter(pv -> "GENERATOR_OUTPUT".equals(pv.getPortName())).findFirst();
     assert (generatorPort4.isEmpty());
     PortValue<?> storagePort4 = recorderBag4.stream()
         .filter(pv -> "STORAGE_OUTPUT".equals(pv.getPortName())).findFirst().get();
-    assert (storagePort4.getValue().equals(StorageStateEnum.S1));
+    assert (storagePort4.getValue().equals("S1"));
     assert (executeExternalTransition2.getEventTime().getT() == 1L);
     testKit.shutdownTestKit();
     KafkaUtils.deleteTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
+        Arrays.asList(genStoreSystemTopic),
         adminClient);
     Thread.sleep(5000);
 
@@ -397,11 +399,11 @@ public class KafkaDevsStreamProxyTest {
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
     KafkaUtils.deleteTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
+        Arrays.asList(genStoreSystemTopic),
         adminClient);
     Thread.sleep(5000);
     KafkaUtils.createTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
+        Arrays.asList(genStoreSystemTopic),
         adminClient, Optional.of(1), Optional.empty());
     ActorTestKit testKit = ActorTestKit.create();
     ActorRef<DevsMessage> generator = testKit.spawn(
@@ -409,7 +411,7 @@ public class KafkaDevsStreamProxyTest {
             new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", generatorInputTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
         "generatorProxy");
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
@@ -418,7 +420,7 @@ public class KafkaDevsStreamProxyTest {
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("storage", storageInputTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("storage", genStoreSystemTopic, kafkaClusterConfig),
         "storageProxy");
 
     ActorRef<DevsMessage> recorderSim =
@@ -447,14 +449,14 @@ public class KafkaDevsStreamProxyTest {
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =
-        testKit.spawn(KafkaDevsStreamProxy.create("coordinator", coordinatorInputTopic,
+        testKit.spawn(KafkaDevsStreamProxy.create("genStoreCoupled", genStoreSystemTopic,
             kafkaClusterConfig), "coordinatorProxy");
     Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
-        coordinatorProxy, kafkaConsumerConfig, storageInputTopic), "storageReceiver");
+        coordinatorProxy, "storage", kafkaConsumerConfig, genStoreSystemTopic), "storageReceiver");
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(generator,
-        coordinatorProxy, kafkaConsumerConfig, generatorInputTopic), "generatorReceiver");
+        coordinatorProxy, "generator",kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
@@ -464,21 +466,19 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> coordinatorReceiver =
         testKit.spawn(KafkaReceiver.create(coordinator, rootCoordinator,
-            kafkaConsumerConfig, coordinatorInputTopic), "coordinatorReceiver");
+            "genStoreCoupled", kafkaConsumerConfig, genStoreSystemTopic), "coordinatorReceiver");
 
     Thread.sleep(3000);
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId("root").build())
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
+        .receiverId("root")
         .build());
     Thread.sleep(5000);
     testKit.shutdownTestKit();
-    KafkaUtils.deleteTopics(
-        Arrays.asList(generatorInputTopic, coordinatorInputTopic, storageInputTopic),
-        adminClient);
+    //KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
     Thread.sleep(5000);
   }
 }

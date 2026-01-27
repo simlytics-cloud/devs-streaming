@@ -40,15 +40,15 @@ public class ExecuteTransitionTest {
     ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
         .payload(ExecuteTransitionPayload.builder()
-            .modelId("vehicle")
             .addInputs(immutablePortValue)
             .build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")  
         .build();
     assert executeTransition.getEventTime().getT() == 0L;
-    assert executeTransition.getPayload().getModelId().equals("vehicle");
+    assert executeTransition.getReceiverId().equals("vehicle");
     List<PortValue<?>> inputs = executeTransition.getPayload().getInputs();
     assert inputs.size() == 1;
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
@@ -69,12 +69,12 @@ public class ExecuteTransitionTest {
     ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
         .payload(ExecuteTransitionPayload.builder()
-            .modelId("vehicle")
             .addInputs(immutablePortValue)
             .build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle") 
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -86,7 +86,7 @@ public class ExecuteTransitionTest {
     assert ((ExecuteTransition<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
     ExecuteTransition<LongSimTime> deserializedExecuteTransition = (ExecuteTransition<LongSimTime>) deserializedSimMessage;
     assert deserializedExecuteTransition.getEventTime().getT() == 0L;
-    assert deserializedExecuteTransition.getPayload().getModelId().equals("vehicle");
+    assert deserializedExecuteTransition.getReceiverId().equals("vehicle");
     List<PortValue<?>> inputs = deserializedExecuteTransition.getPayload().getInputs();
     assert inputs.size() == 1;
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
@@ -104,12 +104,12 @@ public class ExecuteTransitionTest {
     ExecuteTransition<LongSimTime> executeTransition = ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
         .payload(ExecuteTransitionPayload.builder()
-            .modelId("vehicle")
             .addInputs(pv)
             .build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -121,7 +121,7 @@ public class ExecuteTransitionTest {
     assert ((ExecuteTransition<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
     ExecuteTransition<LongSimTime> deserializedExecuteTransition = (ExecuteTransition<LongSimTime>) deserializedSimMessage;
     assert deserializedExecuteTransition.getEventTime().getT() == 0L;
-    assert deserializedExecuteTransition.getPayload().getModelId().equals("vehicle");
+    assert deserializedExecuteTransition.getReceiverId().equals("vehicle");
     List<PortValue<?>> inputs = deserializedExecuteTransition.getPayload().getInputs();
     assert inputs.size() == 1;
     assert inputs.get(0).getPortName().equals("TestInteger");

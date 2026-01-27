@@ -33,6 +33,7 @@ public class ModelTerminatedTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .build();
     assert modelTerminated.getSimulationId().equals("run1");
     assert modelTerminated.getMessageId().equals("id");
@@ -47,6 +48,7 @@ public class ModelTerminatedTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();

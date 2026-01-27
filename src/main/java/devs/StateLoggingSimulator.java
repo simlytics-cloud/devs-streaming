@@ -195,6 +195,7 @@ public class StateLoggingSimulator<T extends SimTime, S, M extends PDEVSModel<T,
         .simulationId(requestOutput.getSimulationId())
         .messageId(generateMessageId("OutputReport"))
         .senderId(devsModel.getModelIdentifier())
+        .receiverId(parentId)
         .nextInternalTime(timeNext).build();
     parent.tell(outputReport);
     DevsModelLogMessage<?> devsModelLogMessage =

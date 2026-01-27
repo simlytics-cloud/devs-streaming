@@ -24,7 +24,6 @@ import devs.iso.DevsExternalMessage;
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
 import devs.iso.ExecuteTransitionPayload;
-import devs.iso.ModelIdPayload;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
 import devs.iso.PortValue;
@@ -355,10 +354,10 @@ public class ExternalServiceTest {
     // Initialize and expect next sim time to be 1
     simulator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build(), probe.getRef()));
     DevsMessage receivedMessage = probe.receiveMessage();
     assert (receivedMessage instanceof NextInternalTimeReport<?>);
@@ -370,10 +369,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message2 = probe.receiveMessage();
     assert (message2 instanceof OutputReport<?>);
@@ -385,10 +384,11 @@ public class ExternalServiceTest {
     // Execute transition and expect next time to be 1
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .payload(ExecuteTransitionPayload.builder().build())
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message3 = probe.receiveMessage();
     assert (message3 instanceof TransitionComplete<?>);
@@ -398,10 +398,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 1
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message4 = probe.receiveMessage();
     assert (message4 instanceof OutputReport<?>);
@@ -413,10 +413,11 @@ public class ExternalServiceTest {
     // Execute transition and expect next time to be 2
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .payload(ExecuteTransitionPayload.builder().build())
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message5 = probe.receiveMessage();
     assert (message5 instanceof TransitionComplete<?>);
@@ -427,10 +428,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(2))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message6 = probe.receiveMessage();
     assert (message6 instanceof OutputReport<?>);
@@ -523,10 +524,10 @@ public class ExternalServiceTest {
     // Initialize and expect next sim time to be 1
     simulator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build(), probe.getRef()));
     DevsMessage receivedMessage = probe.receiveMessage();
     assert (receivedMessage instanceof NextInternalTimeReport<?>);
@@ -538,10 +539,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message2 = probe.receiveMessage();
     assert (message2 instanceof OutputReport<?>);
@@ -553,10 +554,11 @@ public class ExternalServiceTest {
     // Execute transition and expect next time to be 1
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .payload(ExecuteTransitionPayload.builder().build())
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message3 = probe.receiveMessage();
     assert (message3 instanceof TransitionComplete<?>);
@@ -566,10 +568,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 1
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message4 = probe.receiveMessage();
     assert (message4 instanceof OutputReport<?>);
@@ -581,10 +583,11 @@ public class ExternalServiceTest {
     // Execute transition and expect next time to be 2
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ExecuteTransitionPayload.builder().modelId(GeneratorModel.identifier).build())
+        .payload(ExecuteTransitionPayload.builder().build())
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message5 = probe.receiveMessage();
     assert (message5 instanceof TransitionComplete<?>);
@@ -595,10 +598,10 @@ public class ExternalServiceTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(2))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(generatorModel.getModelIdentifier())
         .build());
     DevsMessage message6 = probe.receiveMessage();
     assert (message6 instanceof OutputReport<?>);

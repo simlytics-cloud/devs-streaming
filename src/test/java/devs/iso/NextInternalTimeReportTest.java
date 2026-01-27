@@ -36,6 +36,7 @@ public class NextInternalTimeReportTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
     assert nextInternalTimeReport.getEventTime().getT() == 0L;
@@ -53,6 +54,7 @@ public class NextInternalTimeReportTest {
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
 

@@ -48,6 +48,7 @@ public abstract class DevsSimMessage implements DevsMessage {
   @Value.Derived
   public abstract SimMessageType getMessageType();
   public abstract String getSenderId();
+  public abstract String getReceiverId();
   @Nullable
   public abstract String getCorrelationId();
 }

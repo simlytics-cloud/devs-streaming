@@ -33,13 +33,13 @@ public class RequestOutputTest {
   public void createRequestOutput() {
     RequestOutput<LongSimTime> requestOutput = RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
     assert requestOutput.getEventTime().getT() == 0L;
-    assert requestOutput.getPayload().getModelId().equals("vehicle");
+    assert requestOutput.getReceiverId().equals("vehicle");
     assert requestOutput.getSimulationId().equals("run1");
     assert requestOutput.getMessageId().equals("id");
     assert requestOutput.getSenderId().equals("irp");
@@ -50,10 +50,10 @@ public class RequestOutputTest {
   public void serializeDeserializeRequestOutput() throws JsonProcessingException {
     RequestOutput<LongSimTime> requestOutput = RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .payload(ModelIdPayload.builder().modelId("vehicle").build())
         .simulationId("run1")
         .messageId("id")
         .senderId("irp")
+        .receiverId("vehicle")
         .build();
 
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -64,7 +64,7 @@ public class RequestOutputTest {
     assert ((RequestOutput<?>) deserializedSimMessage).getEventTime() instanceof LongSimTime;
     RequestOutput<LongSimTime> deserializedRequestOutput = (RequestOutput<LongSimTime>) deserializedSimMessage;
     assert deserializedRequestOutput.getEventTime().getT() == 0L;
-    assert deserializedRequestOutput.getPayload().getModelId().equals("vehicle");
+    assert deserializedRequestOutput.getReceiverId().equals("vehicle");
     assert deserializedRequestOutput.getSimulationId().equals("run1");
     assert deserializedRequestOutput.getMessageId().equals("id");
     assert deserializedRequestOutput.getSenderId().equals("irp");

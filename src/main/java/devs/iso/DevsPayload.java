@@ -21,7 +21,11 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-@JsonSubTypes({@Type(value = ModelIdPayload.class)})
+@JsonSubTypes(
+    {@Type(value = ExecuteTransitionPayload.class),
+    @Type(value = OutputReportPayload.class),
+    @Type(value = SimulationTerminatePayload.class)}
+)
 public abstract class DevsPayload {
 
 }

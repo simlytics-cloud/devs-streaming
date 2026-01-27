@@ -19,7 +19,6 @@ package devs;
 
 
 import devs.iso.DevsMessage;
-import devs.iso.ModelIdPayload;
 import devs.iso.ModelTerminated;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
@@ -126,12 +125,12 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     this.time = simulationInit.getEventTime();
     this.simulationId = simulationInit.getSimulationId();
     SimulationInit<T> rootInit = SimulationInit.<T>builder()
-            .eventTime(simulationInit.getEventTime())
-                .payload(ModelIdPayload.builder().modelId(childModelId).build())
-                    .simulationId(simulationInit.getSimulationId())
-                        .messageId(generateMessageId())
-                            .senderId("root")
-                                .build();
+        .eventTime(simulationInit.getEventTime())
+        .simulationId(simulationInit.getSimulationId())
+        .messageId(generateMessageId())
+        .senderId("root")
+        .receiverId(childModelId)
+        .build();
     child.tell(new SimulationInitMessage<T>(rootInit, getContext().getSelf()));
     return this;
   }
@@ -148,10 +147,10 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     time = nextInternalTimeReport.getNextInternalTime();
     child.tell(RequestOutput.<T>builder()
         .eventTime(time)
-        .payload(ModelIdPayload.builder().modelId(childModelId).build())
         .simulationId(simulationId)
         .messageId(generateMessageId())
         .senderId("root")
+        .receiverId(childModelId)
         .build());
     return this;
   }
@@ -166,10 +165,10 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
       time = outputReport.getNextInternalTime();
       child.tell(RequestOutput.<T>builder()
           .eventTime(time)
-          .payload(ModelIdPayload.builder().modelId(childModelId).build())
           .simulationId(simulationId)
           .messageId(generateMessageId())
           .senderId("root")
+          .receiverId(childModelId)
           .build());
     } else {
       child.tell(SimulationTerminate.<T>builder()
@@ -177,6 +176,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
           .simulationId(simulationId)
           .messageId(generateMessageId())
           .senderId("root")
+          .receiverId(childModelId)
           .payload(SimulationTerminatePayload.builder().reason("Simulation completed").build())
           .build());
     }

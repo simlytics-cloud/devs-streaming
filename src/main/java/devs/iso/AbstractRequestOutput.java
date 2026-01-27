@@ -27,7 +27,7 @@ import org.jspecify.annotations.NullMarked;
 @JsonSerialize(as = RequestOutput.class)
 @JsonDeserialize(as = RequestOutput.class)
 public abstract class AbstractRequestOutput<T extends SimTime> extends DevsSimMessage implements
-    TimedMessage<T>, HasPayload<ModelIdPayload> {
+    TimedMessage<T> {
 
   @Override
   public SimMessageType getMessageType() {

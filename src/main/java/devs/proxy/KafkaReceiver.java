@@ -68,6 +68,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
 
   private final Consumer.DrainingControl<Done> control;
   private final ActorRef<DevsMessage> sender;
+  private final String recieverId;
 
   private final ActorRef<DevsMessage> devsComponent;
   private final Logger logger;
@@ -88,10 +89,10 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
    * @return A behavior instance of type Behavior, configured to handle messages for KafkaReceiver.
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(
-      ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender,
+      ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String recieverId,
       Config pekkoKafkaConsumerConfig, String consumerTopic) {
     return Behaviors.setup(context -> new KafkaReceiver(context, devsComponent, sender,
-        pekkoKafkaConsumerConfig, consumerTopic));
+        recieverId, pekkoKafkaConsumerConfig, consumerTopic));
   }
 
   /**
@@ -107,10 +108,12 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
    * @param consumerTopic            The Kafka topic to subscribe to and consume messages from.
    */
   public KafkaReceiver(ActorContext<DevsMessage> context, ActorRef<DevsMessage> devsComponent,
-      ActorRef<DevsMessage> sender, Config pekkoKafkaConsumerConfig, String consumerTopic) {
+      ActorRef<DevsMessage> sender, String receiverId, Config pekkoKafkaConsumerConfig, 
+      String consumerTopic) {
     super(context);
     this.devsComponent = devsComponent;
     this.sender = sender;
+    this.recieverId = receiverId;
     this.logger = context.getLog();
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
@@ -124,7 +127,7 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     // The consumer's auto.offset.reset property is set to earliest so it always reads all data
     this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(consumerTopic))
         .map(record -> {
-          logger.debug("Kafka received record: " + record.value());
+          logger.debug("Kafka receiver for " + receiverId + " received record: " + record.value());
           processRecord(record);
           return NotUsed.notUsed();
         })
@@ -150,16 +153,30 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
   }
 
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
-    if (devsMessage instanceof SimulationInit<?> simulationInit) {
-      devsMessage = new SimulationInitMessage<>(simulationInit, sender);
-    }
-    devsComponent.tell(devsMessage);
-    if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
-      control.shutdown();
-      return Behaviors.stopped();
+    if (devsMessage instanceof DevsSimMessage devsSimMessage) {
+      String receiverId = devsSimMessage.getReceiverId();
+      if (!receiverId.equals(recieverId)) {
+        logger.debug("Dropping message for : " + devsSimMessage.getReceiverId()
+        + " because it is not for : " + recieverId);
+        return Behaviors.same();
+      } else {
+        if (devsMessage instanceof SimulationInit<?> simulationInit) {
+          devsMessage = new SimulationInitMessage<>(simulationInit, sender);
+        }
+        devsComponent.tell(devsMessage);
+        if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
+          control.shutdown();
+          return Behaviors.stopped();
+        } else {
+          return Behaviors.same();
+        }
+      }
     } else {
+      logger.error("Received message that was not a DevsSimMessage: " 
+          + devsMessage.getClass().getName());
       return Behaviors.same();
     }
+
   }
 
   private void processRecord(ConsumerRecord<String, String> record) {

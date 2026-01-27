@@ -18,7 +18,6 @@ package devs;
 
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
-import devs.iso.ModelIdPayload;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
 import devs.iso.PortValue;
@@ -131,10 +130,10 @@ public class PDevsCoordinatorTest {
 
     coordinator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
+        .receiverId(GeneratorModel.identifier)
         .build(), rootInProbe.getRef()));
 
     // PDEVS Coordinator should pass InitSim message to Generator and Storage
@@ -168,10 +167,10 @@ public class PDevsCoordinatorTest {
     // Root coordinator should tell imminent generator to send an output
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(GeneratorModel.identifier)
         .build());
     DevsMessage message4 = generatorInProbe.receiveMessage();
     assert (message4 instanceof RequestOutput<?>);
@@ -214,10 +213,10 @@ public class PDevsCoordinatorTest {
     // Coordinator sends a SendOutput to the generator and the storage model
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(GeneratorModel.identifier)
         .build());
     DevsMessage message8 = generatorInProbe.receiveMessage();
     assert (message8 instanceof RequestOutput<?>);
@@ -265,10 +264,10 @@ public class PDevsCoordinatorTest {
     // Coordinator sends a SendOutput to the imminent storage model
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .payload(ModelIdPayload.builder().modelId(GeneratorModel.identifier).build())
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
+        .receiverId(GeneratorModel.identifier)
         .build());
     DevsMessage message12 = storageInProbe.receiveMessage();
     assert (message12 instanceof RequestOutput<?>);
