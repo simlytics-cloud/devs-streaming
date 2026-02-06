@@ -21,6 +21,7 @@ import devs.Port;
 import devs.ScheduledDevsModel;
 import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
+import devs.msg.state.ScheduleState;
 import devs.utils.Schedule;
 import java.util.List;
 
@@ -37,7 +38,7 @@ import java.util.List;
  * values on the `numberOut` port. - Computed string-based output of logarithmic text on the
  * `wordOut` port.
  */
-public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, Void> {
+public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, ScheduleState<LongSimTime>> {
 
   /**
    * Represents the unique identifier for the model class `LogBaseTwoCalculatorModel`.
@@ -77,8 +78,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    * associated with the "wordOut" identifier.
    */
   public static final Port<String> wordOut = new Port<>("wordOut", String.class);
-
-  public final Schedule<LongSimTime> schedule;
+  
 
   /**
    * Constructs a new instance of the LogBaseTwoCalculatorModel. This model is designed to operate
@@ -87,8 +87,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    * identifier, and a new schedule for handling events.
    */
   public LogBaseTwoCalculatorModel() {
-    super(null, MODEL_ID);
-    this.schedule = new Schedule<>();
+    super(new ScheduleState<>(LongSimTime.create(0)), MODEL_ID);
   }
 
   /**
@@ -100,15 +99,15 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    * inputs to predefined outputs. The results are added to the event schedule for further
    * processing or output.
    *
-   * @param currentTime The current simulation time represented as a {@code LongSimTime} instance.
-   *                    This parameter provides the time context in which the external event
-   *                    processing occurs.
+   * @param elapsedTime The time since the last state transition..
    * @param inputs      A list containing external inputs to the model. This parameter
    *                    includes port-value pairs that represent the input events arriving at this
    *                    simulation time.
    */
   @Override
-  public void scheduledExternalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> inputs) {
+    LongSimTime currentTime = modelState.getCurrentTime().plus(elapsedTime);
+    modelState.setCurrentTime(currentTime);
     simulator.getContext().getLog().info("Generating roots at {}", currentTime);
     for (PortValue<?> pv : inputs) {
       if (pv.getPortName().equals(numberIn.getPortName())) {
@@ -123,7 +122,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
             .value(outValue)
             .portName(numberOut.getPortName())
             .build();
-        schedule.scheduleOutputEvent(currentTime, outPortValue);
+        modelState.getSchedule().scheduleOutputEvent(currentTime, outPortValue);
       } else if (pv.getPortName().equals(wordIn.getPortName())) {
         String word = wordIn.getValue(pv);
         String outWord = switch (word) {
@@ -138,7 +137,7 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
             .value(outWord)
             .portName(wordOut.getPortName())
             .build();
-        schedule.scheduleOutputEvent(currentTime, outPortValue);
+        modelState.getSchedule().scheduleOutputEvent(currentTime, outPortValue);
       } else {
         throw new IllegalArgumentException(
             "LogBaseTwoCalculatorModel did not expect port value with identifier"
@@ -149,8 +148,10 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
   }
 
   @Override
-  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
-    // Nothing more to do.  The schedule has been cleared
+  public void internalStateTransitionFunction() {
+    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
+    modelState.setCurrentTime(currentTime);
+    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
   }
   /**
    * Executes the confluent state transition function of the DEVS model.
@@ -159,17 +160,16 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, V
    * simulation time. It sequentially processes both the external and internal state transitions,
    * ensuring proper prioritization and consistency of the model's state.
    *
-   * @param currentTime The current simulation time represented as a {@code LongSimTime} instance.
-   *                    This parameter provides the time context in which the transition occurs.
    * @param inputs      A list containing external inputs to the model. This parameter
    *                    includes port-value pairs representing the input events arriving at this
    *                    simulation time.
    */
   @Override
-  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
-    externalStateTransitionFunction(currentTime, inputs);
-    scheduledInternalStateTransitionFunction(currentTime);
-
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
+    // The internal state transition function clears outputs from schedule and sets current time
+    internalStateTransitionFunction();
+    // Time is already set, so call external state transition with a zero elapsed time
+    externalStateTransitionFunction(LongSimTime.create(0), inputs);
   }
 
 }

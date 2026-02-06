@@ -21,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import devs.Port;
 import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
+import devs.msg.state.TimeState;
 import java.util.List;
 
 /**
@@ -47,7 +48,7 @@ import java.util.List;
  * This model does not produce any output events, as it inherits this behavior from the
  * {@code Acceptor} base class.
  */
-public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
+public class TestAcceptor extends Acceptor<LongSimTime, TimeState<LongSimTime>> {
 
   public static String modelIdentifier = "TestAcceptor";
   /**
@@ -57,7 +58,7 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
    * constructor of its superclass {@code Acceptor} with an initial state value of {@code 0}.
    */
   public TestAcceptor() {
-    super(0, modelIdentifier);
+    super(new TimeState<>(LongSimTime.create(0L)), modelIdentifier);
   }
 
   /**
@@ -82,19 +83,25 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
    */
   public static Port<String> acceptWord = new Port<>("acceptWord", String.class);
 
+  @Override
+  public void internalStateTransitionFunction() {
+    
+  }
+
   /**
    * Processes external events for the simulation model by evaluating port values received during
    * the simulation and transitioning the state accordingly. This method validates the inputs based
    * on simulation time and specific expected criteria.
    *
-   * @param currentTime The current simulation time. This parameter represents the time at which the
-   *                    external event occurred.
+   * @param elapsedTime The time since the last state transition
    * @param inputs      The list containing port values received during this external transition.
    *                    Each port value is processed and validated based on its identifier and
    *                    associated data.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> inputs) {
+    LongSimTime currentTime = modelState.getCurrentTime().plus(elapsedTime);
+    modelState.setCurrentTime(currentTime);
     for (PortValue<?> pv : inputs) {
       if ("acceptNumber".equals(pv.getPortName())) {
         double d = acceptNumber.getValue(pv);
@@ -121,6 +128,11 @@ public class TestAcceptor extends Acceptor<LongSimTime, Integer> {
       }
     }
 
+  }
+
+  @Override
+  public LongSimTime timeAdvanceFunction() {
+    return LongSimTime.create(Long.MAX_VALUE);
   }
 
 }

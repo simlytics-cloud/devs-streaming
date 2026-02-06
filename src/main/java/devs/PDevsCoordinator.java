@@ -17,6 +17,7 @@
 package devs;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
 import devs.iso.ExecuteTransitionPayload;
@@ -31,6 +32,7 @@ import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.TransitionComplete;
 import devs.iso.time.SimTime;
+import devs.utils.DevsObjectMapper;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -282,8 +284,15 @@ public class PDevsCoordinator<T extends SimTime>
    */
   Behavior<DevsMessage> onRequestOutput(RequestOutput<T> requestOutput) {
     if (requestOutput.getEventTime().compareTo(timeNext) != 0) {
-      throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
-          + requestOutput.getEventTime() + " did not equal " + timeNext);
+      try {
+        String sendOutputMessage = DevsObjectMapper.buildObjectMapper().writeValueAsString(requestOutput);
+        throw new RuntimeException("Bad synchronization.  Received SendOutputMessage "
+            + sendOutputMessage + "where time "
+            + requestOutput.getEventTime() + " did not equal " + timeNext);
+      } catch (JsonProcessingException e) {
+        throw new RuntimeException("Bad synchronization.  Received SendOutputMessage where time "
+            + requestOutput.getEventTime() + " did not equal " + timeNext);
+      }
     }
     generatingOutput = true;
     buildImminentModels();

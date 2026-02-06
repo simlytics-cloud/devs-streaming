@@ -19,6 +19,7 @@ package devs.iso.time;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigInteger;
 import java.util.Objects;
 import org.immutables.value.Value;
 
@@ -42,6 +43,10 @@ public abstract class AbstractLongSimTime extends SimTime {
   public static LongSimTime maxValue(LongSimTime currentTime) {
     return LongSimTime.builder().t(Long.MAX_VALUE - currentTime.getT()).build();
   }
+  
+  public static LongSimTime buildMaxValue() {
+    return LongSimTime.builder().t(Long.MAX_VALUE).build();
+  }
 
   /**
    * Creates a new {@link LongSimTime} instance with the specified simulation time.
@@ -51,6 +56,18 @@ public abstract class AbstractLongSimTime extends SimTime {
    */
   public static LongSimTime create(long t) {
     return LongSimTime.builder().t(t).build();
+  }
+  
+  public static long clamp(BigInteger t) {
+    if (t.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0) {
+      return Long.MAX_VALUE;
+    }
+    
+    if (t.compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0) {
+      return Long.MIN_VALUE;
+    }
+    
+    return t.longValue();
   }
 
   /**
@@ -80,7 +97,10 @@ public abstract class AbstractLongSimTime extends SimTime {
    */
   @Override
   public LongSimTime plus(SimTime operand) {
-    return LongSimTime.builder().t(getT() + ((LongSimTime) operand).getT()).build();
+    LongSimTime operandLong = (LongSimTime) operand;
+    BigInteger operandT = BigInteger.valueOf(operandLong.getT());
+    BigInteger sum = operandT.add(BigInteger.valueOf(getT()));
+    return LongSimTime.builder().t(clamp(sum)).build();
   }
 
   /**
@@ -93,7 +113,10 @@ public abstract class AbstractLongSimTime extends SimTime {
    */
   @Override
   public LongSimTime minus(SimTime operand) {
-    return LongSimTime.builder().t(getT() - ((LongSimTime) operand).getT()).build();
+    LongSimTime operandLong = (LongSimTime) operand;
+    BigInteger operandT = BigInteger.valueOf(operandLong.getT());
+    BigInteger difference = BigInteger.valueOf(getT()).subtract(operandT);
+    return LongSimTime.builder().t(clamp(difference)).build();
   }
 
   /**

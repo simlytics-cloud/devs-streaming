@@ -37,25 +37,15 @@ public abstract class Acceptor<T extends SimTime, S> extends PDEVSModel<T, S> {
   public Acceptor(S initialState, String modelIdentifier) {
     super(initialState, modelIdentifier);
   }
-
-  @Override
-  public void internalStateTransitionFunction(T currentTime) {
-    // Nothing to do
-
-  }
+  
 
 
   @Override
-  public void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
-    externalStateTransitionFunction(currentTime, inputs);
-    internalStateTransitionFunction(currentTime);
-
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
+    internalStateTransitionFunction();
+    externalStateTransitionFunction(timeAdvanceFunction(), inputs);
   }
-
-  @Override
-  public T timeAdvanceFunction(T currentTime) {
-    return (T) currentTime.getMaxValue().minus(currentTime);
-  }
+  
 
   @Override
   public List<PortValue<?>> outputFunction() {

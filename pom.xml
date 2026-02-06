@@ -203,6 +203,12 @@
             <artifactId>config</artifactId>
             <version>1.4.3</version>
         </dependency>
+      <dependency>
+        <artifactId>lombok</artifactId>
+        <groupId>org.projectlombok</groupId>
+        <version>1.18.42</version>
+        <scope>provided</scope>
+      </dependency>
     </dependencies>
 
     <build>

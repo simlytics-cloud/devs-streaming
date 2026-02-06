@@ -18,6 +18,7 @@ package devs;
 
 import devs.iso.PortValue;
 import devs.iso.time.SimTime;
+import devs.msg.state.ScheduleState;
 import devs.utils.Schedule;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,100 +38,19 @@ import java.util.List;
  *            SimTime class.
  * @param <S> A type parameter representing the state type of the DEVS model.
  */
-public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSModel<T, S> {
-  
-  protected final Schedule<T> schedule;
-  
+public abstract class ScheduledDevsModel<T extends SimTime, S extends ScheduleState<T>> extends PDEVSModel<T, S> {
+
+
   /**
-   * Constructs a new instance of ScheduledDevsModel.
+   * Constructs a new instance of the PDEVSModel class.
    *
-   * @param modelState the initial state of the DEVS model
+   * @param modelState      the initial state of the DEVS model
    * @param modelIdentifier a unique identifier for this model instance
    */
   public ScheduledDevsModel(S modelState, String modelIdentifier) {
     super(modelState, modelIdentifier);
-    this.schedule = new Schedule<>();
-  }
-
-  public ScheduledDevsModel(S modelState, String modelIdentifier, Schedule<T> schedule) {
-    super(modelState, modelIdentifier);
-    this.schedule = schedule;
   }
   
-
-  /**
-   * Executes the internal state transition function for the DEVS model. According to the parallel
-   * DEVS specification, this is called when the elapsed time since the last transition equals
-   * the time advance. This method:
-   * <ol>
-   *   <li>Clears any outputs (PortValues) from the first entry of the schedule</li>
-   *   <li>Delegates to the scheduled internal state transition implementation</li>
-   * </ol>
-   */
-  @Override
-  public void internalStateTransitionFunction(T currentTime) {
-    schedule.removeCurrentScheduledOutput(currentTime);
-    scheduledInternalStateTransitionFunction(currentTime);
-  }
-
-  /**
-   * Executes the scheduled internal state transition logic for the DEVS model. This abstract
-   * method is invoked during the internal state transition process when a scheduled state change
-   * is due. The implementation should define the specific behavior and changes to the model's
-   * state. According to the parallel DEVS specification, the model stores the current time as
-   * part of its state.
-   */
-  public abstract void scheduledInternalStateTransitionFunction(T currentTime);
-
-  /**
-   * Executes the scheduled external state transition logic for the DEVS model. This abstract
-   * method is invoked when an external event arrives at the model's input ports during the
-   * transition process.
-   *
-   * @param elapsedTime the time elapsed since the last state transition
-   * @param inputs a List containing external input events (as PortValues) received by the model
-   */
-  public abstract void scheduledExternalStateTransitionFunction(T elapsedTime, List<PortValue<?>> inputs);
-
-  /**
-   * Executes the external state transition function for the DEVS model. This method delegates
-   * directly to the scheduled external state transition implementation.
-   *
-   * @param currentTime the time elapsed since the last state transition
-   * @param inputs a List containing external input events received by the model
-   */
-  @Override
-  public void externalStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
-    scheduledExternalStateTransitionFunction(currentTime, inputs);
-  }
-
-  /**
-   * Executes the scheduled confluent state transition logic for the DEVS (Discrete Event System
-   * Specification) model. This abstract method is invoked when a confluent state transition is
-   * required, which occurs when both an external and internal state transition are scheduled to
-   * occur simultaneously. The method processes the provided external inputs along with managing
-   * the internal state of the model.
-   *
-   * @param currentTime the time elapsed since the last state transition (equals timeAdvance for
-   *                    internal transitions)
-   * @param inputs a List containing external input events (as PortValues) received by the model
-   *               at the current time
-   */
-  public abstract void scheduledConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs);
-
-  /**
-   * Executes the confluent state transition function for the DEVS model. This method clears any
-   * outputs (PortValues) from the schedule and delegates the actual confluent state transition
-   * logic to the scheduled implementation defined by the subclass.
-   *
-   * @param currentTime the time elapsed since the last state transition
-   * @param inputs a List containing external input events received by the model
-   */
-  @Override
-  public void confluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
-    schedule.removeCurrentScheduledOutput(currentTime);
-    scheduledConfluentStateTransitionFunction(currentTime, inputs);
-  }
 
   /**
    * Determines the next scheduled internal state transition time for the model based on its
@@ -142,12 +62,12 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    * value if the schedule is empty
    */
   @Override
-  public T timeAdvanceFunction(T currentTime) {
-    if (schedule.isEmpty()) {
-      return (T) currentTime.getTimeUntilMax();
+  public T timeAdvanceFunction() {
+    if (modelState.getSchedule().isEmpty()) {
+      return (T) modelState.getCurrentTime().getTimeUntilMax();
     } else {
-      T nextScheduledTime = schedule.getFirstEventTime();
-      return (T) nextScheduledTime.minus(currentTime);
+      T nextScheduledTime = modelState.getSchedule().getFirstEventTime();
+      return (T) nextScheduledTime.minus(modelState.getCurrentTime());
     }
   }
 
@@ -162,6 +82,6 @@ public abstract class ScheduledDevsModel<T extends SimTime, S> extends PDEVSMode
    */
   @Override
   public List<PortValue<?>> outputFunction() {
-    return schedule.getCurrentScheduledOutput();
+    return modelState.getSchedule().getCurrentScheduledOutput();
   }
 }

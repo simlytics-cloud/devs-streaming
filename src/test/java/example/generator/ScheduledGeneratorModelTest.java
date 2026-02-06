@@ -61,7 +61,7 @@ public class ScheduledGeneratorModelTest {
   void stateTransitionTest() throws JsonProcessingException {
     // Schedule is in initial state of 0 with a FlipState scheduled for t=0
     ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0);
-    LongSimTime nextTime = generatorModel.timeAdvanceFunction(LongSimTime.create(0));
+    LongSimTime nextTime = generatorModel.timeAdvanceFunction();
     assert nextTime.getT() == 1L;
 
     // Output should be 0 before state transition
@@ -69,9 +69,9 @@ public class ScheduledGeneratorModelTest {
     assert ((Integer) output.get(0).getValue() == 0);
 
     // Execute the internal transition
-    generatorModel.internalStateTransitionFunction(nextTime);
+    generatorModel.internalStateTransitionFunction();
     assert generatorModel.getModelState().getiState() == 1;
-    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction(nextTime));
+    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction());
     // Time advance should be 0 it internal state is 1
     assert nextTime.getT() == 1L;
 
@@ -81,9 +81,9 @@ public class ScheduledGeneratorModelTest {
 
 
     // Should flip state to 0L
-    generatorModel.internalStateTransitionFunction(nextTime);
+    generatorModel.internalStateTransitionFunction();
     assert generatorModel.getModelState().getiState() == 0;
-    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction(nextTime));
+    nextTime = nextTime.plus(generatorModel.timeAdvanceFunction());
     assert nextTime.getT() == 2L;
     // Output should be 0 after second state transition
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 0);

@@ -63,19 +63,14 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
   /**
    * Defines the internal state transition logic for the GeneratorModel. This method alternates the
    * model's internal state between 0 and 1.
-   *
-   * @param currentTime the current simulation time. This parameter is typically provided by the
-   *                    simulation environment and represents the point in simulated time at which
-   *                    the transition is occurring.
    */
   @Override
-  public void internalStateTransitionFunction(LongSimTime currentTime) {
+  public void internalStateTransitionFunction() {
     if (modelState == 0) {
       this.modelState = 1;
     } else {
       this.modelState = 0;
     }
-
   }
 
   /**
@@ -83,13 +78,12 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    * inputs received by the model at a specific simulation time and modifies the model's state
    * accordingly.
    *
-   * @param currentTime the current simulation time at which the external state transition occurs.
-   *                    It is typically provided by the simulation environment.
+   * @param elapsedTime the timse since the last transition..
    * @param inputs      a bag of inputs received at the current simulation time. These inputs are
    *                    processed to influence the model's state during this transition.
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> inputs) {
 
   }
 
@@ -98,13 +92,11 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    * internal and external state transitions are scheduled to occur simultaneously. It allows the
    * model to resolve and handle such scenarios by defining appropriate logic for state updates.
    *
-   * @param currentTime the current simulation time at which the confluent state transition occurs.
-   *                    Typically provided by the simulation environment.
    * @param inputs      a bag of inputs received at the current simulation time. These inputs are
    *                    processed in conjunction with the internal transition logic.
    */
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> inputs) {
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
 
   }
 
@@ -113,15 +105,12 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    * time. This method computes the time duration until the next event or state transition in the
    * model.
    *
-   * @param currentTime the current simulation time provided by the simulation environment.
-   *                    Represents the point in simulated time at which the time advance is being
-   *                    calculated.
    * @return a LongSimTime instance representing the time until the next state transition. If the
    * model's state is 1, the same current time is returned. Otherwise, it returns the current time
    * incremented by 1.
    */
   @Override
-  public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+  public LongSimTime timeAdvanceFunction() {
     if (modelState == 1) {
       return LongSimTime.create(0L);
     } else {

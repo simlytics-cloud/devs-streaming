@@ -58,11 +58,9 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * Transitions the internal state of the model at the specified simulation time. This method
    * updates the model's state by creating a new instance of {@link StorageState} with the current
    * state's value and a 'hasOutput' flag set to false.
-   *
-   * @param currentTime the current simulation time represented as a {@link LongSimTime} object
    */
   @Override
-  public void internalStateTransitionFunction(LongSimTime currentTime) {
+  public void internalStateTransitionFunction() {
     this.modelState = new StorageState(modelState.getStateValue(), false);
   }
 
@@ -71,12 +69,11 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * model's state based on the provided input at the given simulation time. The method processes
    * the input and transitions the internal state accordingly.
    *
-   * @param currentTime  the current simulation time represented as a {@link LongSimTime} object
    * @param storageInput the list containing input values for the model's state transition
    * @throws IllegalArgumentException if the input value is not 0 or 1
    */
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> storageInput) {
+  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> storageInput) {
     int storageValue = getInputValue(storageInput);
 
     if (storageValue == 0) {
@@ -118,12 +115,11 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * when an external input is received at the exact moment the model is scheduled to perform an
    * internal transition. It combines the effects of both internal and external state transitions.
    *
-   * @param currentTime   the current simulation time represented as a {@link LongSimTime} object
    * @param storageInputs the List containing input values for the model's state transition
    */
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> storageInputs) {
-    this.externalStateTransitionFunction(currentTime, storageInputs);
+  public void confluentStateTransitionFunction(List<PortValue<?>> storageInputs) {
+    this.externalStateTransitionFunction(timeAdvanceFunction(), storageInputs);
   }
 
   /**
@@ -132,15 +128,14 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    * the model has an output, the time advance will be zero (returning the current simulation time).
    * Otherwise, it sets the time to a maximum value, indicating no imminent event.
    *
-   * @param currentTime the current simulation time represented as a {@link LongSimTime} object
    * @return the calculated next internal event time as a {@link LongSimTime} object
    */
   @Override
-  public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
+  public LongSimTime timeAdvanceFunction() {
     if (modelState.getHasOutput()) {
       return LongSimTime.builder().t(0L).build();
     } else {
-      return LongSimTime.builder().t(Long.MAX_VALUE).build().minus(currentTime);
+      return LongSimTime.create(Long.MAX_VALUE);
     }
   }
 

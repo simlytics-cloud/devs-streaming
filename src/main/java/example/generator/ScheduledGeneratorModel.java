@@ -55,8 +55,8 @@ public static String identifier = "generator";
   public ScheduledGeneratorModel(int initialState) {
     super(new ScheduledGeneratorModelState(initialState), identifier);
     LongSimTime t1 = LongSimTime.create(1L);
-    schedule.scheduleInternalEvent(t1, new FlipState());
-    schedule.scheduleOutputEvent(t1, generatorOutputPort.createPortValue(0));
+    modelState.getSchedule().scheduleInternalEvent(t1, new FlipState());
+    modelState.getSchedule().scheduleOutputEvent(t1, generatorOutputPort.createPortValue(0));
   }
 
   /**
@@ -65,8 +65,11 @@ public static String identifier = "generator";
    *
    */
   @Override
-  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
-    ArrayList<Object> events = new ArrayList<>(schedule.removeCurrentScheduledEvents(currentTime));
+  public void internalStateTransitionFunction() {
+    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
+    modelState.setCurrentTime(currentTime);
+    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
+    ArrayList<Object> events = new ArrayList<>(modelState.getSchedule().removeCurrentScheduledEvents(currentTime));
     for (Object event: events) {
       if (event instanceof FlipState) {
         if (modelState.getiState() == 0) {
@@ -76,22 +79,21 @@ public static String identifier = "generator";
         }
         Long timeAdvance = modelState.getiState() == 0 ? 1L : 0L;
         LongSimTime nextTime = LongSimTime.create(currentTime.getT() + timeAdvance);
-        schedule.scheduleOutputEvent(nextTime, generatorOutputPort.createPortValue(modelState.getiState()));
-        schedule.scheduleInternalEvent(nextTime, new FlipState());
+        modelState.getSchedule().scheduleOutputEvent(nextTime, generatorOutputPort.createPortValue(modelState.getiState()));
+        modelState.getSchedule().scheduleInternalEvent(nextTime, new FlipState());
       }
     }
 
   }
 
   @Override
-  public void scheduledExternalStateTransitionFunction(LongSimTime currentTime,
+  public void externalStateTransitionFunction(LongSimTime elapsedTime,
       List<PortValue<?>> inputs) {
     // Nothing to do.  Generator should not get any inputs
   }
 
   @Override
-  public void scheduledConfluentStateTransitionFunction(LongSimTime currentTime,
-      List<PortValue<?>> inputs) {
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
     // Nothing to do.  Generator should not get any inputs
   }
 }

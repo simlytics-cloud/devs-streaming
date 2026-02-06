@@ -82,11 +82,11 @@ public class GeneratorModelTest {
   void stateTransitionTest() throws JsonProcessingException {
 
     GeneratorModel generatorModel = new GeneratorModel(0);
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
+    generatorModel.internalStateTransitionFunction();
     // Output should be 1 after state transition
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 1);
 
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(2L).build());
+    generatorModel.internalStateTransitionFunction();
     // Output should be 0 after second state transition
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 0);
   }
@@ -114,10 +114,10 @@ public class GeneratorModelTest {
 
     GeneratorModel generatorModel = new GeneratorModel(0);
     // Time advance should be 1 if state is 0
-    assert (generatorModel.timeAdvanceFunction(LongSimTime.builder().t(0L).build()).getT() == 1L);
-    generatorModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
+    assert (generatorModel.timeAdvanceFunction().getT() == 1L);
+    generatorModel.internalStateTransitionFunction();
     // time advance should be 0 if state is 1
-    assert (generatorModel.timeAdvanceFunction(LongSimTime.builder().t(1L).build()).getT() == 0L);
+    assert (generatorModel.timeAdvanceFunction().getT() == 0L);
 
   }
 }

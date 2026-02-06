@@ -354,7 +354,7 @@ public class MutabilityUtil {
                 (k1, k2) -> k1,
                 java.util.LinkedHashMap::new
             ));
-      } else if (map instanceof java.util.TreeMap) {
+      } else if (map instanceof java.util.TreeMap || map instanceof com.google.common.collect.ImmutableSortedMap) {
         return (T) map.entrySet().stream()
             .collect(Collectors.toMap(
                 Map.Entry::getKey,

@@ -42,6 +42,10 @@ public abstract class AbstractDoubleSimTime extends SimTime {
     return DoubleSimTime.builder().t(Double.MAX_VALUE - currentTime.getT()).build();
   }
 
+  public static DoubleSimTime buildMaxValue() {
+    return DoubleSimTime.builder().t(Double.MAX_VALUE).build();
+  }
+
   /**
    * Creates an immutable instance of {@link DoubleSimTime} with the specified simulation time
    * value.
@@ -52,6 +56,20 @@ public abstract class AbstractDoubleSimTime extends SimTime {
   public static DoubleSimTime create(double t) {
     return DoubleSimTime.builder().t(t).build();
   }
+
+  static double clamp(double v) {
+    if (Double.isNaN(v)) {
+      throw new ArithmeticException("NaN encountered");
+    }
+    if (v == Double.POSITIVE_INFINITY) {
+      return Double.MAX_VALUE;
+    }
+    if (v == Double.NEGATIVE_INFINITY) {
+      return -Double.MAX_VALUE;
+    }
+    return v;
+  }
+
 
   /**
    * Retrieves the simulation time value represented as a Double.
@@ -81,8 +99,10 @@ public abstract class AbstractDoubleSimTime extends SimTime {
    * instance's simulation time value and the given operand's simulation time value
    */
   @Override
-  public AbstractDoubleSimTime plus(SimTime operand) {
-    return DoubleSimTime.builder().t(getT() + ((AbstractDoubleSimTime) operand).getT()).build();
+  public DoubleSimTime plus(SimTime operand) {
+    AbstractDoubleSimTime operandDouble = (AbstractDoubleSimTime) operand;
+    double sum = clamp(getT() + operandDouble.getT());
+    return DoubleSimTime.builder().t(clamp(sum)).build();
   }
 
   /**
@@ -95,8 +115,10 @@ public abstract class AbstractDoubleSimTime extends SimTime {
    * current instance's simulation time value and the given operand's simulation time value
    */
   @Override
-  public AbstractDoubleSimTime minus(SimTime operand) {
-    return DoubleSimTime.builder().t(getT() - ((AbstractDoubleSimTime) operand).getT()).build();
+  public DoubleSimTime minus(SimTime operand) {
+    AbstractDoubleSimTime operandDouble = (AbstractDoubleSimTime) operand;
+    double difference = clamp(getT() - operandDouble.getT());
+    return DoubleSimTime.builder().t(difference).build();
   }
 
 

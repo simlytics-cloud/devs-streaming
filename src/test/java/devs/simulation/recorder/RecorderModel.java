@@ -76,17 +76,17 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
   }
 
   @Override
-  public void internalStateTransitionFunction(LongSimTime currentTime) {
+  public void internalStateTransitionFunction() {
     return;
   }
 
   @Override
-  public void externalStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> input) {
+  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> input) {
     return;
   }
 
   @Override
-  public void confluentStateTransitionFunction(LongSimTime currentTime, List<PortValue<?>> input) {
+  public void confluentStateTransitionFunction(List<PortValue<?>> input) {
     return;
   }
 
@@ -94,12 +94,11 @@ public class RecorderModel extends PDEVSModel<LongSimTime, Void> {
    * Determines the time to the next internal event by returning a LongSimTime instance with maximum
    * time value.
    *
-   * @param currentTime the current simulation time
    * @return a LongSimTime instance representing the maximum possible simulation time
    */
   @Override
-  public LongSimTime timeAdvanceFunction(LongSimTime currentTime) {
-    return LongSimTime.builder().t(Long.MAX_VALUE).build().minus(currentTime);
+  public LongSimTime timeAdvanceFunction() {
+    return LongSimTime.builder().t(Long.MAX_VALUE).build();
   }
 
   @Override

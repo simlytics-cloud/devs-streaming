@@ -254,7 +254,7 @@ public class ExternalServiceTest {
     
 
     @Override
-    public void internalStateTransitionFunction(LongSimTime currentTime) {
+    public void internalStateTransitionFunction() {
       transitionDone = false;
       generatorService.tell(new GeneratorServiceRequest(modelState, simulator.getActorRef()));
     }
@@ -286,7 +286,7 @@ public class ExternalServiceTest {
 
 
     @Override
-    public void internalStateTransitionFunction(LongSimTime currentTime) {
+    public void internalStateTransitionFunction() {
       transitionDone = false;
       generatorService.tell(new Request<String>(String.valueOf(modelState), simulator.getActorRef(), "flip"));
     }

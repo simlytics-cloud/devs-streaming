@@ -93,7 +93,7 @@ public class StorageModelTest {
     StorageModel storageModel = new StorageModel(initialState);
 
     // Internal state transition does not change state
-    storageModel.internalStateTransitionFunction(LongSimTime.builder().t(1L).build());
+    storageModel.internalStateTransitionFunction();
     // Enum has serialized to a JSON string
     assert (storageModel.outputFunction().get(0).getValue().equals("S0"));
 
@@ -102,14 +102,14 @@ public class StorageModelTest {
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(2L).build(),
         List.of(StorageModel.storageInputPort.createPortValue(0)));
-    assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(2L).build()).getT() == 0L);
+    assert (storageModel.timeAdvanceFunction().getT() == 0L);
     assert (storageModel.outputFunction().get(0)
         .getValue().equals("S0"));
 
-    // After internal state transition, time advance will be max long minus current time
-    storageModel.internalStateTransitionFunction(LongSimTime.builder().t(3L).build());
-    assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(3L).build())
-        .getT() == Long.MAX_VALUE - 3L);
+    // After internal state transition, time advance will be max long
+    storageModel.internalStateTransitionFunction();
+    assert (storageModel.timeAdvanceFunction()
+        .getT() == Long.MAX_VALUE);
 
     storageModel.externalStateTransitionFunction(LongSimTime.builder().t(3L).build(),
         List.of(StorageModel.storageInputPort.createPortValue(1)));
@@ -137,7 +137,7 @@ public class StorageModelTest {
   void timeAdvanceTest() {
     StorageState internalState = new StorageState(StorageStateEnum.S0);
     StorageModel storageModel = new StorageModel(internalState);
-    assert (storageModel.timeAdvanceFunction(LongSimTime.builder().t(0L).build())
+    assert (storageModel.timeAdvanceFunction()
         .getT() == Long.MAX_VALUE);
   }
 }

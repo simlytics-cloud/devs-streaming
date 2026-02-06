@@ -17,6 +17,7 @@
 package devs.proxy;
 
 import devs.iso.DevsMessage;
+import devs.iso.DevsSimMessage;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,6 +112,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
   protected final Consumer.DrainingControl<Done> control;
   protected final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
   protected Optional<ActorRef<DevsMessage>> localParentCoordinator;
+  protected final String componentName;
 
   /**
    * Initializes a new instance of the KafkaLocalProxy class. This constructor sets up a Kafka
@@ -123,10 +125,10 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
    */
   public KafkaLocalProxy(ActorContext<DevsMessage> context, ProxyProperties props) {
     super(context, props.componentName(), props.producerTopic(), props.kafkaProducerConfig());
-
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(props.kafkaConsumerConfig(), new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
+    this.componentName = props.componentName();
 
     // Using a Kafka consumer from the Pekko Kafka project because this consumer
     // does a better job of managing
@@ -203,16 +205,20 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
    *               {@link DevsMessage}.
    */
   private void processRecord(ConsumerRecord<String, String> record) {
-    DevsMessage devsMessage = null;
+    DevsSimMessage devsMessage = null;
     try {
-      devsMessage = objectMapper.readValue(record.value(), DevsMessage.class);
+      devsMessage = objectMapper.readValue(record.value(), DevsSimMessage.class);
     } catch (JsonProcessingException e) {
       System.err.println("Could not deserialize JSON record " + record.value());
       e.printStackTrace();
       System.exit(1);
     }
     if (localParentCoordinator.isPresent()) {
-      localParentCoordinator.get().tell(devsMessage);
+      if (devsMessage.getReceiverId().equals(componentName)) {
+        localParentCoordinator.get().tell(devsMessage);        
+      } else {
+        getContext().getLog().debug("Received message for another component, ignoring: {}", devsMessage);
+      }
     } else {
       System.err.println(
           "ERROR: Received the following DevsMessage from Kafka before learning the identity of \n"

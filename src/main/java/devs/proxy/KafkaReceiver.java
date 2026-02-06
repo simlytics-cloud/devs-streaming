@@ -154,8 +154,8 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
 
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
     if (devsMessage instanceof DevsSimMessage devsSimMessage) {
-      String receiverId = devsSimMessage.getReceiverId();
-      if (!receiverId.equals(recieverId)) {
+      String messageReceiverId = devsSimMessage.getReceiverId();
+      if (!messageReceiverId.equals(recieverId)) {
         logger.debug("Dropping message for : " + devsSimMessage.getReceiverId()
         + " because it is not for : " + recieverId);
         return Behaviors.same();
@@ -190,4 +190,8 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
     getContext().getSelf().tell(devsMessage);
   }
 
+
+  public String getRecieverId() {
+    return recieverId;
+  }
 }

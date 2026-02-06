@@ -16,9 +16,19 @@
 
 package devs.utils;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import devs.Port;
 import devs.iso.PortValue;
 import devs.iso.time.SimTime;
+import devs.iso.time.SimTimeKeyDeserializer;
+import devs.iso.time.SimTimeKeySerializer;
+import devs.msg.mutability.Mutable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeMap;
@@ -34,38 +44,57 @@ import java.util.TreeMap;
  *
  * @param <T> The type of time points used, which must extend the SimTime class.
  */
-public class Schedule<T extends SimTime> {
-  
-  protected interface Event {}
-  
+public class Schedule<T extends SimTime> implements Mutable {
+
+  @JsonTypeInfo(
+      use = JsonTypeInfo.Id.NAME,
+      include = JsonTypeInfo.As.PROPERTY,
+      property = "eventKind"
+  )
+  @JsonSubTypes({
+      @JsonSubTypes.Type(value = ScheduledEvent.class, name = "scheduled"),
+      @JsonSubTypes.Type(value = OutputEvent.class, name = "output")
+  })
+  public interface Event {}
+
+  @JsonTypeName("scheduled")
   public static class ScheduledEvent implements Event {
+
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "eventType")
     protected final Object event;
 
-    protected ScheduledEvent(Object event) {
+    @JsonCreator
+    public ScheduledEvent(@JsonProperty("event") Object event) {
       if (event instanceof PortValue<?>) {
-        throw new IllegalArgumentException("Cannot schedule port value event." 
+        throw new IllegalArgumentException("Cannot schedule port value event."
             + "Must use OutputEvent instead.");
       }
       this.event = event;
     }
-    
-    protected Object getEvent() {
+
+    @JsonProperty("event")
+    public Object getEvent() {
       return event;
     }
   }
-  
-  protected static class OutputEvent implements Event {
+
+  @JsonTypeName("scheduled")
+  public static class OutputEvent implements Event {
     protected final PortValue<?> portValue;
-    protected OutputEvent(PortValue<?> portValue) {
+
+    @JsonCreator
+    public OutputEvent(@JsonProperty("portValue") PortValue<?> portValue) {
       this.portValue = portValue;
     }
-    
-    protected PortValue<?> getPortValue() {
+
+    @JsonProperty("portValue")
+    public PortValue<?> getPortValue() {
       return portValue;
     }
-    
   }
-  
+
+  @JsonSerialize(keyUsing = SimTimeKeySerializer.class)
+  @JsonDeserialize(keyUsing = SimTimeKeyDeserializer.class)
   protected TreeMap<T, ArrayList<Event>> schedule = new TreeMap<T, ArrayList<Event>>();
 
   /**
@@ -76,6 +105,10 @@ public class Schedule<T extends SimTime> {
    * lists of events (as Objects) associated with each time point.
    */
   public Schedule() {
+  }
+
+  public Schedule(TreeMap<T, ArrayList<Event>> schedule) {
+    this.schedule = schedule;
   }
   
 
@@ -210,5 +243,10 @@ public class Schedule<T extends SimTime> {
       }
     }
     return stringBuilder.toString();
+  }
+  
+  @Override
+  public ImmutableSchedule<T> toImmutable() {
+    return new ImmutableSchedule<>(schedule);
   }
 }

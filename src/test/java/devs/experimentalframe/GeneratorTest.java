@@ -89,7 +89,7 @@ public class GeneratorTest {
     // First scheduled event is for t1
     LongSimTime t0 = LongSimTime.builder().t(0L).build();
     LongSimTime t1 = LongSimTime.builder().t(1L).build();
-    assert (generator.timeAdvanceFunction(t0).equals(t1));
+    assert (generator.timeAdvanceFunction().equals(t1));
 
     // For each power of two, generator should output an integer and the word
     for (int e = 0; e <= 3; e++) {
@@ -98,8 +98,8 @@ public class GeneratorTest {
       System.out.println("Testing generator at t = " + t);
       // Time advance should be zero
       LongSimTime simTime = LongSimTime.builder().t(t).build();
-      LongSimTime timeAdvance = generator.timeAdvanceFunction(simTime);
-      assert (timeAdvance.equals(t0));
+      LongSimTime timeAdvance = generator.timeAdvanceFunction();
+      assert (timeAdvance.getT() == Math.pow(2.0, Math.max(0, e - 1)));
       // Test the output
       for (PortValue<?> pv : generator.outputFunction()) {
         if ("number".equals(pv.getPortName())) {
@@ -119,7 +119,7 @@ public class GeneratorTest {
       }
 
       // Internal transition will clear outputs
-      generator.internalStateTransitionFunction(simTime);
+      generator.internalStateTransitionFunction();
     }
 
 

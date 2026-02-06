@@ -19,6 +19,7 @@ package devs.experimentalframe;
 import devs.Port;
 import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
+import devs.msg.state.ScheduleState;
 import devs.utils.Schedule;
 
 /**
@@ -60,7 +61,7 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
    * defined schedule, which is established at creation time.
    */
   public PowerOfTwoGenerator() {
-    super(MODEL_ID, buildSchedule());
+    super(MODEL_ID, new ScheduleState<>(LongSimTime.create(0), buildSchedule()));
 
   }
 
@@ -95,8 +96,10 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
   
 
   @Override
-  public void scheduledInternalStateTransitionFunction(LongSimTime currentTime) {
-    // Nothing more to do
+  public void internalStateTransitionFunction() {
+    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
+    modelState.setCurrentTime(currentTime);
+    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
     
   }
 

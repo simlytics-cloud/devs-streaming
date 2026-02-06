@@ -16,14 +16,11 @@
 
 package devs.experimentalframe;
 
-import devs.PDEVSModel;
-import devs.Port;
 import devs.ScheduledDevsModel;
 import devs.iso.PortValue;
 import devs.iso.time.SimTime;
-import devs.utils.Schedule;
+import devs.msg.state.ScheduleState;
 import java.util.List;
-import java.util.Map;
 
 
 /**
@@ -34,23 +31,22 @@ import java.util.Map;
  *
  * @param <T> The type representing simulation time, extending the SimTime class.
  */
-public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T, Void> {
+public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T, ScheduleState<T>> {
 
   /**
    * Constructs a new instance of the Generator class.
    *
    * @param modelIdentifier a unique string identifier for this Generator instance
-   * @param schedule the schedule associated with the Generator, used to manage
-   *                 the timing and firing of events
+   * @param scheduleState the schedule state with initial time and scheduled events
    */
-  protected Generator(String modelIdentifier, Schedule<T> schedule) {
-    super(null, modelIdentifier, schedule);
+  protected Generator(String modelIdentifier, ScheduleState<T> scheduleState) {
+    super(scheduleState, modelIdentifier);
   }
   
   
 
   @Override
-  public void externalStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
+  public void externalStateTransitionFunction(T elapsedTime, List<PortValue<?>> inputs) {
     // No external events
     throw new IllegalArgumentException("Generator does not expect external events.  \n"
         + "Got event with port identifier of "
@@ -59,15 +55,11 @@ public abstract class Generator<T extends SimTime> extends ScheduledDevsModel<T,
   }
 
   @Override
-  public void scheduledExternalStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
-    externalStateTransitionFunction(currentTime, inputs);
-
-  }
-
-  @Override
-  public void scheduledConfluentStateTransitionFunction(T currentTime, List<PortValue<?>> inputs) {
-    // Will trhow an error.  No external events allowed to a generator
-    externalStateTransitionFunction(currentTime, inputs);
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
+    // Will throw an error.  No external events allowed to a generator
+    throw new IllegalArgumentException("Generator does not expect external events.  \n"
+        + "Got event with port identifier of "
+        + inputs.get(0).getPortName());
   }
   
 }

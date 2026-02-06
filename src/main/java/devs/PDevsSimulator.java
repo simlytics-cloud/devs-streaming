@@ -135,7 +135,7 @@ public class PDevsSimulator<T extends SimTime, S,
    *                          time
    */
   protected T timeAdvance(T currentTime) {
-    T time = (T) currentTime.plus(devsModel.timeAdvanceFunction(currentTime));
+    T time = (T) currentTime.plus(devsModel.timeAdvanceFunction());
     if (time.compareTo(currentTime) < 0) {
       throw new RuntimeException(devsModel.modelIdentifier + " generated a negative time advance.");
     }
@@ -277,7 +277,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * state
    */
   protected Behavior<DevsMessage> internalStateTransition(T time) {
-    devsModel.internalStateTransitionFunction(time);
+    devsModel.internalStateTransitionFunction();
     transitionDone(time);
     return this;
   }
@@ -295,7 +295,7 @@ public class PDevsSimulator<T extends SimTime, S,
    * state
    */
   protected Behavior<DevsMessage> confluentStateTransition(T time, List<PortValue<?>> input) {
-    devsModel.confluentStateTransitionFunction(time, input);
+    devsModel.confluentStateTransitionFunction(input);
     transitionDone(time);
     return this;
   }
@@ -312,7 +312,8 @@ public class PDevsSimulator<T extends SimTime, S,
    * state
    */
   protected Behavior<DevsMessage> externalStateTransition(T time, List<PortValue<?>> input) {
-    devsModel.externalStateTransitionFunction(time, input);
+    T elapsedTime = (T)time.minus(timeLast);
+    devsModel.externalStateTransitionFunction(elapsedTime, input);
     transitionDone(time);
     return this;
   }
