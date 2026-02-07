@@ -17,9 +17,11 @@
 package devs;
 
 import devs.iso.PortValue;
+import devs.iso.time.LongSimTime;
 import devs.iso.time.SimTime;
 import devs.msg.state.ScheduleState;
 import devs.utils.Schedule;
+import devs.utils.Schedule.ScheduledEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -50,6 +52,18 @@ public abstract class ScheduledDevsModel<T extends SimTime, S extends ScheduleSt
   public ScheduledDevsModel(S modelState, String modelIdentifier) {
     super(modelState, modelIdentifier);
   }
+  
+  @Override
+  public void internalStateTransitionFunction() {
+    T currentTime = (T)modelState.getCurrentTime().plus((T)timeAdvanceFunction());
+    modelState.setCurrentTime(currentTime);
+    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
+    ArrayList<Object> events = new ArrayList<>(modelState.getSchedule()
+        .removeCurrentScheduledEvents(currentTime));
+    handleScheduledEvents(events);
+  }
+  
+  public abstract void handleScheduledEvents(List<Object> events);
   
 
   /**

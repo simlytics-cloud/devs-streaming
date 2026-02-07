@@ -76,6 +76,7 @@ public class Schedule<T extends SimTime> implements Mutable {
     public Object getEvent() {
       return event;
     }
+    
   }
 
   @JsonTypeName("scheduled")

@@ -21,6 +21,7 @@ import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
 import devs.msg.state.ScheduleState;
 import devs.utils.Schedule;
+import java.util.List;
 
 /**
  * PowerOfTwoGenerator is a concrete implementation of the Generator class, providing a predefined
@@ -93,16 +94,9 @@ public class PowerOfTwoGenerator extends Generator<LongSimTime> {
 
     return initialSchedule;
   }
-  
 
   @Override
-  public void internalStateTransitionFunction() {
-    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
-    modelState.setCurrentTime(currentTime);
-    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
-    
+  public void handleScheduledEvents(List<Object> events) {
+    // No internal events to handle
   }
-
-  
-
 }

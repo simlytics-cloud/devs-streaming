@@ -17,6 +17,7 @@
 package example.generator;
 
 import devs.utils.Schedule;
+import devs.utils.Schedule.ScheduledEvent;
 import java.util.ArrayList;
 
 import devs.PDEVSModel;
@@ -30,7 +31,7 @@ public class ScheduledGeneratorModel
     extends ScheduledDevsModel<LongSimTime, ScheduledGeneratorModelState> {
 public static String identifier = "generator";
 
-  public static record FlipState() {}
+  public static record FlipState() { }
   /**
    * Represents the output port of the GeneratorModel, used for emitting the current state of the
    * model during its execution. The port is identified with the name "OUTPUT" and is associated
@@ -59,17 +60,10 @@ public static String identifier = "generator";
     modelState.getSchedule().scheduleOutputEvent(t1, generatorOutputPort.createPortValue(0));
   }
 
-  /**
-   * Defines the internal state transition logic for the GeneratorModel. This method alternates the
-   * model's internal state between 0 and 1.
-   *
-   */
+
   @Override
-  public void internalStateTransitionFunction() {
-    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
-    modelState.setCurrentTime(currentTime);
-    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
-    ArrayList<Object> events = new ArrayList<>(modelState.getSchedule().removeCurrentScheduledEvents(currentTime));
+  public void handleScheduledEvents(List<Object> events) {
+
     for (Object event: events) {
       if (event instanceof FlipState) {
         if (modelState.getiState() == 0) {
@@ -78,7 +72,7 @@ public static String identifier = "generator";
           this.modelState.setiState(0);
         }
         Long timeAdvance = modelState.getiState() == 0 ? 1L : 0L;
-        LongSimTime nextTime = LongSimTime.create(currentTime.getT() + timeAdvance);
+        LongSimTime nextTime = LongSimTime.create(modelState.getCurrentTime().getT() + timeAdvance);
         modelState.getSchedule().scheduleOutputEvent(nextTime, generatorOutputPort.createPortValue(modelState.getiState()));
         modelState.getSchedule().scheduleInternalEvent(nextTime, new FlipState());
       }

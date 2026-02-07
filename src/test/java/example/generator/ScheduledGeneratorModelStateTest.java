@@ -22,6 +22,7 @@ import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
 import devs.msg.state.ScheduleState;
 import devs.utils.DevsObjectMapper;
+import devs.utils.Schedule.ScheduledEvent;
 import example.generator.ScheduledGeneratorModel.FlipState;
 import java.util.List;
 import org.junit.jupiter.api.Test;

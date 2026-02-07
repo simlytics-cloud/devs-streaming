@@ -148,11 +148,10 @@ public class LogBaseTwoCalculatorModel extends ScheduledDevsModel<LongSimTime, S
   }
 
   @Override
-  public void internalStateTransitionFunction() {
-    LongSimTime currentTime = modelState.getCurrentTime().plus(timeAdvanceFunction());
-    modelState.setCurrentTime(currentTime);
-    modelState.getSchedule().removeCurrentScheduledOutput(currentTime);
+  public void handleScheduledEvents(List<Object> events) {
+    // No internal events to handle
   }
+
   /**
    * Executes the confluent state transition function of the DEVS model.
    * <p>
