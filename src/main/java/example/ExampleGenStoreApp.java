@@ -39,8 +39,6 @@ import devs.iso.DevsMessage;
 import devs.iso.log.DevsLogMessage;
 import devs.iso.log.StopLogger;
 import devs.iso.time.LongSimTime;
-import example.coordinator.GenStoreInputCouplingHandler;
-import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
@@ -175,9 +173,9 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     modelSimulators.put("generator", generator);
     modelSimulators.put("storage", storage);
 
-    PDevsCouplings genStoreCoupling =
-        new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
-            Collections.singletonList(new GenStoreOutputCouplingHandler()));
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+        .addConnection("generator", "OUTPUT", "storage", "INPUT")
+        .build();
     ActorRef<DevsMessage> coordinator = context.spawn(
         PDevsCoordinator.create("coupled", modelSimulators, genStoreCoupling), "coordinator");
 

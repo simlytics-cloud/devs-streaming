@@ -32,13 +32,10 @@ import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.SimulationTerminatePayload;
 import devs.iso.time.LongSimTime;
-import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaUtils;
-import example.coordinator.GenStoreInputCouplingHandler;
-import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
@@ -255,10 +252,11 @@ public class KafkaDevsStreamProxyTest {
     modelSimulators.put("storage", storageProxy);
     modelSimulators.put("recorder", toRecorderProbe.getRef());
 
-    PDevsCouplings genStoreCoupling =
-        new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
-            Arrays.asList(new GenStoreOutputCouplingHandler(),
-                new GenStoreRecorderOutputCouplingHandler()));
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+        .addConnection("generator", "OUTPUT", "storage", "INPUT")
+        .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
+        .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")
+        .build();
 
     ActorRef<DevsMessage> coordinator =
         testKit.spawn(
@@ -438,10 +436,11 @@ public class KafkaDevsStreamProxyTest {
     modelSimulators.put("storage", storageProxy);
     modelSimulators.put("recorder", recorderSim);
 
-    PDevsCouplings genStoreCoupling =
-        new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
-            Arrays.asList(new GenStoreOutputCouplingHandler(),
-                new GenStoreRecorderOutputCouplingHandler()));
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+        .addConnection("generator", "OUTPUT", "storage", "INPUT")
+        .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
+        .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")
+        .build();
 
     ActorRef<DevsMessage> coordinator =
         testKit.spawn(

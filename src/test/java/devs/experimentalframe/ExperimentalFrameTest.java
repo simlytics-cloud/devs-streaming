@@ -78,8 +78,12 @@ public class ExperimentalFrameTest {
         logCalculator.getDevsSimulatorProvider(),
         testAcceptor.getDevsSimulatorProvider());
 
-    PDevsCouplings couplings = new PDevsCouplings(Collections.emptyList(),
-        Collections.singletonList(new TestOutputCouplingHandler()));
+    PDevsCouplings couplings = PDevsCouplings.builder()
+        .addConnection("PowerOfTwoGenerator", "numbers", LogBaseTwoCalculatorModel.MODEL_ID, "numberIn")
+        .addConnection("PowerOfTwoGenerator", "words", LogBaseTwoCalculatorModel.MODEL_ID, "wordIn")
+        .addConnection(LogBaseTwoCalculatorModel.MODEL_ID, "numberOut", TestAcceptor.modelIdentifier, "acceptNumber")
+        .addConnection(LogBaseTwoCalculatorModel.MODEL_ID, "wordOut", TestAcceptor.modelIdentifier, "acceptWord")
+        .build();
     coupledModelFactory = new CoupledModelFactory<LongSimTime>(
       "experimentalFrameTest",
       simulatorProviders,

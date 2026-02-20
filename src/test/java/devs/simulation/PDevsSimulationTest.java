@@ -26,10 +26,7 @@ import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
-import devs.simulation.recorder.GenStoreRecorderOutputCouplingHandler;
 import devs.simulation.recorder.RecorderModel;
-import example.coordinator.GenStoreInputCouplingHandler;
-import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
@@ -142,10 +139,11 @@ public class PDevsSimulationTest {
     modelSimulators.put("storage", storageSim);
     modelSimulators.put("recorder", toRecorderProbe.getRef());
 
-    PDevsCouplings genStoreCoupling =
-        new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
-            Arrays.asList(new GenStoreOutputCouplingHandler(),
-                new GenStoreRecorderOutputCouplingHandler()));
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+        .addConnection("generator", "OUTPUT", "storage", "INPUT")
+        .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
+        .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")
+        .build();
 
     ActorRef<DevsMessage> coordinator = testKit.spawn(
         Behaviors.setup(context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",

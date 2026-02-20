@@ -25,9 +25,6 @@ import devs.iso.RequestOutput;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.SimTime;
-import example.coordinator.GenStoreInputCouplingHandler;
-import example.coordinator.GenStoreOutputCouplingHandler;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
@@ -122,9 +119,9 @@ public class PDevsCoordinatorTest {
     modelSimulators.put("generator", generatorInProbe.getRef());
     modelSimulators.put("storage", storageInProbe.getRef());
 
-    PDevsCouplings genStoreCoupling =
-        new PDevsCouplings(Collections.singletonList(new GenStoreInputCouplingHandler()),
-            Collections.singletonList(new GenStoreOutputCouplingHandler()));
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+        .addConnection("generator", "OUTPUT", "storage", "INPUT")
+        .build();
 
     ActorRef<DevsMessage> coordinator = testKit.spawn(
         Behaviors.setup(context -> new PDevsCoordinator<LongSimTime>("genStoreCoupled",
