@@ -33,8 +33,6 @@ import java.util.List;
  */
 public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
 
-  public static String identifier = "generator";
-
 
   /**
    * Represents the output port of the GeneratorModel, used for emitting the current state of the
@@ -56,7 +54,7 @@ public class GeneratorModel extends PDEVSModel<LongSimTime, Integer> {
    *                     of the model, either 0 or 1, and sets up the behavior of the periodic state
    *                     transitions.
    */
-  public GeneratorModel(Integer initialState) {
+  public GeneratorModel(Integer initialState, String identifier) {
     super(initialState, identifier);
   }
 

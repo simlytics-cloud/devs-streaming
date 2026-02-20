@@ -39,8 +39,7 @@ import java.util.List;
  * transition.
  */
 public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
-
-  public static final String MODEL_ID = "storage";
+  
   public static final Port<Integer> storageInputPort = new Port<>("INPUT", Integer.class);
   public static final Port<String> storageOutputPort = new Port<>("OUTPUT",
       String.class);
@@ -50,8 +49,8 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
    *
    * @param initialState the initial state of the storage model
    */
-  public StorageModel(StorageState initialState) {
-    super(initialState, MODEL_ID);
+  public StorageModel(StorageState initialState, String modelIdentifier) {
+    super(initialState, modelIdentifier);
   }
 
   /**

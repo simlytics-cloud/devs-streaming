@@ -31,6 +31,8 @@ import example.storage.StorageModel;
  */
 public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler {
 
+  static final String generatorName = "generator";
+  static final String storageName = "storage";
 
   public GenStoreRecorderOutputCouplingHandler() {
     super(Optional.empty(), Optional.empty(), Optional.empty());
@@ -56,11 +58,11 @@ public class GenStoreRecorderOutputCouplingHandler extends OutputCouplingHandler
   public void handlePortValue(String sender, PortValue<?> portValue,
       Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
 
-    if (sender.equals(GeneratorModel.identifier)) {
+    if (sender.equals(generatorName)) {
       PortValue<Integer> recorderInputValue = RecorderModel.generatorOutput
           .createPortValue(GeneratorModel.generatorOutputPort.getValue(portValue));
       addInputPortValue(recorderInputValue, "recorder", receiverMap);
-    } else if (sender.equals(StorageModel.MODEL_ID)) {
+    } else if (sender.equals(storageName)) {
       PortValue<String> recorderInputValue = RecorderModel.storageOutput
           .createPortValue(StorageModel.storageOutputPort.getValue(portValue));
       addInputPortValue(recorderInputValue, "recorder", receiverMap);

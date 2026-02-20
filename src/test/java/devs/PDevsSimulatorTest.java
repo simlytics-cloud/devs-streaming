@@ -72,6 +72,7 @@ public class PDevsSimulatorTest {
    * The test environment is shut down during cleanup to release resources.
    */
   static final ActorTestKit testKit = ActorTestKit.create();
+  static final String generatorName = "generator";
 
   /**
    * Cleans up resources after all tests in the test class have been executed.
@@ -105,7 +106,7 @@ public class PDevsSimulatorTest {
   @DisplayName("Test PDEVS Simulator")
   void parallelDevsSimulatorTest() {
     TestProbe<DevsMessage> probe = testKit.createTestProbe();
-    GeneratorModel generatorModel = new GeneratorModel(0);
+    GeneratorModel generatorModel = new GeneratorModel(0, generatorName);
     ActorRef<DevsMessage> simulator = testKit.spawn(Behaviors.setup(
         context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(generatorModel,
             LongSimTime.builder().t(0L).build(), context)));
@@ -116,7 +117,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build(), probe.getRef()));
     DevsMessage receivedMessage = probe.receiveMessage();
     assert (receivedMessage instanceof NextInternalTimeReport<?>);
@@ -131,7 +132,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message2 = probe.receiveMessage();
     assert (message2 instanceof OutputReport<?>);
@@ -147,7 +148,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message3 = probe.receiveMessage();
     assert (message3 instanceof TransitionComplete<?>);
@@ -160,7 +161,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message4 = probe.receiveMessage();
     assert (message4 instanceof OutputReport<?>);
@@ -176,7 +177,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message5 = probe.receiveMessage();
     assert (message5 instanceof TransitionComplete<?>);
@@ -190,7 +191,7 @@ public class PDevsSimulatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message6 = probe.receiveMessage();
     assert (message6 instanceof OutputReport<?>);

@@ -31,7 +31,7 @@ public class ScheduledGeneratorModelStateTest {
   
   @Test
   public void serializeScheduledGeneratorModelState() throws JsonProcessingException {
-    ScheduledGeneratorModel model = new ScheduledGeneratorModel(0);
+    ScheduledGeneratorModel model = new ScheduledGeneratorModel(0, "generator");
     ScheduledGeneratorModelState state = model.getModelState();
     ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
     String json = objectMapper.writeValueAsString(state);

@@ -60,7 +60,7 @@ public class ScheduledGeneratorModelTest {
   @DisplayName("Test state transition")
   void stateTransitionTest() throws JsonProcessingException {
     // Schedule is in initial state of 0 with a FlipState scheduled for t=0
-    ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0);
+    ScheduledGeneratorModel generatorModel = new ScheduledGeneratorModel(0, "generator");
     LongSimTime nextTime = generatorModel.timeAdvanceFunction();
     assert nextTime.getT() == 1L;
 

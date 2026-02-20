@@ -72,6 +72,6 @@ public class GenStoreOutputCouplingHandler extends OutputCouplingHandler {
       Map<String, List<PortValue<?>>> receiverMap, List<PortValue<?>> outputMessages) {
     PortValue<Integer> inputPortValue = StorageModel.storageInputPort
         .createPortValue(GeneratorModel.generatorOutputPort.getValue(portValue));
-    addInputPortValue(inputPortValue, StorageModel.MODEL_ID, receiverMap);
+    addInputPortValue(inputPortValue, "storage", receiverMap);
   }
 }

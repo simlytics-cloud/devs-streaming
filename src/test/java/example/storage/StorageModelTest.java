@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 public class StorageModelTest {
 
   ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+  static String storageName = "storage";
 
 
   /**
@@ -58,7 +59,7 @@ public class StorageModelTest {
     StorageState internalState = new StorageState(StorageStateEnum.S0);
     String internalStateJson = objectMapper.writeValueAsString(internalState);
     StorageState initialState = objectMapper.readValue(internalStateJson, StorageState.class);
-    StorageModel storageModel = new StorageModel(initialState);
+    StorageModel storageModel = new StorageModel(initialState, storageName);
     // Output should be the initial state of 0
     assert (storageModel.outputFunction().get(0)
         .getValue().equals("S0"));
@@ -90,7 +91,7 @@ public class StorageModelTest {
     StorageState internalState = new StorageState(StorageStateEnum.S0);
     String internalStateJson = objectMapper.writeValueAsString(internalState);
     StorageState initialState = objectMapper.readValue(internalStateJson, StorageState.class);
-    StorageModel storageModel = new StorageModel(initialState);
+    StorageModel storageModel = new StorageModel(initialState, storageName);
 
     // Internal state transition does not change state
     storageModel.internalStateTransitionFunction();
@@ -136,7 +137,7 @@ public class StorageModelTest {
   @DisplayName("Test time advance")
   void timeAdvanceTest() {
     StorageState internalState = new StorageState(StorageStateEnum.S0);
-    StorageModel storageModel = new StorageModel(internalState);
+    StorageModel storageModel = new StorageModel(internalState, storageName);
     assert (storageModel.timeAdvanceFunction()
         .getT() == Long.MAX_VALUE);
   }

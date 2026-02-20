@@ -92,6 +92,8 @@ public class KafkaDevsStreamProxyTest {
   
   static final String genStoreSystemTopic = "genStoreSystem";
   static final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+  static final String generatorName = "generator";
+  static final String storageName = "storage";
 
   static Long time;
 
@@ -141,15 +143,15 @@ public class KafkaDevsStreamProxyTest {
     final TestProbe<DevsMessage> fromSimulatorProbe = testKit.createTestProbe("fromSimulatorProbe");
 
     final ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create(generatorName, genStoreSystemTopic, kafkaClusterConfig),
         "Proxy");
     
     final ActorRef<DevsMessage> simulator = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
-            new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
+            new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)));
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(toSimulatorProbe.getRef(),
-        fromSimulatorProbe.getRef(), "generator", kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
+        fromSimulatorProbe.getRef(), generatorName, kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
 
     // Initialize and expect next sim time to be 1
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
@@ -157,7 +159,7 @@ public class KafkaDevsStreamProxyTest {
         .simulationId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
-        .receiverId("generator")
+        .receiverId(generatorName)
         .build();
     String initSimString = objectMapper.writeValueAsString(simulationInit);
     final Long start = System.currentTimeMillis();
@@ -231,7 +233,7 @@ public class KafkaDevsStreamProxyTest {
     ActorTestKit testKit = ActorTestKit.create();
     ActorRef<DevsMessage> generator = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
-            new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)),
+            new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
         KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
@@ -239,7 +241,7 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
             .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(
-                new StorageModel(new StorageState(StorageStateEnum.S0)),
+                new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(
@@ -408,7 +410,7 @@ public class KafkaDevsStreamProxyTest {
     ActorTestKit testKit = ActorTestKit.create();
     ActorRef<DevsMessage> generator = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
-            new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)),
+            new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
         KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
@@ -416,7 +418,7 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
             .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(
-                new StorageModel(new StorageState(StorageStateEnum.S0)),
+                new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(

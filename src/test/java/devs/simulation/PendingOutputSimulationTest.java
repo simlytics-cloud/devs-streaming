@@ -82,6 +82,8 @@ public class PendingOutputSimulationTest {
    * cases, promoting efficient resource utilization.
    */
   static final ActorTestKit testKit = ActorTestKit.create();
+  static final String generatorName = "generator";
+  static final String storageName = "storage";
 
   /**
    * Performs cleanup operations after all tests have been executed.
@@ -127,11 +129,11 @@ public class PendingOutputSimulationTest {
 
     ActorRef<DevsMessage> generatorSim = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, ScheduledGeneratorModelState, ScheduledGeneratorModel>(
-            new ScheduledGeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
+            new ScheduledGeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)));
 
     ActorRef<DevsMessage> storageSim = testKit.spawn(Behaviors
         .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(
-            new StorageModel(new StorageState(StorageStateEnum.S0)),
+            new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
             LongSimTime.builder().t(0L).build(), context)));
 
     TestProbe<DevsMessage> toRecorderProbe = testKit.createTestProbe("toRecorderProbe");

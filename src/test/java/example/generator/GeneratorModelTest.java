@@ -37,7 +37,7 @@ public class GeneratorModelTest {
 
 
   ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
-
+  static String generatorName = "generator";
 
   /**
    * Tests the output generation behavior of the {@code GeneratorModel} class.
@@ -54,7 +54,7 @@ public class GeneratorModelTest {
   @DisplayName("Test generation of values")
   void outputTest() throws JsonProcessingException {
 
-    GeneratorModel generatorModel = new GeneratorModel(0);
+    GeneratorModel generatorModel = new GeneratorModel(0, generatorName);
     // Output should be the initial state of 0
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 0);
   }
@@ -81,7 +81,7 @@ public class GeneratorModelTest {
   @DisplayName("Test state transition")
   void stateTransitionTest() throws JsonProcessingException {
 
-    GeneratorModel generatorModel = new GeneratorModel(0);
+    GeneratorModel generatorModel = new GeneratorModel(0, generatorName);
     generatorModel.internalStateTransitionFunction();
     // Output should be 1 after state transition
     assert ((Integer) generatorModel.outputFunction().get(0).getValue() == 1);
@@ -112,7 +112,7 @@ public class GeneratorModelTest {
   @DisplayName("Test time advance")
   void timeAdvanceTest() {
 
-    GeneratorModel generatorModel = new GeneratorModel(0);
+    GeneratorModel generatorModel = new GeneratorModel(0, generatorName);
     // Time advance should be 1 if state is 0
     assert (generatorModel.timeAdvanceFunction().getT() == 1L);
     generatorModel.internalStateTransitionFunction();

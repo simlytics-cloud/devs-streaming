@@ -29,7 +29,6 @@ import java.util.List;
 
 public class ScheduledGeneratorModel 
     extends ScheduledDevsModel<LongSimTime, ScheduledGeneratorModelState> {
-public static String identifier = "generator";
 
   public static record FlipState() { }
   /**
@@ -53,7 +52,7 @@ public static String identifier = "generator";
    *                     of the model, either 0 or 1, and sets up the behavior of the periodic state
    *                     transitions.
    */
-  public ScheduledGeneratorModel(int initialState) {
+  public ScheduledGeneratorModel(int initialState, String identifier) {
     super(new ScheduledGeneratorModelState(initialState), identifier);
     LongSimTime t1 = LongSimTime.create(1L);
     modelState.getSchedule().scheduleInternalEvent(t1, new FlipState());

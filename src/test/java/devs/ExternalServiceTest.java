@@ -247,7 +247,7 @@ public class ExternalServiceTest {
     private final ActorRef<GeneratorServiceRequest> generatorService;
 
     public CalculatingGeneratorModel(Integer initialState, ActorRef<GeneratorServiceRequest> generatorService) {
-      super(initialState);
+      super(initialState, "generator");
       this.generatorService = generatorService;
     }
 
@@ -279,7 +279,7 @@ public class ExternalServiceTest {
     private final ActorRef<HttpServiceActor.Command> generatorService;
 
     public HttpCalculatingGeneratorModel(Integer initialState, ActorRef<HttpServiceActor.Command> generatorService) {
-      super(initialState);
+      super(initialState, "generator");
       this.generatorService = generatorService;
     }
 

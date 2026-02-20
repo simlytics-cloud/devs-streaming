@@ -84,6 +84,8 @@ public class PDevsCoordinatorTest {
   }
 
   private static final String simulationId = "PDevsCoordinatorTest";
+  static final String generatorName = "generator";
+  static final String storageName = "storage";
 
   /**
    * This method tests the functionality of a PDEVS (Parallel DEVS) coordinator and its interaction
@@ -133,13 +135,13 @@ public class PDevsCoordinatorTest {
         .simulationId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build(), rootInProbe.getRef()));
 
     // PDEVS Coordinator should pass InitSim message to Generator and Storage
     ActorRef<DevsMessage> generatorSim = testKit.spawn(
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
-            new GeneratorModel(0), LongSimTime.builder().t(0L).build(), context)));
+            new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)));
     DevsMessage message1 = generatorInProbe.receiveMessage();
     assert (message1 instanceof SimulationInitMessage<?>);
     SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
@@ -148,7 +150,7 @@ public class PDevsCoordinatorTest {
 
     ActorRef<DevsMessage> storageSim = testKit.spawn(Behaviors
         .setup(context -> new PDevsSimulator<LongSimTime, StorageState, StorageModel>(
-            new StorageModel(new StorageState(StorageStateEnum.S0)),
+            new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
             LongSimTime.builder().t(0L).build(), context)));
     DevsMessage message2 = storageInProbe.receiveMessage();
     assert (message2 instanceof SimulationInitMessage<?>);
@@ -170,7 +172,7 @@ public class PDevsCoordinatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message4 = generatorInProbe.receiveMessage();
     assert (message4 instanceof RequestOutput<?>);
@@ -216,7 +218,7 @@ public class PDevsCoordinatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message8 = generatorInProbe.receiveMessage();
     assert (message8 instanceof RequestOutput<?>);
@@ -267,7 +269,7 @@ public class PDevsCoordinatorTest {
         .simulationId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
-        .receiverId(GeneratorModel.identifier)
+        .receiverId(generatorName)
         .build());
     DevsMessage message12 = storageInProbe.receiveMessage();
     assert (message12 instanceof RequestOutput<?>);

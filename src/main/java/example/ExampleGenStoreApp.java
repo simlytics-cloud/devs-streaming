@@ -164,11 +164,11 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     context.watch(loggingActor);
 
     ActorRef<DevsMessage> generator =
-        context.spawn(StateLoggingSimulator.createStateLoggingSimulator(new GeneratorModel(0),
+        context.spawn(StateLoggingSimulator.createStateLoggingSimulator(new GeneratorModel(0, "generator"),
             LongSimTime.builder().t(0L).build()), "generator");
 
     ActorRef<DevsMessage> storage = context.spawn(StateLoggingSimulator.createStateLoggingSimulator(
-        new StorageModel(new StorageState(StorageStateEnum.S0)),
+        new StorageModel(new StorageState(StorageStateEnum.S0), "storage"),
         LongSimTime.builder().t(0L).build()), "storage");
 
     Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
