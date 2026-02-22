@@ -78,7 +78,7 @@ public class ExperimentalFrameTest {
         logCalculator.getDevsSimulatorProvider(),
         testAcceptor.getDevsSimulatorProvider());
 
-    PDevsCouplings couplings = PDevsCouplings.builder()
+    PDevsCouplings couplings = PDevsCouplings.builder("experimentalFrameTest")
         .addConnection("PowerOfTwoGenerator", "numbers", LogBaseTwoCalculatorModel.MODEL_ID, "numberIn")
         .addConnection("PowerOfTwoGenerator", "words", LogBaseTwoCalculatorModel.MODEL_ID, "wordIn")
         .addConnection(LogBaseTwoCalculatorModel.MODEL_ID, "numberOut", TestAcceptor.modelIdentifier, "acceptNumber")

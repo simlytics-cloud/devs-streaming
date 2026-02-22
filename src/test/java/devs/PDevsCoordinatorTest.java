@@ -119,7 +119,7 @@ public class PDevsCoordinatorTest {
     modelSimulators.put("generator", generatorInProbe.getRef());
     modelSimulators.put("storage", storageInProbe.getRef());
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("genStoreCoupled")
         .addConnection("generator", "OUTPUT", "storage", "INPUT")
         .build();
 

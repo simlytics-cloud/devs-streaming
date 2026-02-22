@@ -357,7 +357,7 @@ public class PDevsCoordinator<T extends SimTime>
       log(Level.DEBUG, "We have all outputReport.");
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
-      modelOutput = outputCouplingMessages.getOutputMessages();
+      modelOutput = outputCouplingMessages.getExternalOutputMessages();
       receivers = outputCouplingMessages.getInternalMessages();
 
       receivers.forEach((key, value) -> {

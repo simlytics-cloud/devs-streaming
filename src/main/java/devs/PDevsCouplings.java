@@ -16,35 +16,36 @@
 
 package devs;
 
+import devs.couplings.CouplingResolver;
+import devs.couplings.CouplingTarget;
+import devs.couplings.Couplings;
+import devs.couplings.StaticCouplingResolver;
 import devs.iso.PortValue;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * A unified coupling handler using a predefined routing map.
  * <p>
- * Internally, it stores routes as a mapping from (sender, outputPort) to a map of
- * (receiver -> receiverPort). When a message comes from a sender/port, it is routed to
- * zero or more (receiver, receiverPort) pairs.
+ * Internally, it stores routes as a mapping from (sender, outputPort) to a {@link CouplingResolver}.
+ * When a message comes from a sender/port, it is resolved to
+ * zero or more {@link CouplingTarget} pairs.
  * <p>
  * Conventions:
- * - Use the special sender key {@link #COUPLED_SENDER} for inputs arriving to the coupled model
- *   from the environment (i.e., for {@link #handleInputs(List, Map)} and
+ * - When building couplings, use the name of the coupled model as the sender identifier for
+ *   inputs arriving from the environment (i.e., for {@link #handleInputs(List, Map)} and
  *   {@link #handleInputMessage(List)}).
- * - Use the special receiver key {@link #COUPLED_OUTPUT} to indicate an external output of the
- *   coupled model (i.e., add to the {@code outputMessages} list in
+ * - When building couplings, use the name of the coupled model as the receiver identifier for
+ *   external outputs (i.e., add to the {@code outputMessages} list in
  *   {@link #handleOutputs(Map, Map, List)} and {@link #handleOutputBag(Map)}).
  */
 public class PDevsCouplings {
-
-  /** Special sender identifier used for messages entering the coupled model. */
-  public static final String COUPLED_SENDER = "$COUPLED";
-  /** Special receiver identifier used for messages that should become external outputs. */
-  public static final String COUPLED_OUTPUT = "$OUTPUT";
 
   /**
    * Represents a single connection from a sender's output port to a receiver's input port.
@@ -62,7 +63,17 @@ public class PDevsCouplings {
    */
   public static class Builder {
 
-    private final List<Connection> connections = new ArrayList<>();
+    private final String coupledModelName;
+    private final Couplings couplings = new Couplings();
+
+    /**
+     * Creates a new builder for the specified coupled model.
+     *
+     * @param coupledModelName name of the coupled model
+     */
+    public Builder(String coupledModelName) {
+      this.coupledModelName = coupledModelName;
+    }
 
     /**
      * Adds a single {@link Connection} to the builder.
@@ -71,7 +82,8 @@ public class PDevsCouplings {
      * @return this builder instance
      */
     public Builder addConnection(Connection connection) {
-      connections.add(connection);
+      couplings.addConnection(connection.sender(), connection.senderPort(),
+          connection.receiver(), connection.receiverPort());
       return this;
     }
 
@@ -86,7 +98,7 @@ public class PDevsCouplings {
      */
     public Builder addConnection(String sender, String senderPort, String receiver,
         String receiverPort) {
-      connections.add(new Connection(sender, senderPort, receiver, receiverPort));
+      couplings.addConnection(sender, senderPort, receiver, receiverPort);
       return this;
     }
 
@@ -97,7 +109,49 @@ public class PDevsCouplings {
      * @return this builder instance
      */
     public Builder addConnections(List<Connection> connections) {
-      this.connections.addAll(connections);
+      for (Connection conn : connections) {
+        couplings.addConnection(conn.sender(), conn.senderPort(), conn.receiver(),
+            conn.receiverPort());
+      }
+      return this;
+    }
+
+    /**
+     * Adds a resolver for multiple source models.
+     *
+     * @param senders set of sender identifiers
+     * @param senderPort identifier for the output port on the senders
+     * @param resolver the resolver to use
+     * @return this builder instance
+     */
+    public Builder addResolver(Set<String> senders, String senderPort, CouplingResolver resolver) {
+      couplings.addResolver(senders, senderPort, resolver);
+      return this;
+    }
+
+    /**
+     * Adds a pattern-based resolver.
+     *
+     * @param regex regular expression to match sender identifiers
+     * @param senderPort identifier for the output port on the matching senders
+     * @param resolver the resolver to use
+     * @return this builder instance
+     */
+    public Builder addPatternResolver(String regex, String senderPort, CouplingResolver resolver) {
+      couplings.addPatternResolver(regex, senderPort, resolver);
+      return this;
+    }
+
+    /**
+     * Adds a custom resolver for a specific source port.
+     *
+     * @param sender identifier for the model emitting the message
+     * @param senderPort identifier for the output port on the sender
+     * @param resolver the resolver to use for this source
+     * @return this builder instance
+     */
+    public Builder addResolver(String sender, String senderPort, CouplingResolver resolver) {
+      couplings.addResolver(sender, senderPort, resolver);
       return this;
     }
 
@@ -107,39 +161,36 @@ public class PDevsCouplings {
      * @return a new PDevsCouplings instance
      */
     public PDevsCouplings build() {
-      Map<String, Map<String, Map<String, String>>> routes = new HashMap<>();
-
-      for (Connection conn : connections) {
-        routes.computeIfAbsent(conn.sender(), s -> new HashMap<>())
-            .computeIfAbsent(conn.senderPort(), sp -> new HashMap<>())
-            .put(conn.receiver(), conn.receiverPort());
-      }
-
-      return new PDevsCouplings(routes);
+      return new PDevsCouplings(coupledModelName, couplings);
     }
   }
 
   /**
-   * Returns a new {@link Builder} instance.
+   * Returns a new {@link Builder} instance for the specified coupled model.
    *
+   * @param coupledModelName name of the coupled model
    * @return a new builder
    */
-  public static Builder builder() {
-    return new Builder();
+  public static Builder builder(String coupledModelName) {
+    return new Builder(coupledModelName);
   }
 
+  /** Name of the coupled model this coupling belongs to. */
+  private final String coupledModelName;
   /**
-   * The routing map: sender -> outputPort -> (receiver -> receiverPort)
+   * The routing structure managing coupling resolvers.
    */
-  private final Map<String, Map<String, Map<String, String>>> routes;
+  private final Couplings couplings;
 
   /**
    * Construct a new PDevsCouplings with explicit routing information.
    *
-   * @param routes mapping of sender -> outputPort -> (receiver -> receiverPort)
+   * @param coupledModelName name of the coupled model
+   * @param couplings the routing structure
    */
-  public PDevsCouplings(Map<String, Map<String, Map<String, String>>> routes) {
-    this.routes = routes;
+  public PDevsCouplings(String coupledModelName, Couplings couplings) {
+    this.coupledModelName = coupledModelName;
+    this.couplings = couplings;
   }
 
   /**
@@ -192,7 +243,7 @@ public class PDevsCouplings {
 
   /**
    * Handles the input bag coming to the coupled model by routing based on the
-   * {@link #routes} using {@link #COUPLED_SENDER} as the sender key.
+   * {@link #couplings} using {@link #coupledModelName} as the sender key.
    *
    * @param inputs the input bag sent to the coupled model
    * @param receiverMap a map of model identifiers and the {@link PortValue}s routed to those models
@@ -201,27 +252,43 @@ public class PDevsCouplings {
     if (inputs == null || inputs.isEmpty()) {
       return;
     }
-    Map<String, Map<String, String>> byPort = routes.get(COUPLED_SENDER);
-    if (byPort == null) {
-      return;
-    }
     for (PortValue<?> portValue : inputs) {
-      Map<String, String> destinations = byPort.get(portValue.getPortName());
+      List<CouplingTarget> destinations = getDestinationsForMessage(coupledModelName, portValue);
       if (destinations == null || destinations.isEmpty()) {
         continue;
       }
-      for (Map.Entry<String, String> dest : destinations.entrySet()) {
-        String receiver = dest.getKey();
-        String receiverPort = dest.getValue();
+      for (CouplingTarget dest : destinations) {
+        String receiver = dest.targetModel();
+        String receiverPort = dest.targetPort();
         PortValue<?> mapped = withPortName(portValue, receiverPort);
         addInputPortValue(mapped, receiver, receiverMap);
       }
     }
   }
+  
+  /**
+   * Determines the destinations for a message.
+   *
+   * @param sender The identifier of the sender model.
+   * @param portValue The actual message being routed.
+   * @return A list of target destinations.
+   */
+  protected List<CouplingTarget> getDestinationsForMessage(
+      String sender,
+      PortValue<?> portValue) {
+    List<CouplingResolver> resolvers = couplings.getResolvers(sender, portValue.getPortName());
+    if (resolvers.isEmpty()) {
+      return List.of();
+    }
+    return resolvers.stream()
+            .map(r -> r.resolve(sender, portValue))
+            .flatMap(Collection::stream)
+            .collect(Collectors.toList());
+  }
 
   /**
    * Processes the outputs of models and routes port values to their corresponding receivers or
-   * coupled model output messages, based on {@link #routes}.
+   * coupled model output messages, based on {@link #couplings}.
    *
    * @param modelOutputs A map where the key represents the sender identifier and the value is an
    *                     optional list containing port values emitted by the sender.
@@ -242,20 +309,16 @@ public class PDevsCouplings {
       if (maybe.isEmpty()) {
         continue;
       }
-      Map<String, Map<String, String>> byPort = routes.get(sender);
-      if (byPort == null || byPort.isEmpty()) {
-        continue;
-      }
       for (PortValue<?> portValue : maybe.get()) {
-        Map<String, String> destinations = byPort.get(portValue.getPortName());
+        List<CouplingTarget> destinations = getDestinationsForMessage(sender, portValue);
         if (destinations == null || destinations.isEmpty()) {
           continue;
         }
-        for (Map.Entry<String, String> dest : destinations.entrySet()) {
-          String receiver = dest.getKey();
-          String receiverPort = dest.getValue();
+        for (CouplingTarget dest : destinations) {
+          String receiver = dest.targetModel();
+          String receiverPort = dest.targetPort();
           PortValue<?> mapped = withPortName(portValue, receiverPort);
-          if (COUPLED_OUTPUT.equals(receiver)) {
+          if (coupledModelName.equals(receiver)) {
             outputMessages.add(mapped);
           } else {
             addInputPortValue(mapped, receiver, receiverMap);

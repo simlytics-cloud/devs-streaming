@@ -252,7 +252,7 @@ public class KafkaDevsStreamProxyTest {
     modelSimulators.put("storage", storageProxy);
     modelSimulators.put("recorder", toRecorderProbe.getRef());
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("genStoreCoupled")
         .addConnection("generator", "OUTPUT", "storage", "INPUT")
         .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
         .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")
@@ -436,7 +436,7 @@ public class KafkaDevsStreamProxyTest {
     modelSimulators.put("storage", storageProxy);
     modelSimulators.put("recorder", recorderSim);
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("genStoreCoupled")
         .addConnection("generator", "OUTPUT", "storage", "INPUT")
         .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
         .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")

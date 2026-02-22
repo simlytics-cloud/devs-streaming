@@ -139,7 +139,7 @@ public class PDevsSimulationTest {
     modelSimulators.put("storage", storageSim);
     modelSimulators.put("recorder", toRecorderProbe.getRef());
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("genStoreCoupled")
         .addConnection("generator", "OUTPUT", "storage", "INPUT")
         .addConnection("generator", "OUTPUT", "recorder", "GENERATOR_OUTPUT")
         .addConnection("storage", "OUTPUT", "recorder", "STORAGE_OUTPUT")

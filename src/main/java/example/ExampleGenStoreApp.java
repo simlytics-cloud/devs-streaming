@@ -173,7 +173,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
     modelSimulators.put("generator", generator);
     modelSimulators.put("storage", storage);
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder()
+    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("coupled")
         .addConnection("generator", "OUTPUT", "storage", "INPUT")
         .build();
     ActorRef<DevsMessage> coordinator = context.spawn(

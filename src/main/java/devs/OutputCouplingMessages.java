@@ -34,16 +34,16 @@ import java.util.Map;
  */
 public class OutputCouplingMessages {
 
-  final List<PortValue<?>> outputMessages;
+  final List<PortValue<?>> externalOutputMessages;
   final Map<String, List<PortValue<?>>> internalMessages;
 
-  public OutputCouplingMessages(List<PortValue<?>> outputMessages, Map<String, List<PortValue<?>>> internalMessages) {
-    this.outputMessages = outputMessages;
+  public OutputCouplingMessages(List<PortValue<?>> externalOutputMessages, Map<String, List<PortValue<?>>> internalMessages) {
+    this.externalOutputMessages = externalOutputMessages;
     this.internalMessages = internalMessages;
   }
 
-  public List<PortValue<?>> getOutputMessages() {
-    return outputMessages;
+  public List<PortValue<?>> getExternalOutputMessages() {
+    return externalOutputMessages;
   }
 
   public Map<String, List<PortValue<?>>> getInternalMessages() {
