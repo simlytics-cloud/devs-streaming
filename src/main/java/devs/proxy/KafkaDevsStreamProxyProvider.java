@@ -36,7 +36,7 @@ public class KafkaDevsStreamProxyProvider<T extends SimTime> implements Simulato
 
   @Override
   public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context, T initialTime) {
-    return context.spawn(KafkaDevsStreamProxy.create(componentName, producerTopic, pekkoProducerConfig), "KafkaDevsStreamProxy");
+    return context.spawn(KafkaDevsStreamProxy.create(componentName, producerTopic, pekkoProducerConfig), componentName + "KafkaDevsStreamProxy");
   }
 
   @Override

@@ -18,10 +18,10 @@ package devs.proxy;
 
 import devs.iso.DevsMessage;
 import devs.iso.DevsSimMessage;
+import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Optional;
 import com.typesafe.config.Config;
 import devs.SimulatorProvider;
 import devs.iso.SimulationInitMessage;
@@ -66,8 +66,8 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
    * producer. - consumerTopic: Specifies the Kafka topic from which the consumer reads messages. -
    * kafkaConsumerConfig: Contains optional configuration for initializing the Kafka consumer.
    */
-  public static record ProxyProperties(String componentName, String producerTopic,
-                                       Config kafkaProducerConfig, String consumerTopic,
+  public static record ProxyProperties(String localComponentName, String producerTopic,
+                                       Config kafkaProducerConfig, String remoteComponentName, String consumerTopic,
                                        Config kafkaConsumerConfig) {
 
   }
@@ -87,12 +87,12 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context,
         T initialTime) {
       return context.spawn(KafkaLocalProxy.create(properties), 
-        ModelUtils.toLegalActorName(properties.componentName()));
+        ModelUtils.toLegalActorName(properties.remoteComponentName()));
     }
 
     @Override
     public String getModelIdentifier() {
-      return properties.componentName();
+      return properties.remoteComponentName();
     }
     
   }
@@ -112,7 +112,8 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
   protected final Consumer.DrainingControl<Done> control;
   protected final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
   protected Optional<ActorRef<DevsMessage>> localParentCoordinator;
-  protected final String componentName;
+  protected final String localComponentName;
+  protected final String remoteComponentName;
 
   /**
    * Initializes a new instance of the KafkaLocalProxy class. This constructor sets up a Kafka
@@ -124,11 +125,12 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
    *                producer, including topics, component name, and Kafka configurations.
    */
   public KafkaLocalProxy(ActorContext<DevsMessage> context, ProxyProperties props) {
-    super(context, props.componentName(), props.producerTopic(), props.kafkaProducerConfig());
+    super(context, props.remoteComponentName(), props.producerTopic(), props.kafkaProducerConfig());
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(props.kafkaConsumerConfig(), new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
-    this.componentName = props.componentName();
+    this.localComponentName = props.localComponentName();
+    this.remoteComponentName = props.remoteComponentName();
 
     // Using a Kafka consumer from the Pekko Kafka project because this consumer
     // does a better job of managing
@@ -214,7 +216,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
       System.exit(1);
     }
     if (localParentCoordinator.isPresent()) {
-      if (devsMessage.getReceiverId().equals(componentName)) {
+      if (devsMessage.getReceiverId().equals(localComponentName)) {
         localParentCoordinator.get().tell(devsMessage);        
       } else {
         getContext().getLog().debug("Received message for another component, ignoring: {}", devsMessage);

@@ -252,6 +252,7 @@ public class PDevsCoordinator<T extends SimTime>
    * @return The updated behavior of this actor after processing the {@code NextTime} message.
    */
   Behavior<DevsMessage> onNextInternalTimeReport(NextInternalTimeReport<T> nextInternalTimeReport) {
+    getContext().getLog().debug("Received NextInternalTimeReport from {}", nextInternalTimeReport.getSenderId());
     nextTimeMap.put(nextInternalTimeReport.getSenderId(), nextInternalTimeReport.getNextInternalTime());
 
     // If we have all next time messages from models, the next time if the min
