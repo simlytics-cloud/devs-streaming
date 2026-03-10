@@ -53,8 +53,8 @@ The interaction between the models is managed by **couplings** using the `PDevsC
 
 1. The `PowerOfTwoGenerator` produces numbers and words based on a pre-defined schedule.
 2. The `LogBaseTwoCalculatorModel`:
-    - Receives numerical input and processes it to compute logarithmic results.
-    - Transforms textual words into their corresponding logarithmic equivalents.
+    - Receives numerical input and processes it to compute logarithmic results
+    - Transforms textual words into their corresponding logarithmic equivalents
 3. The `TestAcceptor` validates the processed outputs from the `LogBaseTwoCalculatorModel`.
 4. Couplings are defined within the `PDevsCouplings` class to manage the exchange of data.
 
