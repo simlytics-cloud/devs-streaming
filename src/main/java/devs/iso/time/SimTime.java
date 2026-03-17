@@ -26,7 +26,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  * subtraction, and comparison operations.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "timeType")
-@JsonSubTypes({@Type(value = LongSimTime.class), @Type(value = DoubleSimTime.class)})
+@JsonSubTypes({@Type(value = LongSimTime.class), @Type(value = DoubleSimTime.class),
+    @Type(value = LongBranchTime.class), @Type(value = DoubleBranchTime.class)})
 public abstract class SimTime implements Comparable<SimTime> {
 
   public abstract SimTime plus(SimTime operand);

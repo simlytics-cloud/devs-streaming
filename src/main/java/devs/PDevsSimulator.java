@@ -59,6 +59,7 @@ public class PDevsSimulator<T extends SimTime, S,
   protected T transitionTime;
   protected ActorRef<DevsMessage> parent;
   protected String parentId;
+
   protected String simulationId;
 
   protected final M devsModel;
@@ -354,6 +355,14 @@ public class PDevsSimulator<T extends SimTime, S,
 
   public ActorRef<DevsMessage> getActorRef() {
     return getContext().getSelf();
+  }
+
+  public String getSimulationId() {
+    return simulationId;
+  }
+
+  public T getTransitionTime() {
+    return transitionTime;
   }
 
 
