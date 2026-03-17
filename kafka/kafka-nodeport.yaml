@@ -1,5 +1,0 @@
-externalAccess.enabled: true
-externalAccess.service.type: NodePort
-externalAccess.autoDiscovery.enabled: true
-serviceAccount.create: true
-rbac.create: true
