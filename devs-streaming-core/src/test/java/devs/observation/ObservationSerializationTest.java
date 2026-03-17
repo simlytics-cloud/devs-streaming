@@ -14,7 +14,7 @@
  *
  */
 
-package devs.iso.log;
+package devs.observation;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,10 +24,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.time.LongSimTime;
 import devs.msg.Branch;
 import devs.msg.Run;
+import devs.observation.DevsObservationMessage;
 import devs.utils.DevsObjectMapper;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
@@ -88,7 +88,7 @@ public class ObservationSerializationTest {
 
     String json = objectMapper.writeValueAsString(observation);
     // Use DevsLogMessage to test polymorphic deserialization
-    DevsLogMessage deserializedMsg = objectMapper.readValue(json, DevsLogMessage.class);
+    DevsObservationMessage deserializedMsg = objectMapper.readValue(json, DevsObservationMessage.class);
 
     assertTrue(deserializedMsg instanceof Observation);
     Observation<LongSimTime, SamplePayload> deserialized = (Observation<LongSimTime, SamplePayload>) deserializedMsg;

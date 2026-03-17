@@ -14,19 +14,22 @@
  *
  */
 
-package devs.iso.log;
+package devs.observation;
 
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import devs.msg.Branch;
+import devs.msg.Run;
+
 
 
 /**
  * Class used to serialize messages by a DevsLoggingActor.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-@JsonSubTypes({@Type(value = Observation.class), @Type(value = StopLogger.class)})
-public abstract interface DevsLogMessage {
+@JsonSubTypes({@Type(value = Observation.class), @Type(value = Run.class), @Type(value = Branch.class), @Type(value = StopLogger.class)})
+public abstract interface DevsObservationMessage {
 
 }

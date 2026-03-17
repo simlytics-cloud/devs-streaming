@@ -38,7 +38,7 @@ import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
 import devs.iso.DevsMessage;
 import devs.iso.SimulationInitMessage;
-import devs.iso.log.PekkoReceptionistListingResponse;
+import devs.observation.PekkoReceptionistListingResponse;
 import devs.iso.time.SimTime;
 
 /**

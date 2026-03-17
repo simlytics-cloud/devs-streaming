@@ -18,6 +18,7 @@ package devs.msg;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import devs.observation.DevsObservationMessage;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
@@ -29,7 +30,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = Run.class)
 @JsonDeserialize(as = Run.class)
-public abstract class AbstractRun {
+public abstract class AbstractRun implements DevsObservationMessage {
 
   /**
    * Unique identifier for the run (UUID).

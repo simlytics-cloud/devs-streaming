@@ -10,7 +10,6 @@ This architecture defines a high-performance, data-efficient method for capturin
 | :--- | :--- |
 | **Observation** | A single, time-stamped capture of data from a model. It represents the "fact" that occurred at logical time *T* in a specific branch. |
 | **ObservationType** | Defines the structure, fields, and versioning of a specific kind of observation (e.g., `UnitPosition`, `BatteryStatus`). It may include a type identifier to facilitate deserialization in specific languages or frameworks. |
-| **ObservationPort** | The DEVS output port through which `Observation` objects are emitted. |
 | **ObservationFactory** | The component or logic responsible for transforming internal `ModelState` into a structured `Observation` according to an `ObservationType`. |
 | **ObservationArchive** | The persistent storage where all observations of a certain type are stored for a given run (e.g., a database table, collection, or time-series bucket). |
 | **Observation Context** | The combination of `runId` and `branchId` that uniquely identifies the timeline of an observation. |
@@ -20,9 +19,9 @@ This architecture defines a high-performance, data-efficient method for capturin
 1.  **Determinism-Based Storage:** Instead of saving the entire internal state of every model at every step, we only store:
     *   **Minimal Specification:** Initial conditions, random seeds, and external branch decisions.
     *   **Observations:** The "observable" outputs needed for visualization, analysis, or playback.
-2.  **Pure DEVS Observation:** Observation is a first-class citizen. Models emit observations through dedicated `ObservationPorts` during their output function ($\lambda$).
+2.  **Pure DEVS Observation:** Observation is a first-class citizen. Models emit observations through dedicated `Ports` during their output function ($\lambda$).
 3.  **Asynchronous Persistence:** To prevent I/O bottlenecks, observations are passed to an `Observer` model that bridges the simulation to an asynchronous execution environment (e.g., an Actor System, Message Queue, Thread Pool, or non-blocking I/O service) for persistence writes. This ensures that slow I/O does not block simulation logical time.
-4.  **Heterogeneous Observation:** Multiple observers can be attached to the same `ObservationPort`. This allows simultaneous storage to multiple backends (e.g., MongoDB for history, SQL for relational analysis, and a real-time web socket for live monitoring).
+4.  **Heterogeneous Observation:** Multiple observers can be attached to the same `Port`. This allows simultaneous storage to multiple backends (e.g., MongoDB for history, SQL for relational analysis, and a real-time web socket for live monitoring).
 5.  **Parallelization of Writes:** By using asynchronous bridges, persistence operations can be parallelized across multiple workers or services, optimizing the overall throughput of the simulation environment.
 6.  **Branching Timeline Model:** Simulations can "fork" into multiple alternate timelines. Each branch is identified by a `branchId` and its parent's lineage.
 7.  **Flat Run Support:** For simulations without branching, a default "root" or null `branchId` is used, ensuring the architecture is usable for 90% of standard simulation cases without extra overhead.
@@ -149,7 +148,7 @@ Observations of a specific type (e.g., `Observation_UnitPosition`) stored in the
 
 1.  **Model Logic:** The DEVS model updates its internal state during a transition.
 2.  **Production:** When an observation is required, the **ObservationFactory** creates an **Observation** from the state.
-3.  **Emission:** The model emits the **Observation** via its **ObservationPort**.
+3.  **Emission:** The model emits the **Observation** via its dedicated **Port**.
 4.  **Routing:** The **Simulation Coordinator** routes the message to one or more **Observers** (e.g., MongoDB, SQL, or Real-Time).
 5.  **Asynchronous Bridge:** Each **Observer** performs a "fire-and-forget" call to its respective persistence service or handler (e.g., `PersistenceHandler.send(observation)`).
 6.  **Persistence:** The target service writes the **Observation** to the corresponding **ObservationArchive** asynchronously.

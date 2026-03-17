@@ -14,7 +14,7 @@
  *
  */
 
-package devs.iso.log;
+package devs.observation;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -29,10 +29,11 @@ import org.immutables.value.Value;
  * @param <P> The observation payload type.
  */
 @Value.Immutable
+@Value.Style(typeImmutable = "*")
 @JsonSerialize(as = Observation.class)
 @JsonDeserialize(as = Observation.class)
 public abstract class AbstractObservation<T extends SimTime, P>
-    implements TimedDevsMessage<T>, DevsLogMessage {
+    implements TimedDevsMessage<T>, DevsObservationMessage {
 
   /**
    * Reference to the parent run.

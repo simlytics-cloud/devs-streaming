@@ -7,7 +7,7 @@
     <parent>
         <groupId>cloud.simlytics</groupId>
         <artifactId>devs-streaming-parent</artifactId>
-        <version>3.0</version>
+        <version>4.0</version>
     </parent>
 
     <artifactId>devs-observation-mongodb</artifactId>
@@ -17,7 +17,34 @@
             <groupId>cloud.simlytics</groupId>
             <artifactId>devs-streaming-core</artifactId>
         </dependency>
-        <!-- MongoDB Java Driver will be added here in the future -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-reactivestreams</artifactId>
+            <version>${mongodb.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-actor-typed_3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jdk8</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pekko</groupId>
+            <artifactId>pekko-actor-testkit-typed_${scala.binary.version}</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>6.0.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

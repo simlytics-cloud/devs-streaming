@@ -22,33 +22,31 @@ import devs.PDevsSimulator;
 import devs.RootCoordinator;
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
+import devs.iso.PortValue;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
-import devs.iso.PortValue;
 import devs.iso.time.LongSimTime;
 import devs.simulation.recorder.RecorderModel;
-import example.generator.GeneratorModel;
+import example.generator.ScheduledGeneratorModel;
 import example.storage.StorageModel;
 import example.storage.StorageState;
 import example.storage.StorageStateEnum;
-import java.util.Arrays;
-import java.util.Collections;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Tests a simulation using the Parallel DEVS version of the components.
+ * Tests a simulation using the {@link ScheduledGeneratorModel} version of the components.
  * It verifies the integration of RootCoordinator, PDEVSCoordinator, and PDEVSSimulators.
  */
-public class PDevsSimulationTest {
+public class ScheduledDevsModelSimulationTest {
 
   static final ActorTestKit testKit = ActorTestKit.create();
   static final String generatorName = "generator";
@@ -63,11 +61,11 @@ public class PDevsSimulationTest {
    * Verifies the simulation behavior by checking initialization and transition messages.
    */
   @Test
-  @DisplayName("Parallel DEVS Simulation Test")
+  @DisplayName("Parallel DEVS Simulation with Scheduled Models")
   void parallelDevsSimulationTest() throws InterruptedException {
 
     ActorRef<DevsMessage> generatorSim = testKit.spawn(PDevsSimulator.create(
-            new GeneratorModel(0, generatorName), LongSimTime.create(0)));
+            new ScheduledGeneratorModel(0, generatorName), LongSimTime.create(0)));
 
     ActorRef<DevsMessage> storageSim = testKit.spawn(PDevsSimulator.create(
             new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
@@ -92,9 +90,10 @@ public class PDevsSimulationTest {
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(RootCoordinator.create(LongSimTime.create(2), coordinator, "genStoreCoupled"));
+
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("PDevsSimulationTest")
+        .simulationId("PendingOutputSimulationTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId("root")

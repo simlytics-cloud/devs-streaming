@@ -14,7 +14,7 @@
  *
  */
 
-package devs.iso.log;
+package devs.observation;
 
 import devs.iso.DevsMessage;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;

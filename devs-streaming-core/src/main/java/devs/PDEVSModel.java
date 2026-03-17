@@ -17,7 +17,7 @@
 package devs;
 
 import devs.iso.DevsExternalMessage;
-import devs.iso.log.PekkoReceptionistListingResponse;
+import devs.observation.PekkoReceptionistListingResponse;
 import devs.iso.time.SimTime;
 
 import org.slf4j.Logger;

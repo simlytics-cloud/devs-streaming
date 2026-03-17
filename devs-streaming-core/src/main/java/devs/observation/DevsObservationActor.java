@@ -14,9 +14,8 @@
  *
  */
 
-package devs;
+package devs.observation;
 
-import devs.iso.log.StopLogger;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import org.apache.pekko.actor.typed.Behavior;
@@ -25,80 +24,78 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
-import org.apache.pekko.actor.typed.receptionist.Receptionist;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import devs.iso.log.DevsLogMessage;
 import devs.utils.DevsObjectMapper;
 
 /**
- * A utility actor to serialize log messages and write them to an ouput stream.
+ * A utility actor to serialize observation messages and write them to an ouput stream.
  */
-public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
+public class DevsObservationActor extends AbstractBehavior<DevsObservationMessage> {
 
   private final PrintStream printStream;
   private final ObjectMapper objectMapper;
   private final String runId;
 
   /**
-   * Factory class for creating instances of a DevsLoggingActor Behavior. This factory aids in
-   * creating actor behaviors that serialize DEVS log messages and write them to a specified output
+   * Factory class for creating instances of a DevsObservationActor Behavior. This factory aids in
+   * creating actor behaviors that serialize DEVS observation messages and write them to a specified output
    * stream with an associated run identifier.
    */
-  public static class DevsLoggingActorFactory {
+  public static class DevsObservationActorFactory {
 
     protected final OutputStream outputStream;
     protected final String runId;
 
     /**
-     * Constructs a DevsLoggingActorFactory with the provided output stream and run identifier.
+     * Constructs a DevsObservationActorFactory with the provided output stream and run identifier.
      *
-     * @param outputStream the output stream where DEVS log messages will be written
+     * @param outputStream the output stream where DEVS observation messages will be written
      * @param runId        the identifier associated with the current simulation run
      */
-    public DevsLoggingActorFactory(OutputStream outputStream, String runId) {
+    public DevsObservationActorFactory(OutputStream outputStream, String runId) {
       this.outputStream = outputStream;
       this.runId = runId;
     }
 
     /**
-     * Creates a new behavior for the DevsLoggingActor to handle and process {@link DevsLogMessage}
-     * instances. This behavior enables serialization of DEVS log messages and directs them to the
+     * Creates a new behavior for the DevsObservationActor to handle and process {@link DevsObservationMessage}
+     * instances. This behavior enables serialization of DEVS observation messages and directs them to the
      * specified output stream with an associated run identifier.
      *
-     * @return a {@link Behavior} instance configured to process {@link DevsLogMessage} objects
-     * using a DevsLoggingActor.
+     * @return a {@link Behavior} instance configured to process {@link DevsObservationMessage} objects
+     * using a DevsObservationActor.
      */
-    public Behavior<DevsLogMessage> createDevsLogMessageBehavior() {
-      return DevsLoggingActor.create(outputStream, runId);
+    public Behavior<DevsObservationMessage> createObservationBehavior() {
+      return DevsObservationActor.create(outputStream, runId);
     }
 
   }
 
   /**
-   * Creates a behavior for a DevsLoggingActor.
+   * Creates a behavior for a DevsObservationActor.
    *
-   * @param outputStream the OutputStream where log messages will be written
+   * @param outputStream the OutputStream where observation messages will be written
    * @param runId        the unique identifier for this simulation run
-   * @return a behavior instance for the DevsLoggingActor
+   * @return a behavior instance for the DevsObservationActor
    */
-  public static Behavior<DevsLogMessage> create(OutputStream outputStream, String runId) {
+  public static Behavior<DevsObservationMessage> create(OutputStream outputStream, String runId) {
     return Behaviors.setup(context -> {
-      return new DevsLoggingActor(context, outputStream, runId);
+      return new DevsObservationActor(context, outputStream, runId);
     });
   }
 
 
   /**
-   * Creates a DevsLoggingActor.
+   * Creates a DevsObservationActor.
    *
    * @param context      the actor context
-   * @param outputStream to OutputStream where messages will be logged
+   * @param outputStream to OutputStream where messages will be observed
    * @param runId        the unique identifier for this simulation run
    */
-  public DevsLoggingActor(ActorContext<DevsLogMessage> context, OutputStream outputStream,
-      String runId) {
+  public DevsObservationActor(ActorContext<DevsObservationMessage> context, OutputStream outputStream,
+                              String runId) {
     super(context);
     this.printStream = new PrintStream(outputStream);
     this.objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -107,30 +104,30 @@ public class DevsLoggingActor extends AbstractBehavior<DevsLogMessage> {
   }
 
   @Override
-  public Receive<DevsLogMessage> createReceive() {
-    ReceiveBuilder<DevsLogMessage> builder = newReceiveBuilder();
-    builder.onMessage(DevsLogMessage.class, this::onDevsLogMessage);
+  public Receive<DevsObservationMessage> createReceive() {
+    ReceiveBuilder<DevsObservationMessage> builder = newReceiveBuilder();
+    builder.onMessage(DevsObservationMessage.class, this::onObservationMessage);
     return builder.build();
   }
 
   /**
-   * Handles a DevsLogMessage by either stopping the logger when a StopLogger message is received or
-   * serializing and printing the log message.
+   * Handles a DevsObservationMessage by either stopping the observation when a StopLogger message is received or
+   * serializing and printing the observation message.
    *
-   * @param devsLogMessage the logging message to process; it may be either a message to stop
-   *                       logging or another log message to handle
+   * @param devsObservationMessage the observation message to process; it may be either a message to stop
+   *                       observation or another observation message to handle
    * @return the updated behavior of the actor; it returns {@code Behaviors.stopped()} for a
    * StopLogger message or {@code Behaviors.same()} for other messages
    * @throws JsonProcessingException if there is an error during message serialization
    */
-  protected Behavior<DevsLogMessage> onDevsLogMessage(DevsLogMessage devsLogMessage)
+  protected Behavior<DevsObservationMessage> onObservationMessage(DevsObservationMessage devsObservationMessage)
       throws JsonProcessingException {
-    if (devsLogMessage instanceof StopLogger) {
+    if (devsObservationMessage instanceof StopLogger) {
       printStream.flush();
       printStream.close();
       return Behaviors.stopped();
     } else {
-      String output = objectMapper.writeValueAsString(devsLogMessage);
+      String output = objectMapper.writeValueAsString(devsObservationMessage);
       printStream.println(output);
       return Behaviors.same();
     }

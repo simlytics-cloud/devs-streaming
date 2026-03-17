@@ -17,7 +17,7 @@
 package example;
 
 import devs.iso.SimulationInit;
-import java.util.Collections;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -30,14 +30,13 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.apache.pekko.actor.typed.javadsl.Receive;
 import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
-import devs.DevsLoggingActor;
+import devs.observation.DevsObservationActor;
 import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.RootCoordinator;
-import devs.PDevsSimulator;
 import devs.iso.DevsMessage;
-import devs.iso.log.DevsLogMessage;
-import devs.iso.log.StopLogger;
+import devs.observation.DevsObservationMessage;
+import devs.observation.StopLogger;
 import devs.iso.time.LongSimTime;
 import example.generator.GeneratorModel;
 import example.storage.StorageModel;
@@ -114,7 +113,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    * monitored for lifecycle changes. When the root coordinator actor is terminated, the
    * {@code loggingActor} is also stopped as part of the cleanup process.
    */
-  ActorRef<DevsLogMessage> loggingActor;
+  ActorRef<DevsObservationMessage> loggingActor;
 
   /**
    * Creates a receive handler for the {@code GenStoreApp} interface.
@@ -157,7 +156,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
   protected Behavior<GenStoreApp> onStart(GenStoreStart start) {
     ActorContext<GenStoreApp> context = this.getContext();
     loggingActor =
-        context.spawn(DevsLoggingActor.create(System.out, UUID.randomUUID().toString()), "logger");
+        context.spawn(DevsObservationActor.create(System.out, UUID.randomUUID().toString()), "logger");
 
     context.watch(loggingActor);
 

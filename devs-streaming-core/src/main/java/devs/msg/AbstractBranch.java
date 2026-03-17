@@ -18,6 +18,7 @@ package devs.msg;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import devs.observation.DevsObservationMessage;
 import java.util.Optional;
 import org.immutables.value.Value;
 
@@ -27,7 +28,7 @@ import org.immutables.value.Value;
 @Value.Immutable
 @JsonSerialize(as = Branch.class)
 @JsonDeserialize(as = Branch.class)
-public abstract class AbstractBranch {
+public abstract class AbstractBranch implements DevsObservationMessage {
 
   /**
    * Unique identifier for the branch (UUID).

@@ -14,7 +14,7 @@
  *
  */
 
-package devs.iso.log;
+package devs.observation;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -24,8 +24,9 @@ import org.immutables.value.Value;
  * Message used to request a logger to stop its operations and close any resources.
  */
 @Value.Immutable
+@Value.Style(typeImmutable = "*")
 @JsonSerialize(as = StopLogger.class)
 @JsonDeserialize(as = StopLogger.class)
-public abstract class AbstractStopLogger implements DevsLogMessage {
+public abstract class AbstractStopLogger implements DevsObservationMessage {
 
 }
