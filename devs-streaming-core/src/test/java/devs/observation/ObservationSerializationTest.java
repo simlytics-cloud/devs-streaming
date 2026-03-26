@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.time.LongSimTime;
 import devs.msg.Branch;
 import devs.msg.Run;
-import devs.observation.DevsObservationMessage;
 import devs.utils.DevsObjectMapper;
 import java.time.Instant;
 import java.util.Map;
@@ -38,7 +37,7 @@ public class ObservationSerializationTest {
   @Test
   public void testRunSerialization() throws JsonProcessingException {
     Run run = Run.builder()
-        .id(UUID.randomUUID().toString())
+        ._id(UUID.randomUUID().toString())
         .name("Test Run")
         .startTime(Instant.now())
         .status(Run.RunStatus.PENDING)
@@ -48,7 +47,7 @@ public class ObservationSerializationTest {
     String json = objectMapper.writeValueAsString(run);
     Run deserialized = objectMapper.readValue(json, Run.class);
 
-    assertEquals(run.getId(), deserialized.getId());
+    assertEquals(run._id(), deserialized._id());
     assertEquals(run.getName(), deserialized.getName());
     assertEquals(run.getStatus(), deserialized.getStatus());
     assertEquals(run.getConfig().get("seed").toString(), deserialized.getConfig().get("seed").toString());
@@ -57,7 +56,7 @@ public class ObservationSerializationTest {
   @Test
   public void testBranchSerialization() throws JsonProcessingException {
     Branch branch = Branch.builder()
-        .id(UUID.randomUUID().toString())
+        ._id(UUID.randomUUID().toString())
         .runId(UUID.randomUUID().toString())
         .forkTime(100.0)
         .parentBranchId(UUID.randomUUID().toString())
@@ -67,7 +66,7 @@ public class ObservationSerializationTest {
     String json = objectMapper.writeValueAsString(branch);
     Branch deserialized = objectMapper.readValue(json, Branch.class);
 
-    assertEquals(branch.getId(), deserialized.getId());
+    assertEquals(branch._id(), deserialized._id());
     assertEquals(branch.getRunId(), deserialized.getRunId());
     assertEquals(branch.getForkTime(), deserialized.getForkTime());
     assertEquals(branch.getParentBranchId(), deserialized.getParentBranchId());

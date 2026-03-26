@@ -20,6 +20,8 @@ import devs.iso.PortValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+
+import org.immutables.value.Generated;
 import org.immutables.value.Value;
 
 
@@ -91,8 +93,9 @@ public class ImmutablePort<I> extends Port<I> {
    * @return true if the class is considered immutable; false otherwise
    */
   public static boolean isImmutable(Class<?> clazz) {
-    // Check if the class implements the Immutable interface
-    if (Immutable.class.isAssignableFrom(clazz)) {
+    // Check if the class has the immutables Generated annotation
+    Generated annotation = clazz.getAnnotation(Generated.class);
+    if (annotation != null && "Immutables".equals(annotation.generator())) {
       return true;
     }
 

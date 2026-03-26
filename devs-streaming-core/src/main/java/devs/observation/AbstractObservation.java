@@ -29,11 +29,20 @@ import org.immutables.value.Value;
  * @param <P> The observation payload type.
  */
 @Value.Immutable
-@Value.Style(typeImmutable = "*")
+@Value.Style(typeImmutable = "*", get = {"get*", "is*", "*"})
 @JsonSerialize(as = Observation.class)
 @JsonDeserialize(as = Observation.class)
 public abstract class AbstractObservation<T extends SimTime, P>
     implements TimedDevsMessage<T>, DevsObservationMessage {
+
+  /**
+   * Unique identifier for the observation (UUID).
+   */
+  @Value.Default
+  @com.fasterxml.jackson.annotation.JsonProperty("_id")
+  public String _id() {
+    return java.util.UUID.randomUUID().toString();
+  }
 
   /**
    * Reference to the parent run.

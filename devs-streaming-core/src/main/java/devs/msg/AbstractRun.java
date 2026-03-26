@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import devs.observation.DevsObservationMessage;
 import java.time.Instant;
 import java.util.Map;
-import java.util.Optional;
+
 import org.immutables.value.Value;
 
 /**
@@ -35,7 +35,8 @@ public abstract class AbstractRun implements DevsObservationMessage {
   /**
    * Unique identifier for the run (UUID).
    */
-  public abstract String getId();
+  @com.fasterxml.jackson.annotation.JsonProperty("_id")
+  public abstract String _id();
 
   /**
    * Human-readable name of the simulation run.

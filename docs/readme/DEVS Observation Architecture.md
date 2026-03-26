@@ -13,6 +13,7 @@ This architecture defines a high-performance, data-efficient method for capturin
 | **ObservationFactory** | The component or logic responsible for transforming internal `ModelState` into a structured `Observation` according to an `ObservationType`. |
 | **ObservationArchive** | The persistent storage where all observations of a certain type are stored for a given run (e.g., a database table, collection, or time-series bucket). |
 | **Observation Context** | The combination of `runId` and `branchId` that uniquely identifies the timeline of an observation. |
+| **Observation Catalog** | A registry that defines all available `ObservationTypes`, their human-readable names, categories, and physical storage locations (archives). |
 
 ## Architectural Principles
 
@@ -89,6 +90,25 @@ To ensure data integrity and facilitate automated validation, the following JSON
 }
 ```
 
+### 4. Observation Type Catalog Schema (`observation_type_catalog.schema.json`)
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ObservationTypeEntry",
+  "type": "object",
+  "properties": {
+    "typeId": { "type": "string", "description": "Unique identifier (e.g., 'Observation_UnitPosition')" },
+    "archiveName": { "type": "string", "description": "The name of the database table/collection (e.g., 'obs_unit_positions')" },
+    "metadata": {
+      "type": "object",
+      "description": "Optional generic metadata for UI hints (e.g., displayName, category, icon)",
+      "additionalProperties": true
+    }
+  },
+  "required": ["typeId", "archiveName"]
+}
+```
+
 ## Data Store Schemas (Persistence Layer)
 
 The architecture is agnostic to the underlying persistence technology. Below are examples of how the core entities are represented, using a document-oriented structure (like MongoDB) for illustration.
@@ -139,6 +159,22 @@ Observations of a specific type (e.g., `Observation_UnitPosition`) stored in the
     "lon": -0.1278,
     "alt": 150.0,
     "heading": 90.0
+  }
+}
+```
+
+### 4. `observation_type_catalog` (Sample Record)
+Defines the metadata for an observation type.
+
+```json
+{
+  "typeId": "Observation_UnitPosition",
+  "archiveName": "obs_unit_positions",
+  "metadata": {
+    "displayName": "Unit Position",
+    "category": "Entity",
+    "icon": "mdi-map-marker",
+    "schemaId": "unit_position.schema.json"
   }
 }
 ```

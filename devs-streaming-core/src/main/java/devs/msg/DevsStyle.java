@@ -34,7 +34,7 @@ import org.immutables.value.Value;
  * framework's operation.
  */
 @Target({ElementType.PACKAGE, ElementType.TYPE})
-@Value.Style(typeAbstract = "Abstract*", typeImmutable = "*", stagedBuilder = true)
+@Value.Style(typeAbstract = "Abstract*", typeImmutable = "*", stagedBuilder = true, get = {"get*", "is*", "*"})
 public @interface DevsStyle {
 
 }

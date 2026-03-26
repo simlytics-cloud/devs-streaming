@@ -33,7 +33,8 @@ public abstract class AbstractBranch implements DevsObservationMessage {
   /**
    * Unique identifier for the branch (UUID).
    */
-  public abstract String getId();
+  @com.fasterxml.jackson.annotation.JsonProperty("_id")
+  public abstract String _id();
 
   /**
    * Reference to the parent run.

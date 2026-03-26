@@ -26,6 +26,13 @@ public abstract class DevsModelTest<T extends SimTime> {
     protected abstract SimulatorProvider<T> buildDevsModelProvider();
     protected abstract PDevsCouplings buildCouplings();
 
+    /**
+     * Override this method to spawn additional actors in the experimental frame.
+     */
+    protected void spawnAdditionalActors(ActorTestKit testKit) {
+        
+    }
+
     protected void executeExperimentalFrame(T startTime, T endTime, String simulationId,
                                             long timeoutSeconds)
             throws InterruptedException {
@@ -34,6 +41,7 @@ public abstract class DevsModelTest<T extends SimTime> {
         AtomicReference<Throwable> failureRef = new AtomicReference<>();
 
         try {
+            spawnAdditionalActors(testKit);
             Generator<T> generator = buildGenerator();
             Acceptor<T, ?> acceptor = buldAcceptor(failureRef);
 
@@ -45,12 +53,12 @@ public abstract class DevsModelTest<T extends SimTime> {
             PDevsCouplings couplings = buildCouplings();
 
             CoupledModelFactory<T> coupledModelFactory =
-                    new CoupledModelFactory<>("vehicleImplTest", simulatorProviders, couplings);
+                    new CoupledModelFactory<>("devsModelTest", simulatorProviders, couplings);
 
             ActorRef<DevsMessage> testFrame =
-                    testKit.spawn(coupledModelFactory.create(startTime), "vehicleImplTest");
+                    testKit.spawn(coupledModelFactory.create(startTime), "devsModelTest");
             ActorRef<DevsMessage> rootCoordinator =
-                    testKit.spawn(RootCoordinator.create(endTime, testFrame, "vehicleImplTest"), "root");
+                    testKit.spawn(RootCoordinator.create(endTime, testFrame, "devsModelTest"), "root");
 
             rootCoordinator.tell(SimulationInit.<T>builder()
                     .eventTime(startTime)
