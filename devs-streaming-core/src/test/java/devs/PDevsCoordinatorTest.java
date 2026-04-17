@@ -128,7 +128,7 @@ public class PDevsCoordinatorTest {
 
     coordinator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -163,7 +163,7 @@ public class PDevsCoordinatorTest {
     // Root coordinator should tell imminent generator to send an output
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -209,7 +209,7 @@ public class PDevsCoordinatorTest {
     // Coordinator sends a SendOutput to the generator and the storage model
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -260,7 +260,7 @@ public class PDevsCoordinatorTest {
     // Coordinator sends a SendOutput to the imminent storage model
     coordinator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)

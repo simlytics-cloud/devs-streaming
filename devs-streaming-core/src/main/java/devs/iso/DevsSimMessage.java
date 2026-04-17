@@ -43,7 +43,7 @@ import org.jspecify.annotations.Nullable;
     @Type(value = ExecuteTransition.class)
 })
 public abstract class DevsSimMessage implements DevsMessage {
-  public abstract String getSimulationId();
+  public abstract String getSimulationRunId();
   public abstract String getMessageId();
   @Value.Derived
   public abstract SimMessageType getMessageType();

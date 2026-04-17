@@ -16,8 +16,6 @@
 
 package devs.iso;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.time.LongSimTime;
@@ -41,7 +39,7 @@ public class OutputReportTest {
     OutputReport<LongSimTime> outputReport = OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
         .payload(OutputReportPayload.builder().addOutputs(immutablePortValue).build())
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
@@ -53,7 +51,7 @@ public class OutputReportTest {
     assert outputs.get(0).getPortName().equals("customerOut");
     assert outputs.get(0).getValue() instanceof TestCustomer;
     assert ((TestCustomer) outputs.get(0).getValue()).gettEnter() == 1.0;
-    assert outputReport.getSimulationId().equals("run1");
+    assert outputReport.getSimulationRunId().equals("run1");
     assert outputReport.getMessageId().equals("id");
     assert outputReport.getSenderId().equals("irp");
     assert outputReport.getNextInternalTime().getT() == 3L;
@@ -69,7 +67,7 @@ public class OutputReportTest {
     OutputReport<LongSimTime> outputReport = OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
         .payload(OutputReportPayload.builder().addOutputs(immutablePortValue).build())
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
@@ -90,7 +88,7 @@ public class OutputReportTest {
     assert outputs.get(0).getPortName().equals("customerOut");
     assert outputs.get(0).getValue() instanceof TestCustomer;
     assert ((TestCustomer) outputs.get(0).getValue()).gettEnter() == 1.0;
-    assert deserializedOutputReport.getSimulationId().equals("run1");
+    assert deserializedOutputReport.getSimulationRunId().equals("run1");
     assert deserializedOutputReport.getMessageId().equals("id");
     assert deserializedOutputReport.getSenderId().equals("irp");
     assert deserializedOutputReport.getNextInternalTime().getT() == 3L;

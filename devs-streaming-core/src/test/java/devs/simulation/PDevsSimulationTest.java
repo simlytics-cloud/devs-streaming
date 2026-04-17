@@ -94,7 +94,7 @@ public class PDevsSimulationTest {
         testKit.spawn(RootCoordinator.create(LongSimTime.create(2), coordinator, "genStoreCoupled"));
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("PDevsSimulationTest")
+        .simulationRunId("PDevsSimulationTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId("root")

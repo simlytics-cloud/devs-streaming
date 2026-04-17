@@ -59,7 +59,7 @@ public class PDevsSimulator<T extends SimTime, S,
   protected T transitionTime;
   protected ActorRef<DevsMessage> parent;
   protected String parentId;
-  protected String simulationId;
+  protected String simulationRunId;
 
   protected final M devsModel;
   protected final ActorRef<Receptionist.Listing> listingResponseAdapter;
@@ -158,12 +158,12 @@ public class PDevsSimulator<T extends SimTime, S,
   protected Behavior<DevsMessage> onSimulationInitMessage(SimulationInitMessage<T> simulationInitMessage) {
     this.parent = simulationInitMessage.getParent();
     this.parentId = simulationInitMessage.getSimulationInit().getSenderId();
-    this.simulationId = simulationInitMessage.getSimulationInit().getSimulationId();
+    this.simulationRunId = simulationInitMessage.getSimulationInit().getSimulationRunId();
     timeNext = timeAdvance(simulationInitMessage.getSimulationInit().getEventTime());
     parent.tell(
         NextInternalTimeReport.builder()
             .eventTime(simulationInitMessage.getSimulationInit().getEventTime())
-            .simulationId(simulationId)
+            .simulationRunId(simulationRunId)
             .messageId(generateMessageId("NextInternalTimeReport"))
             .senderId(devsModel.getModelIdentifier())
             .receiverId(parentId)
@@ -193,7 +193,7 @@ public class PDevsSimulator<T extends SimTime, S,
     parent.tell(OutputReport.<T>builder()
         .eventTime(requestOutput.getEventTime())
         .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationRunId)
         .messageId(generateMessageId("OutputReport"))
         .senderId(devsModel.getModelIdentifier())
         .receiverId(parentId)
@@ -257,7 +257,7 @@ public class PDevsSimulator<T extends SimTime, S,
       timeNext = timeAdvance(time);
       parent.tell(TransitionComplete.<T>builder()
           .eventTime(time)
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("TransitionComplete"))
           .senderId(devsModel.getModelIdentifier())
           .receiverId(parentId)
@@ -344,7 +344,7 @@ public class PDevsSimulator<T extends SimTime, S,
    */
   protected Behavior<DevsMessage> onSimulationTerminate(SimulationTerminate<T> simulationTerminate) {
     parent.tell(ModelTerminated.builder()
-        .simulationId(simulationId)
+        .simulationRunId(simulationRunId)
         .messageId(generateMessageId("ModelTerminated"))
         .senderId(devsModel.getModelIdentifier())
         .receiverId(parentId)

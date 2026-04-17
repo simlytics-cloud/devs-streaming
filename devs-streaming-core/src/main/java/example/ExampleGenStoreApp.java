@@ -185,7 +185,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
 
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("GenStoreSimulation")
+        .simulationRunId("GenStoreSimulation")
         .messageId("App-SimStoreInit")
         .senderId("App")
         .receiverId("root")

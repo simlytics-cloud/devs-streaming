@@ -62,7 +62,7 @@ public abstract class DevsModelTest<T extends SimTime> {
 
             rootCoordinator.tell(SimulationInit.<T>builder()
                     .eventTime(startTime)
-                    .simulationId(simulationId)
+                    .simulationRunId(simulationId)
                     .messageId("SimulationInit")
                     .senderId("TestActor")
                     .receiverId("root")

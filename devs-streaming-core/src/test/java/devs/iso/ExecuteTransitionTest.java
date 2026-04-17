@@ -16,8 +16,6 @@
 
 package devs.iso;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.time.LongSimTime;
@@ -42,7 +40,7 @@ public class ExecuteTransitionTest {
         .payload(ExecuteTransitionPayload.builder()
             .addInputs(immutablePortValue)
             .build())
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")  
@@ -54,7 +52,7 @@ public class ExecuteTransitionTest {
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
     assert inputs.get(0).getValue() instanceof TestCustomer;
     assert ((TestCustomer) inputs.get(0).getValue()).gettEnter() == 1.0;
-    assert executeTransition.getSimulationId().equals("run1");
+    assert executeTransition.getSimulationRunId().equals("run1");
     assert executeTransition.getMessageId().equals("id");
     assert executeTransition.getSenderId().equals("irp");
     assert executeTransition.getMessageType().equals(SimMessageType.ExecuteTransition);
@@ -71,7 +69,7 @@ public class ExecuteTransitionTest {
         .payload(ExecuteTransitionPayload.builder()
             .addInputs(immutablePortValue)
             .build())
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle") 
@@ -92,7 +90,7 @@ public class ExecuteTransitionTest {
     assert inputs.get(0).getPortName().equals("TestCustomerIn");
     assert inputs.get(0).getValue() instanceof TestCustomer;
     assert ((TestCustomer) inputs.get(0).getValue()).gettEnter() == 1.0;
-    assert deserializedExecuteTransition.getSimulationId().equals("run1");
+    assert deserializedExecuteTransition.getSimulationRunId().equals("run1");
     assert deserializedExecuteTransition.getMessageId().equals("id");
     assert deserializedExecuteTransition.getSenderId().equals("irp");
     assert deserializedExecuteTransition.getMessageType().equals(SimMessageType.ExecuteTransition);
@@ -106,7 +104,7 @@ public class ExecuteTransitionTest {
         .payload(ExecuteTransitionPayload.builder()
             .addInputs(pv)
             .build())
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
@@ -127,7 +125,7 @@ public class ExecuteTransitionTest {
     assert inputs.get(0).getPortName().equals("TestInteger");
     assert inputs.get(0).getValue() instanceof Integer;
     assert ((Integer) inputs.get(0).getValue()).equals(2);
-    assert deserializedExecuteTransition.getSimulationId().equals("run1");
+    assert deserializedExecuteTransition.getSimulationRunId().equals("run1");
     assert deserializedExecuteTransition.getMessageId().equals("id");
     assert deserializedExecuteTransition.getSenderId().equals("irp");
     assert deserializedExecuteTransition.getMessageType().equals(SimMessageType.ExecuteTransition);

@@ -33,14 +33,14 @@ public class NextInternalTimeReportTest {
   public void createNextInternalTimeReport() {
     NextInternalTimeReport<LongSimTime> nextInternalTimeReport = NextInternalTimeReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
     assert nextInternalTimeReport.getEventTime().getT() == 0L;
-    assert nextInternalTimeReport.getSimulationId().equals("run1");
+    assert nextInternalTimeReport.getSimulationRunId().equals("run1");
     assert nextInternalTimeReport.getMessageId().equals("id");
     assert nextInternalTimeReport.getSenderId().equals("irp");
     assert nextInternalTimeReport.getNextInternalTime().getT() == 3L;
@@ -51,7 +51,7 @@ public class NextInternalTimeReportTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     NextInternalTimeReport<LongSimTime> nextInternalTimeReport = NextInternalTimeReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
@@ -67,7 +67,7 @@ public class NextInternalTimeReportTest {
     NextInternalTimeReport<LongSimTime> deserializedNextInternalTime = (NextInternalTimeReport<LongSimTime>)
         deserializedSimMessage;
     assert deserializedNextInternalTime.getEventTime().getT() == 0L;
-    assert deserializedNextInternalTime.getSimulationId().equals("run1");
+    assert deserializedNextInternalTime.getSimulationRunId().equals("run1");
     assert deserializedNextInternalTime.getMessageId().equals("id");
     assert deserializedNextInternalTime.getSenderId().equals("irp");
     assert deserializedNextInternalTime.getNextInternalTime().getT() == 3L;

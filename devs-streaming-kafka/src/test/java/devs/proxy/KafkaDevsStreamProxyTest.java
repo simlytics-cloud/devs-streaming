@@ -153,7 +153,7 @@ public class KafkaDevsStreamProxyTest {
     // Initialize and expect next sim time to be 1
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("KafkaDevsStreamProxyTest")
+        .simulationRunId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
         .receiverId(generatorName)
@@ -176,7 +176,7 @@ public class KafkaDevsStreamProxyTest {
     assert ("generator".equals(nextTime.getSenderId()));
     generatorProxy.tell(SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId("KafkaDevsStreamProxyTest")
+        .simulationRunId("KafkaDevsStreamProxyTest")
         .messageId("SimulationTerminate")
         .senderId("Proxy")
         .receiverId("generator")
@@ -297,7 +297,7 @@ public class KafkaDevsStreamProxyTest {
     Thread.sleep(3000);
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("KafkaDevsStreamProxyTest")
+        .simulationRunId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
         .receiverId("root")
@@ -472,7 +472,7 @@ public class KafkaDevsStreamProxyTest {
     Thread.sleep(3000);
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("KafkaDevsStreamProxyTest")
+        .simulationRunId("KafkaDevsStreamProxyTest")
         .messageId("SimulationInit")
         .senderId("Proxy")
         .receiverId("root")

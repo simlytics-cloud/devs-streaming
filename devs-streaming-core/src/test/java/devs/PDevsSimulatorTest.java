@@ -113,7 +113,7 @@ public class PDevsSimulatorTest {
     // Initialize and expect next sim time to be 1
     simulator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -128,7 +128,7 @@ public class PDevsSimulatorTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -144,7 +144,7 @@ public class PDevsSimulatorTest {
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
         .payload(ExecuteTransitionPayload.builder().build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -157,7 +157,7 @@ public class PDevsSimulatorTest {
     // Get output and expect it to be 1
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -173,7 +173,7 @@ public class PDevsSimulatorTest {
     simulator.tell(ExecuteTransition.<LongSimTime>builder()
         .eventTime(LongSimTime.create(1))
         .payload(ExecuteTransitionPayload.builder().build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("ExecuteTransition")
         .senderId("TestActor")
         .receiverId(generatorName)
@@ -187,7 +187,7 @@ public class PDevsSimulatorTest {
     // Get output and expect it to be 0
     simulator.tell(RequestOutput.<LongSimTime>builder()
         .eventTime(LongSimTime.create(2))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("RequestOutput")
         .senderId("TestActor")
         .receiverId(generatorName)

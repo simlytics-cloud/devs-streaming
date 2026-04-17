@@ -93,7 +93,7 @@ public class ScheduledDevsModelSimulationTest {
 
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId("PendingOutputSimulationTest")
+        .simulationRunId("PendingOutputSimulationTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId("root")

@@ -30,14 +30,14 @@ public class SimulationTerminateTest {
   public void createSimulationTerminate() {
     SimulationTerminate<LongSimTime> simulationTerminate = SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
         .payload(SimulationTerminatePayload.builder().reason("ended").build())
         .build();
     assert simulationTerminate.getEventTime().getT() == 0L;
-    assert simulationTerminate.getSimulationId().equals("run1");
+    assert simulationTerminate.getSimulationRunId().equals("run1");
     assert simulationTerminate.getMessageId().equals("id");
     assert simulationTerminate.getSenderId().equals("irp");
     assert simulationTerminate.getMessageType().equals(SimMessageType.SimulationTerminate);
@@ -47,7 +47,7 @@ public class SimulationTerminateTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     SimulationTerminate<LongSimTime> simulationTerminate = SimulationTerminate.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
@@ -64,7 +64,7 @@ public class SimulationTerminateTest {
         (SimulationTerminate<LongSimTime>) deserializedSimMessage;
     assert deserializedSimulationTerminate.getEventTime().getT() == 0L;
     assert deserializedSimulationTerminate.getPayload().getReason().equals("ended");
-    assert deserializedSimulationTerminate.getSimulationId().equals("run1");
+    assert deserializedSimulationTerminate.getSimulationRunId().equals("run1");
     assert deserializedSimulationTerminate.getMessageId().equals("id");
     assert deserializedSimulationTerminate.getSenderId().equals("irp");
     assert deserializedSimulationTerminate.getMessageType().equals(SimMessageType.SimulationTerminate);

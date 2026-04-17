@@ -48,7 +48,7 @@ import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
 public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
   private T time;
-  private String simulationId;
+  private String simulationRunId;
   private final T endTime;
   private final ActorRef<DevsMessage> child;
   private final String childModelId;
@@ -123,10 +123,10 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    */
   Behavior<DevsMessage> onSimulationInit(SimulationInit<T> simulationInit) {
     this.time = simulationInit.getEventTime();
-    this.simulationId = simulationInit.getSimulationId();
+    this.simulationRunId = simulationInit.getSimulationRunId();
     SimulationInit<T> rootInit = SimulationInit.<T>builder()
         .eventTime(simulationInit.getEventTime())
-        .simulationId(simulationInit.getSimulationId())
+        .simulationRunId(simulationInit.getSimulationRunId())
         .messageId(generateMessageId())
         .senderId("root")
         .receiverId(childModelId)
@@ -147,7 +147,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     time = nextInternalTimeReport.getNextInternalTime();
     child.tell(RequestOutput.<T>builder()
         .eventTime(time)
-        .simulationId(simulationId)
+        .simulationRunId(simulationRunId)
         .messageId(generateMessageId())
         .senderId("root")
         .receiverId(childModelId)
@@ -165,7 +165,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
       time = outputReport.getNextInternalTime();
       child.tell(RequestOutput.<T>builder()
           .eventTime(time)
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId())
           .senderId("root")
           .receiverId(childModelId)
@@ -173,7 +173,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
     } else {
       child.tell(SimulationTerminate.<T>builder()
           .eventTime(time)
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId())
           .senderId("root")
           .receiverId(childModelId)

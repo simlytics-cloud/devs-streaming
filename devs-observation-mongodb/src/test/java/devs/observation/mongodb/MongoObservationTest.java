@@ -154,7 +154,7 @@ public class MongoObservationTest {
         // 3. Run Simulation
         rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
                 .eventTime(LongSimTime.create(0L))
-                .simulationId("MongoObservationTest")
+                .simulationRunId("MongoObservationTest")
                 .messageId("SimulationInit")
                 .senderId("TestActor")
                 .receiverId("root")

@@ -131,7 +131,7 @@ public class ExperimentalFrameTest {
         testKit.spawn(RootCoordinator.create(endTime, testFrame, "experimentalFrameTest"), "root");
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(startTime)
-        .simulationId("ExperimentalFrameTest")
+        .simulationRunId("ExperimentalFrameTest")
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId("experimentalFrameTest")

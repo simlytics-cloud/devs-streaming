@@ -136,7 +136,7 @@ public class RootCoordinatorTest {
         testKit.spawn(RootCoordinator.create(LongSimTime.builder().t(10L).build(), probe.getRef(), "child"));
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("SimulationInit")
         .senderId("TestActor")
         .receiverId("root")
@@ -150,7 +150,7 @@ public class RootCoordinatorTest {
     assert (initSimDeserialized.getEventTime().getT() == 0L);
     rootCoordinator.tell(NextInternalTimeReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("NextInternalTimeReport")
         .senderId("TestActor")
         .receiverId("root")
@@ -164,7 +164,7 @@ public class RootCoordinatorTest {
     rootCoordinator.tell(OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(2))
         .payload(OutputReportPayload.builder().build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("OutputReport")
         .senderId("child")
         .receiverId("root")
@@ -178,7 +178,7 @@ public class RootCoordinatorTest {
     rootCoordinator.tell(OutputReport.<LongSimTime>builder()
         .eventTime(LongSimTime.create(5))
         .payload(OutputReportPayload.builder().build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("OutputReport")
         .senderId("child")
         .receiverId("root")
@@ -190,7 +190,7 @@ public class RootCoordinatorTest {
     SimulationTerminate<LongSimTime> simulationDone = (SimulationTerminate<LongSimTime>) message4;
     assert (simulationDone.getEventTime().getT() == 5L);
     rootCoordinator.tell(ModelTerminated.<LongSimTime>builder()
-        .simulationId(simulationId)
+        .simulationRunId(simulationId)
         .messageId("ModelTerminated")
         .senderId("child")
         .receiverId("root")

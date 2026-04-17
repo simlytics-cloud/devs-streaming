@@ -30,12 +30,12 @@ public class ModelTerminatedTest {
   @Test
   public void createModelTerminated() {
     ModelTerminated<LongSimTime> modelTerminated = ModelTerminated.<LongSimTime>builder()
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
         .build();
-    assert modelTerminated.getSimulationId().equals("run1");
+    assert modelTerminated.getSimulationRunId().equals("run1");
     assert modelTerminated.getMessageId().equals("id");
     assert modelTerminated.getSenderId().equals("irp");
     assert modelTerminated.getMessageType().equals(SimMessageType.ModelTerminated);
@@ -45,7 +45,7 @@ public class ModelTerminatedTest {
   @Test
   public void serializeModelTerminated() throws JsonProcessingException {
     ModelTerminated<LongSimTime> modelTerminated = ModelTerminated.<LongSimTime>builder()
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
@@ -58,7 +58,7 @@ public class ModelTerminatedTest {
     assert deserialized instanceof ModelTerminated;
     ModelTerminated<LongSimTime> deserializedModelTerminated = (ModelTerminated<LongSimTime>)
         deserialized;
-    assert deserializedModelTerminated.getSimulationId().equals("run1");
+    assert deserializedModelTerminated.getSimulationRunId().equals("run1");
     assert deserializedModelTerminated.getMessageId().equals("id");
     assert deserializedModelTerminated.getSenderId().equals("irp");
     assert deserializedModelTerminated.getMessageType().equals(SimMessageType.ModelTerminated);

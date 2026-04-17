@@ -33,14 +33,14 @@ public class SimulationInitTest {
   public void createSimulationInit() {
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
         .build();
     assert simulationInit.getEventTime().getT() == 0L;
     assert simulationInit.getReceiverId().equals("vehicle");
-    assert simulationInit.getSimulationId().equals("run1");
+    assert simulationInit.getSimulationRunId().equals("run1");
     assert simulationInit.getMessageId().equals("id");
     assert simulationInit.getSenderId().equals("irp");
     assert simulationInit.getMessageType().equals(SimMessageType.SimulationInit);
@@ -50,7 +50,7 @@ public class SimulationInitTest {
   public void serializeDeserializeSimulationInit() throws JsonProcessingException {
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
@@ -65,14 +65,14 @@ public class SimulationInitTest {
     SimulationInit<LongSimTime> deserializedSimulationInit = (SimulationInit<LongSimTime>) deserializedSimMessage;
     assert deserializedSimulationInit.getEventTime().getT() == 0L;
     assert deserializedSimulationInit.getReceiverId().equals("vehicle");
-    assert deserializedSimulationInit.getSimulationId().equals("run1");
+    assert deserializedSimulationInit.getSimulationRunId().equals("run1");
     assert deserializedSimulationInit.getMessageId().equals("id");
     assert deserializedSimulationInit.getSenderId().equals("irp");
 
     // Try with a Double value
     SimulationInit<DoubleSimTime> doubleSimulationInit = SimulationInit.<DoubleSimTime>builder()
         .eventTime(DoubleSimTime.create(0.5))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("vehicle")
@@ -85,7 +85,7 @@ public class SimulationInitTest {
     assert deserializedSimulationInitDouble.getEventTime() instanceof DoubleSimTime;
     assertEquals(0.5, doubleSimulationInit.getEventTime().getT(), 0.00000001);
     assert deserializedSimulationInitDouble.getReceiverId().equals("vehicle");
-    assert deserializedSimulationInitDouble.getSimulationId().equals("run1");
+    assert deserializedSimulationInitDouble.getSimulationRunId().equals("run1");
     assert deserializedSimulationInitDouble.getMessageId().equals("id");
     assert deserializedSimulationInitDouble.getSenderId().equals("irp");
     assert deserializedSimulationInit.getMessageType().equals(SimMessageType.SimulationInit);

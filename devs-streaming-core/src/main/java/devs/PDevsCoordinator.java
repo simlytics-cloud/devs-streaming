@@ -66,7 +66,7 @@ public class PDevsCoordinator<T extends SimTime>
     extends AbstractBehavior<DevsMessage> {
 
   final String modelIdentifier;
-  String simulationId;
+  String simulationRunId;
   ActorRef<DevsMessage> parent;
   String parentId;
   final Map<String, ActorRef<DevsMessage>> modelSimulators;
@@ -191,7 +191,7 @@ public class PDevsCoordinator<T extends SimTime>
   private Behavior<DevsMessage> onSimulationInit(SimulationInitMessage<T> tSimulationInitMessage) {
     this.parent = tSimulationInitMessage.getParent();
     this.parentId = tSimulationInitMessage.getSimulationInit().getSenderId();
-    this.simulationId = tSimulationInitMessage.getSimulationInit().getSimulationId();
+    this.simulationRunId = tSimulationInitMessage.getSimulationInit().getSimulationRunId();
     timeLast = tSimulationInitMessage.getSimulationInit().getEventTime();
     // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
 
@@ -199,7 +199,7 @@ public class PDevsCoordinator<T extends SimTime>
         (modelId, model) -> {
           SimulationInit<T> coordinatorInit = SimulationInit.<T>builder()
               .eventTime(tSimulationInitMessage.getSimulationInit().getEventTime())
-              .simulationId(tSimulationInitMessage.getSimulationInit().getSimulationId())
+              .simulationRunId(tSimulationInitMessage.getSimulationInit().getSimulationRunId())
               .messageId(generateMessageId(""))
               .senderId(modelIdentifier)
               .receiverId(modelId)
@@ -262,7 +262,7 @@ public class PDevsCoordinator<T extends SimTime>
       // timeNext);
       parent.tell(NextInternalTimeReport.<T>builder()
           .eventTime(nextInternalTimeReport.getEventTime())
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("NextTime"))
           .senderId(modelIdentifier)
           .receiverId(parentId)
@@ -304,7 +304,7 @@ public class PDevsCoordinator<T extends SimTime>
     imminentModels.forEach(m -> {
       modelSimulators.get(m).tell(RequestOutput.<T>builder()
           .eventTime(requestOutput.getEventTime())
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("SendOutput"))
           .senderId(modelIdentifier)
           .receiverId(m)
@@ -366,7 +366,7 @@ public class PDevsCoordinator<T extends SimTime>
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(timeNext)
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
-            .simulationId(simulationId)
+            .simulationRunId(simulationRunId)
             .messageId(generateMessageId("ExecuteTransition"))
             .senderId(modelIdentifier)
             .receiverId(key)
@@ -389,7 +389,7 @@ public class PDevsCoordinator<T extends SimTime>
         modelSimulators.get(modelId).tell(ExecuteTransition.<T>builder()
             .eventTime(timeNext)
             .payload(ExecuteTransitionPayload.builder().build())
-            .simulationId(simulationId)
+            .simulationRunId(simulationRunId)
             .messageId(generateMessageId("ExecuteTransition"))
             .senderId(modelIdentifier)
             .receiverId(modelId)
@@ -415,7 +415,7 @@ public class PDevsCoordinator<T extends SimTime>
     parent.tell(OutputReport.<T>builder()
         .eventTime(eventTime)
         .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
-        .simulationId(simulationId)
+        .simulationRunId(simulationRunId)
         .messageId(generateMessageId("OutputReport"))
         .senderId(modelIdentifier)
         .receiverId(parentId)
@@ -456,7 +456,7 @@ public class PDevsCoordinator<T extends SimTime>
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(executeTransition.getEventTime())
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
-            .simulationId(simulationId)
+            .simulationRunId(simulationRunId)
             .messageId(generateMessageId("ExecuteTransition"))
             .senderId(modelIdentifier)
             .receiverId(key)
@@ -476,7 +476,7 @@ public class PDevsCoordinator<T extends SimTime>
     parent.tell(
         TransitionComplete.<T>builder()
           .eventTime(time)
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("TransitionComplete"))
           .senderId(modelIdentifier)
           .receiverId(parentId)
@@ -534,7 +534,7 @@ public class PDevsCoordinator<T extends SimTime>
       awaitingTransition.add(key);
       modelSimulators.get(key).tell(SimulationTerminate.<T>builder()
           .eventTime(simulationTerminate.getEventTime())
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("SimulationTerminate"))
           .senderId(modelIdentifier)
           .receiverId(key)
@@ -558,7 +558,7 @@ public class PDevsCoordinator<T extends SimTime>
     awaitingTransition.remove(modelTerminated.getSenderId());
     if (awaitingTransition.isEmpty()) {
       parent.tell(ModelTerminated.<T>builder()
-          .simulationId(simulationId)
+          .simulationRunId(simulationRunId)
           .messageId(generateMessageId("ModelTerminated"))
           .senderId(modelIdentifier)
           .receiverId(parentId)

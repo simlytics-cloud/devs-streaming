@@ -31,14 +31,14 @@ public class TransitionCompleteTest {
   public void createTransitionComplete() {
     TransitionComplete<LongSimTime> transitionComplete = TransitionComplete.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
         .nextInternalTime(LongSimTime.create(3))
         .build();
     assert transitionComplete.getEventTime().getT() == 0L;
-    assert transitionComplete.getSimulationId().equals("run1");
+    assert transitionComplete.getSimulationRunId().equals("run1");
     assert transitionComplete.getMessageId().equals("id");
     assert transitionComplete.getSenderId().equals("irp");
     assert transitionComplete.getNextInternalTime().getT() == 3L;
@@ -49,7 +49,7 @@ public class TransitionCompleteTest {
   public void serializeDeserializeTransitionComplete() throws JsonProcessingException {
     TransitionComplete<LongSimTime> transitionComplete = TransitionComplete.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0L))
-        .simulationId("run1")
+        .simulationRunId("run1")
         .messageId("id")
         .senderId("irp")
         .receiverId("parent")
@@ -65,7 +65,7 @@ public class TransitionCompleteTest {
     TransitionComplete<LongSimTime> deserializedTransitionCompete = (TransitionComplete<LongSimTime>)
         deserializedSimMessage;
     assert deserializedTransitionCompete.getEventTime().getT() == 0L;
-    assert deserializedTransitionCompete.getSimulationId().equals("run1");
+    assert deserializedTransitionCompete.getSimulationRunId().equals("run1");
     assert deserializedTransitionCompete.getMessageId().equals("id");
     assert deserializedTransitionCompete.getSenderId().equals("irp");
     assert deserializedTransitionCompete.getNextInternalTime().getT() == 3L;
