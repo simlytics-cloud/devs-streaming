@@ -39,6 +39,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+@Disabled("Requires MongoDB instance running")
 @DisplayName("MongoDB Observation Test")
 public class MongoObservationTest {
 
