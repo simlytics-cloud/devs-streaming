@@ -42,6 +42,6 @@ public class SourceMappingResolver extends CouplingResolver {
     public List<CouplingTarget> resolve(String sender, PortValue<?> portValue) {
         // Construct the dynamic port name: "uav-01_position"
         String mappedPort = sender + separator + basePortName;
-        return List.of(CouplingTarget.of(targetModel, mappedPort));
+        return List.of(CouplingTarget.of(targetModel, portValue.withPortName(mappedPort)));
     }
 }

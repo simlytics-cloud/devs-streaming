@@ -16,6 +16,7 @@
 
 package devs.couplings;
 
+import devs.iso.PortValue;
 import org.immutables.value.Value;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -28,12 +29,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(as = ImmutableCouplingTarget.class)
 public interface CouplingTarget {
     String targetModel();
-    String targetPort();
+    PortValue<?> targetPortValue();
 
-    static CouplingTarget of(String targetModel, String targetPort) {
+    static CouplingTarget of(String targetModel, PortValue<?> targetPortValue) {
         return ImmutableCouplingTarget.builder()
                 .targetModel(targetModel)
-                .targetPort(targetPort)
+                .targetPortValue(targetPortValue)
                 .build();
     }
 }

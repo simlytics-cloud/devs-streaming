@@ -50,16 +50,16 @@ public class Couplings {
                 .findFirst()
                 .orElse(null);
 
-        List<CouplingTarget> targets;
+        List<StaticCouplingResolver.TargetMapping> mappings;
         if (existing != null && existing.resolver() instanceof StaticCouplingResolver staticResolver) {
-            targets = new ArrayList<>(staticResolver.getTargets());
+            mappings = new ArrayList<>(staticResolver.getMappings());
             rules.remove(existing);
         } else {
-            targets = new ArrayList<>();
+            mappings = new ArrayList<>();
         }
 
-        targets.add(CouplingTarget.of(targetModel, targetPort));
-        rules.add(new CouplingRule(new SourceMatchers.Literal(sourceModel), sourcePort, new StaticCouplingResolver(targets)));
+        mappings.add(new StaticCouplingResolver.TargetMapping(targetModel, targetPort));
+        rules.add(new CouplingRule(new SourceMatchers.Literal(sourceModel), sourcePort, new StaticCouplingResolver(mappings)));
     }
 
     /**

@@ -18,23 +18,28 @@ package devs.couplings;
 
 import devs.iso.PortValue;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Resolves to a fixed list of targets regardless of message content.
  */
 public class StaticCouplingResolver extends CouplingResolver {
-    private final List<CouplingTarget> targets;
+    public record TargetMapping(String targetModel, String targetPort) {}
 
-    public StaticCouplingResolver(List<CouplingTarget> targets) {
-        this.targets = List.copyOf(targets);
+    private final List<TargetMapping> mappings;
+
+    public StaticCouplingResolver(List<TargetMapping> mappings) {
+        this.mappings = List.copyOf(mappings);
     }
 
     @Override
     public List<CouplingTarget> resolve(String sender, PortValue<?> portValue) {
-        return targets;
+        return mappings.stream()
+                .map(m -> CouplingTarget.of(m.targetModel(), portValue.withPortName(m.targetPort())))
+                .collect(Collectors.toList());
     }
 
-    public List<CouplingTarget> getTargets() {
-        return targets;
+    public List<TargetMapping> getMappings() {
+        return mappings;
     }
 }

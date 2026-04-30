@@ -38,7 +38,8 @@ public class SourceMappingResolverTest {
 
         assertEquals(1, targets.size());
         assertEquals("targetModel", targets.get(0).targetModel());
-        assertEquals("senderId_basePort", targets.get(0).targetPort());
+        assertEquals("senderId_basePort", targets.get(0).targetPortValue().getPortName());
+        assertEquals("testValue", targets.get(0).targetPortValue().getValue());
     }
 
     @Test
@@ -53,7 +54,8 @@ public class SourceMappingResolverTest {
 
         assertEquals(1, targets.size());
         assertEquals("targetModel", targets.get(0).targetModel());
-        assertEquals("senderId-basePort", targets.get(0).targetPort());
+        assertEquals("senderId-basePort", targets.get(0).targetPortValue().getPortName());
+        assertEquals("testValue", targets.get(0).targetPortValue().getValue());
     }
 
     @Test

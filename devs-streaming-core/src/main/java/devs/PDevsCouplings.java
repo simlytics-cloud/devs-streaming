@@ -258,10 +258,7 @@ public class PDevsCouplings {
         continue;
       }
       for (CouplingTarget dest : destinations) {
-        String receiver = dest.targetModel();
-        String receiverPort = dest.targetPort();
-        PortValue<?> mapped = withPortName(portValue, receiverPort);
-        addInputPortValue(mapped, receiver, receiverMap);
+        addInputPortValue(dest.targetPortValue(), dest.targetModel(), receiverMap);
       }
     }
   }
@@ -316,8 +313,7 @@ public class PDevsCouplings {
         }
         for (CouplingTarget dest : destinations) {
           String receiver = dest.targetModel();
-          String receiverPort = dest.targetPort();
-          PortValue<?> mapped = withPortName(portValue, receiverPort);
+          PortValue<?> mapped = dest.targetPortValue();
           if (coupledModelName.equals(receiver)) {
             outputMessages.add(mapped);
           } else {
@@ -338,11 +334,5 @@ public class PDevsCouplings {
       portValues.add(portValue);
       receiverMap.put(receiver, portValues);
     }
-  }
-
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  private static <T> PortValue<T> withPortName(PortValue<?> original, String newPortName) {
-    // Safe by construction: only the port name changes; value type remains the same
-    return ((PortValue) original).withPortName(newPortName);
   }
 }
