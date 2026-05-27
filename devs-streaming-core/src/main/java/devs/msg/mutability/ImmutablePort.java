@@ -16,13 +16,16 @@
 package devs.msg.mutability;
 
 import devs.Port;
+import devs.TypeReference;
 import devs.iso.PortValue;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.lang.reflect.Modifier;
+import java.util.Collection;
+import java.util.Map;
 
-import org.immutables.value.Generated;
-import org.immutables.value.Value;
 
 
 /**
@@ -34,6 +37,9 @@ import org.immutables.value.Value;
  * @param <I> the immutable data type associated with the port
  */
 public class ImmutablePort<I> extends Port<I> {
+
+  private static final String IMMUTABLES_VALUE_IMMUTABLE_ANNOTATION =
+      "org.immutables.value.Value$Immutable";
 
   /**
    * Constructs an immutable port with a specified identifier and associated data type.
@@ -54,6 +60,22 @@ public class ImmutablePort<I> extends Port<I> {
     }
   }
 
+  /**
+   * Constructs an immutable port with a specified identifier and associated generic data type.
+   *
+   * @param portIdentifier the unique identifier of the port
+   * @param typeReference the generic type reference representing the data type associated with the
+   *                      port
+   * @throws IllegalArgumentException if the provided type is not immutable
+   */
+  public ImmutablePort(String portIdentifier, TypeReference<I> typeReference) {
+    super(portIdentifier, typeReference);
+    if (!isTypeImmutable(getType())) {
+      throw new IllegalArgumentException("The type " + getType().getTypeName()
+          + " must be immutable");
+    }
+  }
+
   
 
 
@@ -68,11 +90,76 @@ public class ImmutablePort<I> extends Port<I> {
    */
   @Override
   public PortValue<I> createPortValue(I value) {
-    if (!isImmutable(value.getClass())) {
+    if (!isValueImmutable(value, getType())) {
       throw new IllegalArgumentException("The class " + value.getClass().getCanonicalName()
        + " must be immutable");
     }
     return super.createPortValue(value);
+  }
+
+  private static boolean isValueImmutable(Object value, Type type) {
+    if (type instanceof ParameterizedType parameterizedType
+        && parameterizedType.getRawType() instanceof Class<?> rawClass) {
+      Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+      if (Collection.class.isAssignableFrom(rawClass) && typeArguments.length == 1) {
+        if (!(value instanceof Collection<?> collection)) {
+          return false;
+        }
+        for (Object element : collection) {
+          if (element != null && !isValueImmutable(element, typeArguments[0])) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+      if (Map.class.isAssignableFrom(rawClass) && typeArguments.length == 2) {
+        if (!(value instanceof Map<?, ?> map)) {
+          return false;
+        }
+        for (Map.Entry<?, ?> entry : map.entrySet()) {
+          if (entry.getKey() != null && !isValueImmutable(entry.getKey(), typeArguments[0])) {
+            return false;
+          }
+          if (entry.getValue() != null && !isValueImmutable(entry.getValue(), typeArguments[1])) {
+            return false;
+          }
+        }
+        return true;
+      }
+    }
+
+    return isImmutable(value.getClass());
+  }
+
+  private static boolean isTypeImmutable(Type type) {
+    if (type instanceof Class<?> clazz) {
+      if (clazz.isInterface()) {
+        return true;
+      }
+      return isImmutable(clazz);
+    }
+
+    if (type instanceof ParameterizedType parameterizedType
+        && parameterizedType.getRawType() instanceof Class<?> rawClass) {
+      Type[] typeArguments = parameterizedType.getActualTypeArguments();
+
+      if (Collection.class.isAssignableFrom(rawClass) && typeArguments.length == 1) {
+        return isTypeImmutable(typeArguments[0]);
+      }
+
+      if (Map.class.isAssignableFrom(rawClass) && typeArguments.length == 2) {
+        return isTypeImmutable(typeArguments[0]) && isTypeImmutable(typeArguments[1]);
+      }
+
+      if (rawClass.isInterface()) {
+        return true;
+      }
+      return isImmutable(rawClass);
+    }
+
+    return true;
   }
 
 
@@ -94,10 +181,6 @@ public class ImmutablePort<I> extends Port<I> {
    */
   public static boolean isImmutable(Class<?> clazz) {
     // Check if the class has the immutables Generated annotation
-    Generated annotation = clazz.getAnnotation(Generated.class);
-    if (annotation != null && "Immutables".equals(annotation.generator())) {
-      return true;
-    }
 
     // Check if the class is a known immutable type (including Enum, primitive wrappers, etc.)
     if (isKnownImmutable(clazz) || isImmutablesGeneratedClass(clazz)) {
@@ -117,11 +200,6 @@ public class ImmutablePort<I> extends Port<I> {
         return false;
       }
 
-      // For reference fields, ensure their types are also immutable
-      Class<?> fieldType = field.getType();
-      if (!fieldType.isPrimitive() && !isKnownImmutable(fieldType)) {
-        return false;
-      }
     }
 
     // If all checks pass, the class is considered immutable
@@ -171,10 +249,10 @@ public class ImmutablePort<I> extends Port<I> {
 
     // Check for the @Value.Immutable annotation on the interface or abstract class
     for (Annotation annotation : clazz.getDeclaredAnnotations()) {
-      if (annotation.annotationType().equals(Value.Immutable.class)) {
-            return true;
-          }
-        }
+      if (IMMUTABLES_VALUE_IMMUTABLE_ANNOTATION.equals(annotation.annotationType().getName())) {
+        return true;
+      }
+    }
 
     // Check the superclass or interfaces
     Class<?> superclass = clazz.getSuperclass();

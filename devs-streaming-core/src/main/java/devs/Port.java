@@ -17,6 +17,7 @@
 package devs;
 
 import devs.iso.PortValue;
+import java.lang.reflect.Type;
 import org.jspecify.annotations.NonNull;
 
 /**
@@ -29,6 +30,7 @@ public class Port<T> {
 
   private final String portName;
   protected final Class<T> clazz;
+  private final Type type;
 
   /**
    * Constructs a Port instance with a specified identifier and associated data type.
@@ -37,8 +39,24 @@ public class Port<T> {
    * @param clazz          the class type representing the data type associated with the port
    */
   public Port(String portName, Class<T> clazz) {
+    this(portName, clazz, clazz);
+  }
+
+  /**
+   * Constructs a Port instance with a specified identifier and associated generic data type.
+   *
+   * @param portName the unique identifier of the port
+   * @param typeReference the generic type reference representing the data type associated with the
+   *                      port
+   */
+  public Port(String portName, TypeReference<T> typeReference) {
+    this(portName, typeReference.getRawClass(), typeReference.getType());
+  }
+
+  private Port(String portName, Class<T> clazz, Type type) {
     this.portName = portName;
     this.clazz = clazz;
+    this.type = type;
   }
 
   @NonNull
@@ -59,5 +77,9 @@ public class Port<T> {
 
   public String getPortName() {
     return portName;
+  }
+
+  public Type getType() {
+    return type;
   }
 }
