@@ -363,6 +363,10 @@ public class PDevsCoordinator<T extends SimTime>
 
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
+        if (!modelSimulators.containsKey(key)) {
+          throw new RuntimeException("Received input for model " + key + " that is not in the modelSimulators map: "
+          + Arrays.toString(modelSimulators.keySet().toArray()));
+        }
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(timeNext)
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
@@ -453,6 +457,10 @@ public class PDevsCoordinator<T extends SimTime>
       // input
       receivers.forEach((key, value) -> {
         awaitingTransition.add(key);
+        if (!modelSimulators.containsKey(key)) {
+          throw new RuntimeException("Received input for model " + key + " that is not in the modelSimulators map: "
+          + Arrays.toString(modelSimulators.keySet().toArray()));
+        }
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(executeTransition.getEventTime())
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
