@@ -16,15 +16,14 @@
 
 package devs.proxy;
 
-import devs.iso.DevsMessage;
-import devs.iso.DevsSimMessage;
+import devs.iso.*;
+
 import java.util.Optional;
 import java.util.UUID;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import devs.SimulatorProvider;
-import devs.iso.SimulationInitMessage;
 import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import devs.utils.ModelUtils;
@@ -192,8 +191,10 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
       this.localParentCoordinator = Optional.of(initSimMessage.getParent());
     }
     // Then pass the message to super to be sent to Kafka
-    super.onDevsMessage(devsMessage);
-    return Behaviors.same();
+    if (devsMessage instanceof ModelTerminated<?> || devsMessage instanceof SimulationTerminate<?>) {
+      this.control.shutdown();
+    }
+    return super.onDevsMessage(devsMessage);
   }
 
   /**

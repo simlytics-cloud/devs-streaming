@@ -33,6 +33,8 @@ import devs.iso.SimulationTerminate;
 import devs.iso.TransitionComplete;
 import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
+
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -64,6 +66,11 @@ import org.slf4j.event.Level;
  */
 public class PDevsCoordinator<T extends SimTime>
     extends AbstractBehavior<DevsMessage> {
+
+  protected record NextInternalTimeCheck() implements DevsMessage {}
+  protected record OutputReportCheck() implements DevsMessage {}
+  protected record AwaitTransitionCheck() implements DevsMessage {}
+  protected record ModelTerminatedCheck() implements DevsMessage {}
 
   final String modelIdentifier;
   String simulationRunId;
@@ -166,14 +173,18 @@ public class PDevsCoordinator<T extends SimTime>
     ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
 
     builder.onMessage(SimulationInitMessage.class, this::onSimulationInit);
+    builder.onMessage(NextInternalTimeCheck.class, this::onNextInternalTimeCheck);
     builder.onMessage(RequestOutput.class, this::onRequestOutput);
+    builder.onMessage(OutputReportCheck.class, this::onOutputReportCheck);
     builder.onMessage(ExecuteTransition.class, this::onExecuteTransition);
     builder.onMessage(NextInternalTimeReport.class, this::onNextInternalTimeReport);
     builder.onMessage(OutputReport.class, this::onOutputReport);
     builder.onMessage(TransitionComplete.class, this::onTransitionComplete);
+    builder.onMessage(AwaitTransitionCheck.class, this::onAwaitTransitionCheck);
     builder.onMessage(SimulationTerminate.class, this::onSimulationTerminate);
     builder.onMessage(ModelTerminated.class, this::onModelTerminated);
     builder.onSignal(Terminated.class, this::onTerminated);
+    builder.onMessage(ModelTerminatedCheck.class, this::onModelTerminatedCheck);
     builder.onSignal(ChildFailed.class, this::onChildFailed);
 
     return builder.build();
@@ -206,6 +217,7 @@ public class PDevsCoordinator<T extends SimTime>
               .build();
           model.tell(new SimulationInitMessage<>(coordinatorInit, getContext().getSelf()));
         });
+    getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new NextInternalTimeCheck());
     return this;
   }
 
@@ -272,6 +284,20 @@ public class PDevsCoordinator<T extends SimTime>
     return this;
   }
 
+  Behavior<DevsMessage> onNextInternalTimeCheck(NextInternalTimeCheck nextInternalTimeCheck) {
+    if (nextTimeMap.size() < modelSimulators.size()) {
+      for (String modelId: modelSimulators.keySet()) {
+        if (!nextTimeMap.containsKey(modelId)) {
+          getContext().getLog().warn("{} waiting for next time from {}", modelIdentifier, modelId);
+           return this;
+        }
+      }
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new NextInternalTimeCheck());
+    }
+
+    return this;
+  }
+
   /**
    * Handles the `SendOutput` message for managing the output generation process within the
    * PDevsCoordinator. This involves verifying synchronization, building imminent models, and
@@ -313,6 +339,7 @@ public class PDevsCoordinator<T extends SimTime>
           );
       outputMap.put(m, Optional.empty());
     });
+    getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new OutputReportCheck());
     return this;
   }
 
@@ -358,6 +385,11 @@ public class PDevsCoordinator<T extends SimTime>
       log(Level.DEBUG, "We have all outputReport.");
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
+      if (outputCouplingMessages.getExternalOutputMessages().isEmpty() && outputCouplingMessages.getInternalMessages().isEmpty()) {
+        List<String> inputPorts = outputReport.getPayload().getOutputs().stream().map(PortValue::getPortName).toList();
+        log(Level.WARN, "Output from " + outputReport.getSenderId() + "at ports "
+                + Arrays.toString(inputPorts.toArray()) + " not handled.");
+      }
       modelOutput = outputCouplingMessages.getExternalOutputMessages();
       receivers = outputCouplingMessages.getInternalMessages();
 
@@ -408,6 +440,18 @@ public class PDevsCoordinator<T extends SimTime>
     return this;
   }
 
+  protected Behavior<DevsMessage> onOutputReportCheck(OutputReportCheck outputReportCheck) {
+    if (!haveAllOutputs()) {
+      for (String modelId: outputMap.keySet()) {
+        if (!outputMap.get(modelId).isPresent()) {
+          getContext().getLog().warn("{} waiting for outputReport from {}", modelIdentifier, modelId);
+        }
+      }
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new OutputReportCheck());
+    }
+    return this;
+  }
+
   /**
    * Sends the output data encapsulated in a ModelOutputMessage to the parent.
    *
@@ -452,6 +496,11 @@ public class PDevsCoordinator<T extends SimTime>
     } else {
       Map<String, List<PortValue<?>>> receivers =
           couplings.handleInputMessage(executeTransition.getPayload().getInputs());
+      if (receivers.isEmpty()) {
+        List<String> inputPorts = executeTransition.getPayload().getInputs().stream().map(PortValue::getPortName).toList();
+        log(Level.WARN, "Input from " + executeTransition.getSenderId() + "at ports "
+                + Arrays.toString(inputPorts.toArray()) + " not handled.");
+      }
       awaitingTransition = new ArrayList<>();
       // Send execute transition messages to those models with input generated from the coordinator
       // input
@@ -470,6 +519,7 @@ public class PDevsCoordinator<T extends SimTime>
             .receiverId(key)
             .build());
       });
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new AwaitTransitionCheck());
     }
     return this;
   }
@@ -527,6 +577,16 @@ public class PDevsCoordinator<T extends SimTime>
     return this;
   }
 
+  protected Behavior<DevsMessage> onAwaitTransitionCheck(AwaitTransitionCheck awaitTransitionCheck) {
+    if (!awaitingTransition.isEmpty()) {
+      for (String modelId: awaitingTransition) {
+        getContext().getLog().warn("{} waiting for transition from {}", modelIdentifier, modelId);
+      }
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new AwaitTransitionCheck());
+    }
+    return this;
+  }
+
   /**
    * Handles the completion of the simulation by propagating the {@code SimulationDone} message to
    * all registered model simulators. This method updates the internal state to prepare for the next
@@ -549,6 +609,7 @@ public class PDevsCoordinator<T extends SimTime>
           .payload(simulationTerminate.getPayload())
           .build());
     }
+    getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new ModelTerminatedCheck());
     return this;
   }
 
@@ -579,6 +640,16 @@ public class PDevsCoordinator<T extends SimTime>
   Behavior<DevsMessage> onTerminated(Terminated terminated) {
     getContext().getLog().warn("{} Received terminated: {}", modelIdentifier, terminated);
     return Behaviors.same();
+  }
+
+  Behavior<DevsMessage> onModelTerminatedCheck(ModelTerminatedCheck modelTerminatedCheck) {
+    if (!awaitingTransition.isEmpty()) {
+      for (String modelId: awaitingTransition) {
+        getContext().getLog().warn("{} waiting for terminations from {}", modelIdentifier, modelId);
+      }
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new ModelTerminatedCheck());
+    }
+    return this;
   }
 
   /**

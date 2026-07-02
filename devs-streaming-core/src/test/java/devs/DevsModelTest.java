@@ -16,6 +16,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class DevsModelTest<T extends SimTime> {
 
+    protected final String testFrameModelId;
+
+    protected DevsModelTest(String testFrameModelId) {
+        this.testFrameModelId = testFrameModelId;
+    }
+
     protected abstract Generator<T> buildGenerator();
 
     /**
@@ -23,7 +29,7 @@ public abstract class DevsModelTest<T extends SimTime> {
      */
     protected abstract Acceptor<T, ?> buldAcceptor(AtomicReference<Throwable> failureRef);
 
-    protected abstract SimulatorProvider<T> buildDevsModelProvider();
+    protected abstract SimulatorProvider<T> buildDevsModelProvider(String simulationRunId);
     protected abstract PDevsCouplings buildCouplings();
 
     /**
@@ -33,7 +39,7 @@ public abstract class DevsModelTest<T extends SimTime> {
         
     }
 
-    protected void executeExperimentalFrame(T startTime, T endTime, String simulationId,
+    protected void executeExperimentalFrame(T startTime, T endTime, String simulationRunId,
                                             long timeoutSeconds)
             throws InterruptedException {
 
@@ -48,21 +54,21 @@ public abstract class DevsModelTest<T extends SimTime> {
             List<SimulatorProvider<T>> simulatorProviders = new ArrayList<>();
             simulatorProviders.add(new DevsSimulatorProvider<>(generator));
             simulatorProviders.add(new DevsSimulatorProvider<>(acceptor));
-            simulatorProviders.add(buildDevsModelProvider());
+            simulatorProviders.add(buildDevsModelProvider(simulationRunId));
 
             PDevsCouplings couplings = buildCouplings();
 
             CoupledModelFactory<T> coupledModelFactory =
-                    new CoupledModelFactory<>("devsModelTest", simulatorProviders, couplings);
+                    new CoupledModelFactory<>(testFrameModelId, simulatorProviders, couplings);
 
             ActorRef<DevsMessage> testFrame =
-                    testKit.spawn(coupledModelFactory.create(startTime), "devsModelTest");
+                    testKit.spawn(coupledModelFactory.create(startTime), testFrameModelId);
             ActorRef<DevsMessage> rootCoordinator =
-                    testKit.spawn(RootCoordinator.create(endTime, testFrame, "devsModelTest"), "root");
+                    testKit.spawn(RootCoordinator.create(endTime, testFrame, testFrameModelId), "root");
 
             rootCoordinator.tell(SimulationInit.<T>builder()
                     .eventTime(startTime)
-                    .simulationRunId(simulationId)
+                    .simulationRunId(simulationRunId)
                     .messageId("SimulationInit")
                     .senderId("TestActor")
                     .receiverId("root")
