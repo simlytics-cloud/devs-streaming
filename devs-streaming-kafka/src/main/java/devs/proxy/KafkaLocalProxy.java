@@ -191,7 +191,7 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
       this.localParentCoordinator = Optional.of(initSimMessage.getParent());
     }
     // Then pass the message to super to be sent to Kafka
-    if (devsMessage instanceof ModelTerminated<?> || devsMessage instanceof SimulationTerminate<?>) {
+    if (devsMessage instanceof ModelTerminated<?>) {
       this.control.shutdown();
     }
     return super.onDevsMessage(devsMessage);

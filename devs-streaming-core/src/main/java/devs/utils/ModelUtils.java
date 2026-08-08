@@ -40,6 +40,14 @@ public class ModelUtils {
     return name.replaceAll("[^a-zA-Z0-9-_.*$+:@&=,!~';]", "");
   }
 
+  public static String toLegalActorSystemName(String name) {
+    String cleaned = name.replaceAll("[^a-zA-Z0-9_-]", "_");
+    cleaned = cleaned.replaceAll("[-_]{2,}", "_");
+    cleaned = cleaned.replaceAll("^[-_]+", "");
+
+    return cleaned.isEmpty() ? "ActorSystem" : cleaned;
+  }
+
   /**
    * Private constructor to prevent instantiation of the utility class.
    * <p>

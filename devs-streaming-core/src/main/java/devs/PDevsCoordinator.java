@@ -385,7 +385,14 @@ public class PDevsCoordinator<T extends SimTime>
       log(Level.DEBUG, "We have all outputReport.");
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
-      if (outputCouplingMessages.getExternalOutputMessages().isEmpty() && outputCouplingMessages.getInternalMessages().isEmpty()) {
+      boolean hasOutputPortValues = false;
+      for (Optional<List<PortValue<?>>> output : outputMap.values()) {
+        if (output.isPresent() && output.get().size() > 0) {
+          hasOutputPortValues = true;
+          break;
+        }
+      }
+      if (hasOutputPortValues && outputCouplingMessages.getExternalOutputMessages().isEmpty() && outputCouplingMessages.getInternalMessages().isEmpty()) {
         List<String> inputPorts = outputReport.getPayload().getOutputs().stream().map(PortValue::getPortName).toList();
         log(Level.WARN, "Output from " + outputReport.getSenderId() + "at ports "
                 + Arrays.toString(inputPorts.toArray()) + " not handled.");
@@ -638,7 +645,7 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   Behavior<DevsMessage> onTerminated(Terminated terminated) {
-    getContext().getLog().warn("{} Received terminated: {}", modelIdentifier, terminated);
+    getContext().getLog().info("{} Received terminated: {}", modelIdentifier, terminated);
     return Behaviors.same();
   }
 
