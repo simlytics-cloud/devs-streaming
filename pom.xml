@@ -13,6 +13,7 @@
         <module>devs-streaming-core</module>
         <module>devs-streaming-kafka</module>
         <module>devs-observation-mongodb</module>
+        <module>devs-observation-postgresql</module>
     </modules>
 
     <properties>
@@ -27,6 +28,7 @@
         <pekko.httpversion>1.1.0</pekko.httpversion>
         <kafka.version>3.7.0</kafka.version>
         <mongodb.version>5.3.1</mongodb.version>
+        <postgresql.version>42.7.8</postgresql.version>
     </properties>
 
     <repositories>

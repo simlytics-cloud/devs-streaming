@@ -2,36 +2,63 @@
 
 ## Overview
 
-This architecture defines a high-performance, data-efficient method for capturing and storing simulation results from a DEVS (Discrete Event System Specification) simulation. It leverages the determinism of DEVS to minimize persistent storage while providing a robust mechanism for "what-if" branching and historical replay.
+This document describes the DEVS observation architecture in three layers:
 
-## Core Terminology
+1. an implementation-neutral architecture that can be applied in different DEVS frameworks and programming languages
+2. the current DEVS Streaming Java mapping of that architecture
+3. the two current persistence implementations in this codebase: MongoDB and PostgreSQL
+
+This separation is intentional. The architecture itself is not tied to Java, actors, MongoDB, PostgreSQL, or any one DEVS library. Those technologies are the current realization used in the DEVS Streaming Framework.
+
+## Level 1: Implementation-Neutral Observation Architecture
+
+### Purpose
+
+The observation architecture defines a high-performance, data-efficient method for capturing and storing simulation results from a DEVS (Discrete Event System Specification) simulation. It leverages the determinism of DEVS to minimize persistent storage while still supporting historical replay, analysis, and what-if branching.
+
+### Core Terminology
 
 | Term | Definition |
 | :--- | :--- |
-| **Observation** | A single, time-stamped capture of data from a model. It represents the "fact" that occurred at logical time *T* in a specific branch. |
-| **ObservationType** | Defines the structure, fields, and versioning of a specific kind of observation (e.g., `UnitPosition`, `BatteryStatus`). It may include a type identifier to facilitate deserialization in specific languages or frameworks. |
-| **ObservationFactory** | The component or logic responsible for transforming internal `ModelState` into a structured `Observation` according to an `ObservationType`. |
-| **ObservationArchive** | The persistent storage where all observations of a certain type are stored for a given run (e.g., a database table, collection, or time-series bucket). |
-| **Observation Context** | The combination of `runId` and `branchId` that uniquely identifies the timeline of an observation. |
-| **Observation Catalog** | A registry that defines all available `ObservationTypes`, their human-readable names, categories, and physical storage locations (archives). |
+| **Run** | A single simulation execution context. |
+| **Branch** | A timeline within a run. A branch may fork from another branch to represent an alternate scenario. |
+| **Observation** | A time-stamped capture of model output or other observable simulation information. |
+| **ObservationType** | The logical type of an observation payload. It defines the meaning and structure of a category of observations. |
+| **ObservationFactory** | The logic that transforms model state or model output into an observation payload. |
+| **ObservationArchive** | The physical storage location for persisted observations of a given type. This may be a table, collection, bucket, stream, or other backend-specific structure. |
+| **Observation Context** | The identifying context for an observation, typically including at least `runId` and `branchId`. |
+| **Observation Catalog** | A registry of observation types and their associated physical archive locations and metadata. |
+| **Observation Sink** | A persistence component that accepts observation traffic and writes it to a target backend. |
 
-## Architectural Principles
+### Architectural Principles
 
-1.  **Determinism-Based Storage:** Instead of saving the entire internal state of every model at every step, we only store:
-    *   **Minimal Specification:** Initial conditions, random seeds, and external branch decisions.
-    *   **Observations:** The "observable" outputs needed for visualization, analysis, or playback.
-2.  **Pure DEVS Observation:** Observation is a first-class citizen. Models emit observations through dedicated `Ports` during their output function ($\lambda$).
-3.  **Asynchronous Persistence:** To prevent I/O bottlenecks, observations are passed to an `Observer` model that bridges the simulation to an asynchronous execution environment (e.g., an Actor System, Message Queue, Thread Pool, or non-blocking I/O service) for persistence writes. This ensures that slow I/O does not block simulation logical time.
-4.  **Heterogeneous Observation:** Multiple observers can be attached to the same `Port`. This allows simultaneous storage to multiple backends (e.g., MongoDB for history, SQL for relational analysis, and a real-time web socket for live monitoring).
-5.  **Parallelization of Writes:** By using asynchronous bridges, persistence operations can be parallelized across multiple workers or services, optimizing the overall throughput of the simulation environment.
-6.  **Branching Timeline Model:** Simulations can "fork" into multiple alternate timelines. Each branch is identified by a `branchId` and its parent's lineage.
-7.  **Flat Run Support:** For simulations without branching, a default "root" or null `branchId` is used, ensuring the architecture is usable for 90% of standard simulation cases without extra overhead.
+1. **Determinism-Based Storage:** Instead of storing full internal model state at every step, the architecture stores the minimum information needed to reproduce or analyze a simulation:
+   - initial conditions, seeds, and external decisions
+   - observations required for playback, visualization, or analysis
+2. **Pure DEVS Observation:** Observation is treated as a first-class concern. Models emit observations as part of their normal DEVS behavior, typically during output generation.
+3. **Asynchronous Persistence:** Observation capture should not force slow persistence operations into the simulation's logical time path. Observation handling should therefore be decoupled from backend writes.
+4. **Heterogeneous Backends:** The same logical observation stream may be consumed by more than one persistence backend at the same time.
+5. **Parallel Write Paths:** Persistence operations may be parallelized or delegated to separate workers, services, or processes for throughput.
+6. **Branching Timeline Model:** A run may contain multiple branches to support what-if analysis and replay of alternate decisions.
+7. **Flat Run Support:** Systems that do not need branching can still use the same architecture with a single default or root branch.
 
-## JSON Schema Definitions
+### Logical Data Model
 
-To ensure data integrity and facilitate automated validation, the following JSON schemas define the structure of the core collections.
+Any implementation of this architecture should support persistence of at least these logical entities:
 
-### 1. Run Schema (`runs.schema.json`)
+- `Run`
+- `Branch`
+- `ObservationTypeEntry` or an equivalent observation catalog record
+- `Observation`
+
+The architecture does not require one physical storage pattern. A document database, relational database, time-series store, event log, or hybrid design can all implement the same logical model.
+
+### JSON Schema Definitions
+
+The following schemas illustrate the logical structure of the core entities. They are intended as portable architecture examples rather than Java-specific API definitions.
+
+#### 1. Run Schema (`runs.schema.json`)
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -51,7 +78,8 @@ To ensure data integrity and facilitate automated validation, the following JSON
 }
 ```
 
-### 2. Branch Schema (`branches.schema.json`)
+#### 2. Branch Schema (`branches.schema.json`)
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -68,7 +96,8 @@ To ensure data integrity and facilitate automated validation, the following JSON
 }
 ```
 
-### 3. Observation Schema (`observation.schema.json`)
+#### 3. Observation Schema (`observation.schema.json`)
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -90,7 +119,8 @@ To ensure data integrity and facilitate automated validation, the following JSON
 }
 ```
 
-### 4. Observation Type Catalog Schema (`observation_type_catalog.schema.json`)
+#### 4. Observation Type Catalog Schema (`observation_type_catalog.schema.json`)
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -109,12 +139,11 @@ To ensure data integrity and facilitate automated validation, the following JSON
 }
 ```
 
-## Data Store Schemas (Persistence Layer)
+### Data Store Schemas (Persistence Layer)
 
-The architecture is agnostic to the underlying persistence technology. Below are examples of how the core entities are represented, using a document-oriented structure (like MongoDB) for illustration.
+The architecture is intentionally agnostic to the underlying persistence technology. The following examples show the logical entities using a document-like representation for clarity.
 
-### 1. `runs` Data Point
-Stores metadata about a simulation execution.
+#### 1. `runs` Data Point
 
 ```json
 {
@@ -129,8 +158,7 @@ Stores metadata about a simulation execution.
 }
 ```
 
-### 2. `branches` Data Point
-Defines the lineage of different timelines within a run.
+#### 2. `branches` Data Point
 
 ```json
 {
@@ -141,10 +169,10 @@ Defines the lineage of different timelines within a run.
   "description": "Alternate reconnaissance path with low battery threshold"
 }
 ```
-*Note: Every run has at least one "root" branch with `parentBranchId: null` and `forkTime: 0`.*
 
-### 3. `observation_archives` (Sample Record)
-Observations of a specific type (e.g., `Observation_UnitPosition`) stored in their respective archive.
+*Note: Every run has at least one root branch with `parentBranchId: null` and `forkTime: 0`.*
+
+#### 3. `observation_archives` Sample Record
 
 ```json
 {
@@ -163,8 +191,7 @@ Observations of a specific type (e.g., `Observation_UnitPosition`) stored in the
 }
 ```
 
-### 4. `observation_type_catalog` (Sample Record)
-Defines the metadata for an observation type.
+#### 4. `observation_type_catalog` Sample Record
 
 ```json
 {
@@ -178,13 +205,110 @@ Defines the metadata for an observation type.
   }
 }
 ```
-*Note: The `observationType` field stores a unique identifier (such as a class name or schema ID) to facilitate serialization and deserialization of the `payload`, which is an instance of that specific `ObservationType`.*
 
-## Data Flow Summary
+*Note: The `observationType` field stores a unique identifier such as a class name, schema ID, or registry key so the payload can be interpreted correctly by the target framework.*
 
-1.  **Model Logic:** The DEVS model updates its internal state during a transition.
-2.  **Production:** When an observation is required, the **ObservationFactory** creates an **Observation** from the state.
-3.  **Emission:** The model emits the **Observation** via its dedicated **Port**.
-4.  **Routing:** The **Simulation Coordinator** routes the message to one or more **Observers** (e.g., MongoDB, SQL, or Real-Time).
-5.  **Asynchronous Bridge:** Each **Observer** performs a "fire-and-forget" call to its respective persistence service or handler (e.g., `PersistenceHandler.send(observation)`).
-6.  **Persistence:** The target service writes the **Observation** to the corresponding **ObservationArchive** asynchronously.
+### Data Flow Summary
+
+1. **Model Logic:** The DEVS model updates its internal state during a transition.
+2. **Production:** When an observation is required, an `ObservationFactory` or equivalent component creates an observation from the model state or output.
+3. **Emission:** The model emits the observation through its normal DEVS interaction mechanism.
+4. **Routing:** An observation-routing layer forwards observation traffic to one or more persistence sinks.
+5. **Persistence:** Each sink writes runs, branches, catalog entries, and observations to backend-specific archives.
+6. **Shutdown:** Observation capture stops only after pending writes are completed or safely handed off.
+
+### Custom Backend Pattern
+
+This architecture is intentionally backend-neutral. Developers can implement additional persistence backends by following the same general pattern:
+
+- define or reuse a shared observation message model
+- separate the simulation-facing observation contract from backend-specific persistence code
+- implement one or more persistence sinks for the target backend
+- persist runs, branches, observation catalog entries, and observations
+- maintain a mapping from logical observation types to physical archives
+
+## Level 2: DEVS Streaming Java Mapping
+
+### Current Java Structure
+
+In the DEVS Streaming Framework, the backend-neutral observation model and actor contracts live in `devs-streaming-core` under `devs.observation`.
+
+The current Java mapping is built around shared contracts in `devs-streaming-core` and pluggable sink implementations in separate modules.
+
+- `ObservationModel` is the simulation-facing observation router.
+- `DevsObservationMessage` is the shared message contract for observation traffic.
+- `Observation`, `ObservationTypeEntry`, `Run`, and `Branch` are the persisted message types handled by sinks.
+- `StopLogger` coordinates graceful sink shutdown after pending writes complete.
+- Sink actors register with `ObservationSinkKeys.OBSERVATION_SINK_KEY`, allowing backend implementations to be swapped or combined without changing the core simulation-facing contract.
+
+### Java-Specific Interpretation of Core Terms
+
+| Architecture Concept | DEVS Streaming Java Mapping |
+| :--- | :--- |
+| Observation | A concrete `DevsObservationMessage` instance, typically `Observation<?, ?>` |
+| Observation Type Catalog | Persisted as `ObservationTypeEntry` messages |
+| Observation Sink | A backend-specific actor that consumes `DevsObservationMessage` |
+| Routing Layer | `ObservationModel` plus service-key based sink discovery |
+| Graceful Shutdown | `StopLogger` handled by sink actors after pending writes complete |
+
+### Java Data Flow Summary
+
+1. **Model Logic:** The DEVS model updates its internal state during a transition.
+2. **Production:** When an observation is required, application logic creates an `Observation` from the state.
+3. **Emission:** The model emits the `Observation` via its dedicated port or observation path.
+4. **Routing:** The observation layer routes `DevsObservationMessage` traffic through `ObservationModel` to one or more registered sink actors using `ObservationSinkKeys.OBSERVATION_SINK_KEY`.
+5. **Sink Handling:** Each sink actor accepts `Run`, `Branch`, `ObservationTypeEntry`, `Observation`, and `StopLogger` messages and forwards persistence work to its backend-specific write path.
+6. **Persistence:** The target backend writes runs, branches, observation type catalog entries, and observations to the appropriate archives.
+7. **Shutdown:** When observation capture should stop, `StopLogger` is used so sinks can finish pending writes before shutting down.
+
+### Java Extension Pattern
+
+Within DEVS Streaming Java, additional persistence backends should follow the established module pattern:
+
+- keep the shared observation model and registration contract in `devs-streaming-core`
+- isolate backend dependencies in a dedicated module
+- implement a sink actor that consumes `DevsObservationMessage`
+- register that sink with `ObservationSinkKeys.OBSERVATION_SINK_KEY`
+- persist runs, branches, `ObservationTypeEntry` records, and per-type observations using the conventions of the target backend
+
+## Level 3: Current Persistence Implementations in DEVS Streaming Java
+
+### Overview
+
+The current codebase provides two concrete persistence implementations:
+
+- `devs-observation-mongodb`
+- `devs-observation-postgresql`
+
+Both modules:
+
+- build on the shared contracts in `devs-streaming-core`
+- register their sink actors with `ObservationSinkKeys.OBSERVATION_SINK_KEY`
+- consume the shared `DevsObservationMessage` model
+- persist the same logical entities: runs, branches, observation type catalog entries, and observations
+
+### MongoDB Implementation
+
+The MongoDB sink is the document-store reference implementation for this architecture.
+
+- It persists the logical observation model using MongoDB collections.
+- It uses per-type archives in a document-oriented form.
+- It demonstrates the backend-isolated sink-module pattern with a document database.
+
+### PostgreSQL Implementation
+
+The PostgreSQL sink persists the same logical model using relational structures.
+
+- `runs`, `branches`, and `observation_type_catalog` are shared base tables.
+- Each logical observation type maps to its own archive table.
+- Archive table names are sanitized from the logical observation type before creation.
+- Structured fields such as time and payload are stored alongside the full serialized observation document.
+
+### Why Both Matter
+
+These two implementations show that the same observation architecture can be realized using different persistence models:
+
+- MongoDB demonstrates a document-oriented backend.
+- PostgreSQL demonstrates a relational backend with per-type archive tables.
+
+Together they provide concrete examples for developers who want to implement additional backends in Java or adapt the same architecture to other languages and DEVS frameworks.

@@ -30,7 +30,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import devs.utils.DevsObjectMapper;
 
 /**
- * A utility actor to serialize observation messages and write them to an ouput stream.
+ * Utility actor that serializes observation messages and writes them to an output stream.
  */
 public class DevsObservationActor extends AbstractBehavior<DevsObservationMessage> {
 
@@ -39,9 +39,7 @@ public class DevsObservationActor extends AbstractBehavior<DevsObservationMessag
   private final String runId;
 
   /**
-   * Factory class for creating instances of a DevsObservationActor Behavior. This factory aids in
-   * creating actor behaviors that serialize DEVS observation messages and write them to a specified output
-   * stream with an associated run identifier.
+   * Factory for building observation writer behaviors with a fixed output stream and run id.
    */
   public static class DevsObservationActorFactory {
 
@@ -111,13 +109,10 @@ public class DevsObservationActor extends AbstractBehavior<DevsObservationMessag
   }
 
   /**
-   * Handles a DevsObservationMessage by either stopping the observation when a StopLogger message is received or
-   * serializing and printing the observation message.
+   * Handles observation messages by either shutting down or emitting a serialized line of JSON.
    *
-   * @param devsObservationMessage the observation message to process; it may be either a message to stop
-   *                       observation or another observation message to handle
-   * @return the updated behavior of the actor; it returns {@code Behaviors.stopped()} for a
-   * StopLogger message or {@code Behaviors.same()} for other messages
+   * @param devsObservationMessage observation message to process
+   * @return updated actor behavior
    * @throws JsonProcessingException if there is an error during message serialization
    */
   protected Behavior<DevsObservationMessage> onObservationMessage(DevsObservationMessage devsObservationMessage)

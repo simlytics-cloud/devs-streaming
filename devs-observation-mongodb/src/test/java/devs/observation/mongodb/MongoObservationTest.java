@@ -3,6 +3,8 @@ package devs.observation.mongodb;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoDatabase;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import devs.PDevsCoordinator;
 import devs.PDevsCouplings;
 import devs.PDevsSimulator;
@@ -15,6 +17,8 @@ import devs.msg.Branch;
 import devs.msg.Run;
 import devs.observation.DevsObservationMessage;
 import devs.observation.Observation;
+import devs.observation.ObservationModel;
+import devs.observation.ObservationSinkKeys;
 import devs.observation.StopLogger;
 import example.generator.GeneratorModel;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
@@ -23,11 +27,8 @@ import example.storage.StorageState;
 import example.storage.StorageStateEnum;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.bson.Document;
 import org.junit.jupiter.api.*;
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -44,7 +45,8 @@ import java.util.concurrent.TimeUnit;
 public class MongoObservationTest {
 
     private static final ActorTestKit testKit = ActorTestKit.create();
-    private static final String MONGO_CONN = "mongodb://localhost:27017/";
+    private static final Config config = ConfigFactory.load();
+    private static final String MONGO_CONN = config.getString("mongodb.connection_string");
     private static final String TEST_DB = "test_db_" + UUID.randomUUID().toString().replace("-", "");
     private static MongoClient mongoClient;
     private static MongoDatabase database;
@@ -59,7 +61,7 @@ public class MongoObservationTest {
     @AfterAll
     public static void cleanup() {
         // Drop database
-        if (dropping) {
+        if (dropping && database != null) {
             CountDownLatch latch = new CountDownLatch(1);
             database.drop().subscribe(new Subscriber<Void>() {
                 @Override
@@ -86,7 +88,9 @@ public class MongoObservationTest {
             } catch (InterruptedException e) {
             }
         }
-        mongoClient.close();
+        if (mongoClient != null) {
+            mongoClient.close();
+        }
         testKit.shutdownTestKit();
     }
 
@@ -100,9 +104,9 @@ public class MongoObservationTest {
         // Wait for the actor to initialize and register with the receptionist
         testKit.createTestProbe().awaitAssert(() -> {
             org.apache.pekko.actor.testkit.typed.javadsl.TestProbe<Receptionist.Listing> probe = testKit.createTestProbe(Receptionist.Listing.class);
-            testKit.system().receptionist().tell(Receptionist.find(MongoObservationActor.MONGO_OBSERVATION_KEY, probe.getRef()));
+            testKit.system().receptionist().tell(Receptionist.find(ObservationSinkKeys.OBSERVATION_SINK_KEY, probe.getRef()));
             Receptionist.Listing listing = probe.receiveMessage();
-            Assertions.assertFalse(listing.getServiceInstances(MongoObservationActor.MONGO_OBSERVATION_KEY).isEmpty(), "Actor not registered yet");
+            Assertions.assertFalse(listing.getServiceInstances(ObservationSinkKeys.OBSERVATION_SINK_KEY).isEmpty(), "Actor not registered yet");
             return null;
         });
 
@@ -131,7 +135,7 @@ public class MongoObservationTest {
                 LongSimTime.create(0L)), "storage");
 
         ActorRef<DevsMessage> observerSim = testKit.spawn(PDevsSimulator.create(
-                new MongoObserverModel("observer", runId, branchId),
+                new ObservationModel("observer", runId, branchId),
                 LongSimTime.create(0L)), "observer");
 
         Map<String, ActorRef<DevsMessage>> modelSimulators = Map.of(
@@ -221,10 +225,82 @@ public class MongoObservationTest {
         verifyData(MongoObservationActor.OBSERVATION_TYPES_COLLECTION, 3);
     }
 
+    @Test
+    public void testMongoObservationRegistersWithoutObservationTypesCollection() throws InterruptedException {
+        String databaseName = "test_db_" + UUID.randomUUID().toString().replace("-", "");
+        MongoDatabase testDatabase = mongoClient.getDatabase(databaseName);
+        String runId = UUID.randomUUID().toString();
+        String branchId = UUID.randomUUID().toString();
+
+        try {
+            ActorRef<DevsObservationMessage> mongoActor = testKit.spawn(MongoObservationActor.create(MONGO_CONN, databaseName));
+
+            awaitObservationSinkRegistration();
+            Assertions.assertFalse(collectionExists(testDatabase, MongoObservationActor.OBSERVATION_TYPES_COLLECTION));
+
+            Observation<LongSimTime, String> obs = Observation.<LongSimTime, String>builder()
+                    ._id(UUID.randomUUID().toString())
+                    .runId(runId)
+                    .branchId(branchId)
+                    .time(LongSimTime.create(0L))
+                    .producerModel("model1")
+                    .observationType("LazyType")
+                    .payload("data")
+                    .build();
+            mongoActor.tell(obs);
+
+            mongoActor.tell(StopLogger.builder().build());
+            testKit.createTestProbe().expectTerminated(mongoActor, java.time.Duration.ofSeconds(10));
+
+            Assertions.assertTrue(collectionExists(testDatabase, MongoObservationActor.OBSERVATION_TYPES_COLLECTION));
+            verifyData(testDatabase, MongoObservationActor.OBSERVATION_TYPES_COLLECTION, 1);
+        } finally {
+            dropDatabase(testDatabase);
+        }
+    }
+
+    private void awaitObservationSinkRegistration() {
+        testKit.createTestProbe().awaitAssert(() -> {
+            org.apache.pekko.actor.testkit.typed.javadsl.TestProbe<Receptionist.Listing> probe = testKit.createTestProbe(Receptionist.Listing.class);
+            testKit.system().receptionist().tell(Receptionist.find(ObservationSinkKeys.OBSERVATION_SINK_KEY, probe.getRef()));
+            Receptionist.Listing listing = probe.receiveMessage();
+            Assertions.assertFalse(listing.getServiceInstances(ObservationSinkKeys.OBSERVATION_SINK_KEY).isEmpty(), "Actor not registered yet");
+            return null;
+        });
+    }
+
+    private boolean collectionExists(MongoDatabase mongoDatabase, String collectionName) throws InterruptedException {
+        List<String> collectionNames = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        mongoDatabase.listCollectionNames().subscribe(new Subscriber<String>() {
+            @Override public void onSubscribe(Subscription s) { s.request(Long.MAX_VALUE); }
+            @Override public void onNext(String name) { collectionNames.add(name); }
+            @Override public void onError(Throwable t) { latch.countDown(); }
+            @Override public void onComplete() { latch.countDown(); }
+        });
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS), "Timeout waiting for collection names");
+        return collectionNames.contains(collectionName);
+    }
+
+    private void dropDatabase(MongoDatabase mongoDatabase) throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        mongoDatabase.drop().subscribe(new Subscriber<Void>() {
+            @Override public void onSubscribe(Subscription s) { s.request(1); }
+            @Override public void onNext(Void unused) { }
+            @Override public void onError(Throwable t) { latch.countDown(); }
+            @Override public void onComplete() { latch.countDown(); }
+        });
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS), "Timeout dropping database");
+    }
+
     private void verifyData(String collectionName, int expectedCount) throws InterruptedException {
+        verifyData(database, collectionName, expectedCount);
+    }
+
+    private void verifyData(MongoDatabase mongoDatabase, String collectionName, int expectedCount) throws InterruptedException {
         List<Document> documents = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
-        database.getCollection(collectionName).find().subscribe(new Subscriber<Document>() {
+        mongoDatabase.getCollection(collectionName).find().subscribe(new Subscriber<Document>() {
             @Override public void onSubscribe(Subscription s) { s.request(Long.MAX_VALUE); }
             @Override public void onNext(Document document) { documents.add(document); }
             @Override public void onError(Throwable t) { latch.countDown(); }

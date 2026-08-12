@@ -26,7 +26,7 @@ import devs.msg.Run;
 
 
 /**
- * Class used to serialize messages by a DevsLoggingActor.
+ * Marker interface for observation messages exchanged between routers and sink actors.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @JsonSubTypes({
@@ -36,6 +36,6 @@ import devs.msg.Run;
     @Type(value = StopLogger.class),
     @Type(value = ObservationTypeEntry.class)
 })
-public abstract interface DevsObservationMessage {
+public interface DevsObservationMessage {
 
 }

@@ -20,19 +20,26 @@ import devs.iso.DevsMessage;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
 /**
- * Returns the Apache Pekko Receptionist listing identifying models that have registered
- * with the receptionist.
+ * Wraps a Pekko receptionist listing so it can be exchanged through the DEVS message layer.
  */
 public class PekkoReceptionistListingResponse implements DevsMessage {
   final Receptionist.Listing listing;
 
+  /**
+   * Creates a message wrapper for a receptionist listing update.
+   *
+   * @param listing listing received from the Pekko receptionist
+   */
   public PekkoReceptionistListingResponse(Receptionist.Listing listing) {
     this.listing = listing;
   }
 
+  /**
+   * Returns the receptionist listing carried by this DEVS message.
+   *
+   * @return receptionist listing update
+   */
   public Receptionist.Listing getListing() {
     return listing;
   }
-
-
 }

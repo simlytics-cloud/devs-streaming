@@ -21,29 +21,35 @@ package devs.observation;
  */
 public class ObservationUtils {
 
-    /**
-     * Extracts the producer ID from a port name.
-     *
-     * @param portName The port name.
-     * @param separator The separator between producer ID and base port name.
-     * @param defaultValue The default value if the separator is not found.
-     * @return The producer ID.
-     */
-    public static String extractProducerId(String portName, String separator, String defaultValue) {
-        if (portName != null && portName.contains(separator)) {
-            return portName.substring(0, portName.lastIndexOf(separator));
-        }
-        return defaultValue;
-    }
+  /**
+   * Prevents instantiation of this utility class.
+   */
+  private ObservationUtils() {
+  }
 
-    /**
-     * Extracts the producer ID from a port name using the default separator "_".
-     *
-     * @param portName The port name.
-     * @param defaultValue The default value if the separator is not found.
-     * @return The producer ID.
-     */
-    public static String extractProducerId(String portName, String defaultValue) {
-        return extractProducerId(portName, "_", defaultValue);
+  /**
+   * Extracts a producer identifier from a qualified port name.
+   *
+   * @param portName port name that may embed a producer identifier
+   * @param separator separator between the producer identifier and the base port name
+   * @param defaultValue fallback value when no embedded producer identifier is present
+   * @return the extracted producer identifier or the provided default value
+   */
+  public static String extractProducerId(String portName, String separator, String defaultValue) {
+    if (portName != null && portName.contains(separator)) {
+      return portName.substring(0, portName.lastIndexOf(separator));
     }
+    return defaultValue;
+  }
+
+  /**
+   * Extracts a producer identifier from a qualified port name using the default separator.
+   *
+   * @param portName port name that may embed a producer identifier
+   * @param defaultValue fallback value when no embedded producer identifier is present
+   * @return the extracted producer identifier or the provided default value
+   */
+  public static String extractProducerId(String portName, String defaultValue) {
+    return extractProducerId(portName, "_", defaultValue);
+  }
 }
