@@ -128,8 +128,15 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     ConsumerSettings<String, String> consumerSettings = ConsumerSettings
         .create(props.kafkaConsumerConfig(), new StringDeserializer(), new StringDeserializer())
         .withGroupId(UUID.randomUUID().toString());
+    System.out.println(
+    "Effective Pekko consumer settings: pollInterval="
+        + consumerSettings.pollInterval().toMillis() + " ms"
+        + ", pollTimeout="
+        + consumerSettings.pollTimeout().toMillis() + " ms"
+    );
     this.localComponentName = props.localComponentName();
     this.remoteComponentName = props.remoteComponentName();
+    
 
     // Using a Kafka consumer from the Pekko Kafka project because this consumer
     // does a better job of managing
@@ -140,22 +147,27 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
     // webLvcTopic
     // The consumer's auto.offset.reset property is set to earliest so it always
     // reads all data
-    this.control = Consumer
-        .plainSource(consumerSettings, Subscriptions.topics(props.consumerTopic())).map(record -> {
-          System.out.println("Kafka received record: " + record.value());
-          processRecord(record);
-          return NotUsed.notUsed();
-        })
-        // This supervisor strategy will drop the current record being processed in the
-        // event of an
-        // error and will continue consuming with the next message
-        .withAttributes(ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider()))
-        // This statement enables logging of messages in the previous step of the stream
-        .log("LopConsumerLog")
-        // Connect to a sink to continuously run the stream and a materializer that
-        // gives a control
-        // to shut down the stream on command.
-        .toMat(Sink.ignore(), Consumer::createDrainingControl).run(getContext().getSystem());
+this.control = Consumer
+    .plainSource(
+        consumerSettings,
+        Subscriptions.topics(props.consumerTopic())
+    )
+    .map(record -> {
+        long receiptWallClockMs = System.currentTimeMillis();
+        long receiptNanos = System.nanoTime();
+
+        processRecord(record, receiptWallClockMs, receiptNanos);
+
+        return NotUsed.notUsed();
+    })
+    .withAttributes(
+        ActorAttributes.withSupervisionStrategy(
+            Supervision.getResumingDecider()
+        )
+    )
+    .log("LopConsumerLog")
+    .toMat(Sink.ignore(), Consumer::createDrainingControl)
+    .run(getContext().getSystem());
   }
 
   /**
@@ -207,27 +219,68 @@ public class KafkaLocalProxy<T extends SimTime> extends KafkaDevsStreamProxy<T> 
    *               the value are strings. The value is expected to represent a JSON-encoded
    *               {@link DevsMessage}.
    */
-  private void processRecord(ConsumerRecord<String, String> record) {
-    DevsSimMessage devsMessage = null;
-    try {
-      devsMessage = objectMapper.readValue(record.value(), DevsSimMessage.class);
-    } catch (JsonProcessingException e) {
-      System.err.println("Could not deserialize JSON record " + record.value());
-      e.printStackTrace();
-      System.exit(1);
-    }
-    if (localParentCoordinator.isPresent()) {
-      if (devsMessage.getReceiverId().equals(localComponentName)) {
-        localParentCoordinator.get().tell(devsMessage);        
-      } else {
-        getContext().getLog().debug("Received message for another component, ignoring: {}", devsMessage);
-      }
-    } else {
-      System.err.println(
-          "ERROR: Received the following DevsMessage from Kafka before learning the identity of \n"
-              + "the local parent coordinator via an InitSimMessage: " + record.value());
-      System.exit(1);
-    }
-  }
+private void processRecord(
+    ConsumerRecord<String, String> record,
+    long receiptWallClockMs,
+    long receiptNanos
+) {
+    DevsSimMessage devsMessage;
 
+    try {
+        devsMessage =
+            objectMapper.readValue(record.value(), DevsSimMessage.class);
+    } catch (JsonProcessingException e) {
+        System.err.println(
+            "Could not deserialize JSON record " + record.value()
+        );
+        e.printStackTrace();
+        System.exit(1);
+        return;
+    }
+
+    long deserializedNanos = System.nanoTime();
+
+    if (localParentCoordinator.isPresent()) {
+        if (devsMessage.getReceiverId().equals(localComponentName)) {
+            localParentCoordinator.get().tell(devsMessage);
+
+            long dispatchedNanos = System.nanoTime();
+
+            double recordAgeMs =
+                record.timestamp() >= 0
+                    ? receiptWallClockMs - record.timestamp()
+                    : Double.NaN;
+
+            double deserializeMs =
+                (deserializedNanos - receiptNanos) / 1_000_000.0;
+
+            double dispatchMs =
+                (dispatchedNanos - deserializedNanos) / 1_000_000.0;
+
+            double totalReceiverMs =
+                (dispatchedNanos - receiptNanos) / 1_000_000.0;
+
+            System.out.println(
+                "Kafka receive timing: messageType="
+                    + devsMessage.getClass().getSimpleName()
+                    + ", sender=" + devsMessage.getSenderId()
+                    + ", recordAge=" + String.format("%.3f", recordAgeMs) + " ms"
+                    + ", deserialize=" + String.format("%.3f", deserializeMs) + " ms"
+                    + ", dispatch=" + String.format("%.3f", dispatchMs) + " ms"
+                    + ", totalReceiver=" + String.format("%.3f", totalReceiverMs) + " ms"
+            );
+        } else {
+            getContext().getLog().debug(
+                "Received message for another component, ignoring: {}",
+                devsMessage
+            );
+        }
+    } else {
+        System.err.println(
+            "ERROR: Received a DevsMessage from Kafka before learning " +
+            "the local parent coordinator: " + record.value()
+        );
+        System.exit(1);
+    }
+}
 }

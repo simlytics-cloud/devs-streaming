@@ -139,18 +139,32 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractBehavior<De
       getContext().getLog().error("Could not deserialize message to string: " + devsMessage);
       throw new RuntimeException(e);
     }
-    producer.send(new ProducerRecord<Long, String>(producerTopic, index, record), new Callback() {
-      @Override
-      public void onCompletion(RecordMetadata m, Exception e) {
-        if (e != null) {
-          System.err
-              .println(componentName + " threw error writing to Kafka topic " + producerTopic);
-          e.printStackTrace();
+    ProducerRecord<Long, String> producerRecord =
+    new ProducerRecord<>(producerTopic, index, record);
+
+    long sendStartNanos = System.nanoTime();
+
+    producer.send(producerRecord, (metadata, exception) -> {
+        double acknowledgementMs =
+            (System.nanoTime() - sendStartNanos) / 1_000_000.0;
+
+        if (exception != null) {
+            System.err.println(
+                componentName
+                    + " threw error writing to Kafka topic "
+                    + producerTopic
+            );
+            exception.printStackTrace();
         } else {
-          logger.debug(componentName + " sending " + devsMessage.getClass().getCanonicalName()
-              + " to " + producerTopic);
+            System.out.printf(
+                "Java Kafka delivery acknowledgement: "
+                    + "messageType=%s, time=%.3f ms, partition=%d, offset=%d%n",
+                devsMessage.getClass().getSimpleName(),
+                acknowledgementMs,
+                metadata.partition(),
+                metadata.offset()
+            );
         }
-      }
     });
     index = index + 1;
     if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {

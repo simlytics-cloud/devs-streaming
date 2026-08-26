@@ -31,6 +31,7 @@ import devs.iso.RequestOutput;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
+import devs.iso.SimulationTerminatePayload;
 import devs.iso.TransitionComplete;
 import devs.iso.time.LongSimTime;
 import java.util.HashMap;
@@ -218,6 +219,7 @@ public class PDevsCoordinatorTest {
         .messageId("SimulationTerminate")
         .senderId(rootName)
         .receiverId(coordinatorName)
+        .payload(SimulationTerminatePayload.builder().reason("Normal termination").build())
         .build());
     assertInstanceOf(SimulationTerminate.class, generatorProbe.receiveMessage());
     assertInstanceOf(SimulationTerminate.class, storageProbe.receiveMessage());
