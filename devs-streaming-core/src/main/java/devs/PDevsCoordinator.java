@@ -78,6 +78,7 @@ public class PDevsCoordinator<T extends SimTime>
   String parentId;
   final Map<String, ActorRef<DevsMessage>> modelSimulators;
   private final PDevsCouplings couplings;
+  private final StepTimingTracker stepTimingTracker;
   private T timeLast;
   private T timeNext;
   private final Map<String, T> nextTimeMap = new HashMap<>();
@@ -92,7 +93,14 @@ public class PDevsCoordinator<T extends SimTime>
   public static Behavior<DevsMessage> create(String modelIdentifier,
       Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings) {
     return Behaviors.setup(context -> new PDevsCoordinator<>(modelIdentifier,
-        modelsSimulators, couplings, context));
+        modelsSimulators, couplings, context, StepTimingTracker.disabled()));
+  }
+
+  public static Behavior<DevsMessage> create(String modelIdentifier,
+      Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings,
+      StepTimingTracker stepTimingTracker) {
+    return Behaviors.setup(context -> new PDevsCoordinator<>(modelIdentifier,
+        modelsSimulators, couplings, context, stepTimingTracker));
   }
 
 
@@ -111,6 +119,12 @@ public class PDevsCoordinator<T extends SimTime>
   public PDevsCoordinator(String modelIdentifier,
       Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings,
       ActorContext<DevsMessage> context) {
+    this(modelIdentifier, modelsSimulators, couplings, context, StepTimingTracker.disabled());
+  }
+
+  public PDevsCoordinator(String modelIdentifier,
+      Map<String, ActorRef<DevsMessage>> modelsSimulators, PDevsCouplings couplings,
+      ActorContext<DevsMessage> context, StepTimingTracker stepTimingTracker) {
     // Check for valid data
     super(context);
     if (modelsSimulators.isEmpty()) {
@@ -120,6 +134,7 @@ public class PDevsCoordinator<T extends SimTime>
     this.modelIdentifier = modelIdentifier;
     this.modelSimulators = modelsSimulators;
     this.couplings = couplings;
+    this.stepTimingTracker = stepTimingTracker;
   }
 
   public String getModelIdentifier() {
@@ -322,12 +337,14 @@ public class PDevsCoordinator<T extends SimTime>
       }
     }
     generatingOutput = true;
+    stepTimingTracker.stepStarted();
     buildImminentModels();
     if (getContext().getLog().isDebugEnabled()) {
       log(Level.DEBUG, "Immenent models are " + Arrays.toString(imminentModels.toArray()));
     }
     outputMap = new HashMap<>();
     imminentModels.forEach(m -> {
+      stepTimingTracker.outputRequestSent(m);
       modelSimulators.get(m).tell(RequestOutput.<T>builder()
           .eventTime(requestOutput.getEventTime())
           .simulationRunId(simulationRunId)
@@ -374,6 +391,7 @@ public class PDevsCoordinator<T extends SimTime>
     }
     // outputReport.getModelOutput().getPortValueList().forEach(portValue -> getContext().getLog().debug(
     // " " + portValue.getPortIdentifier() + ": " + portValue.getValue()));
+    stepTimingTracker.outputReportReceived(outputReport.getSenderId());
     outputMap.put(outputReport.getSenderId(), Optional.of(outputReport.getPayload().getOutputs()));
     if (getContext().getLog().isDebugEnabled()) {
       log(Level.DEBUG, "Have outputReport from " + Arrays.toString(outputMap.keySet().toArray()));
@@ -383,6 +401,8 @@ public class PDevsCoordinator<T extends SimTime>
       // Send outputReport to parent based on mappings and translations
       // Send inputs to children based on mappings and translations
       log(Level.DEBUG, "We have all outputReport.");
+      stepTimingTracker.allOutputsReceived();
+      stepTimingTracker.transitionDispatchStarted();
       awaitingTransition = new ArrayList<>();
       OutputCouplingMessages outputCouplingMessages = couplings.handleOutputBag(outputMap);
       boolean hasOutputPortValues = false;
@@ -406,6 +426,7 @@ public class PDevsCoordinator<T extends SimTime>
           throw new RuntimeException("Received input for model " + key + " that is not in the modelSimulators map: "
           + Arrays.toString(modelSimulators.keySet().toArray()));
         }
+        stepTimingTracker.transitionSent(key);
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(timeNext)
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
@@ -429,6 +450,7 @@ public class PDevsCoordinator<T extends SimTime>
       }
       internalTransitions.forEach(modelId -> {
         awaitingTransition.add(modelId);
+        stepTimingTracker.transitionSent(modelId);
         modelSimulators.get(modelId).tell(ExecuteTransition.<T>builder()
             .eventTime(timeNext)
             .payload(ExecuteTransitionPayload.builder().build())
@@ -438,6 +460,7 @@ public class PDevsCoordinator<T extends SimTime>
             .receiverId(modelId)
             .build());
       });
+      stepTimingTracker.transitionDispatchCompleted();
       // If the model outputReport have not generated any transitions, output is done. Send output
       // message.
       if (awaitingTransition.isEmpty()) {
@@ -467,6 +490,7 @@ public class PDevsCoordinator<T extends SimTime>
    * and sent to the parent using the `tell` method.
    */
   void sendOutputs(T eventTime) {
+    stepTimingTracker.stepCompleted();
     parent.tell(OutputReport.<T>builder()
         .eventTime(eventTime)
         .payload(OutputReportPayload.builder().addAllOutputs(modelOutput).build())
@@ -509,6 +533,7 @@ public class PDevsCoordinator<T extends SimTime>
                 + Arrays.toString(inputPorts.toArray()) + " not handled.");
       }
       awaitingTransition = new ArrayList<>();
+      stepTimingTracker.transitionDispatchStarted();
       // Send execute transition messages to those models with input generated from the coordinator
       // input
       receivers.forEach((key, value) -> {
@@ -517,6 +542,7 @@ public class PDevsCoordinator<T extends SimTime>
           throw new RuntimeException("Received input for model " + key + " that is not in the modelSimulators map: "
           + Arrays.toString(modelSimulators.keySet().toArray()));
         }
+        stepTimingTracker.transitionSent(key);
         modelSimulators.get(key).tell(ExecuteTransition.<T>builder()
             .eventTime(executeTransition.getEventTime())
             .payload(ExecuteTransitionPayload.builder().addAllInputs(value).build())
@@ -526,6 +552,7 @@ public class PDevsCoordinator<T extends SimTime>
             .receiverId(key)
             .build());
       });
+      stepTimingTracker.transitionDispatchCompleted();
       getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new AwaitTransitionCheck());
     }
     return this;
@@ -565,8 +592,10 @@ public class PDevsCoordinator<T extends SimTime>
     log(Level.DEBUG, transitionComplete.getSenderId() + " sent TransitionDone with next time of "
         + transitionComplete.getNextInternalTime());
     nextTimeMap.put(transitionComplete.getSenderId(), transitionComplete.getNextInternalTime());
+    stepTimingTracker.transitionCompleteReceived(transitionComplete.getSenderId());
     awaitingTransition.remove(transitionComplete.getSenderId());
     if (awaitingTransition.isEmpty()) {
+      stepTimingTracker.allTransitionsCompleted();
       timeLast = transitionComplete.getEventTime();
       // System.out.println("Last time for " + modelIdentifier + " is " + timeLast);
       timeNext = getNextTime();
@@ -633,6 +662,10 @@ public class PDevsCoordinator<T extends SimTime>
   Behavior<DevsMessage> onModelTerminated(ModelTerminated<T> modelTerminated) {
     awaitingTransition.remove(modelTerminated.getSenderId());
     if (awaitingTransition.isEmpty()) {
+      String timingSummary = stepTimingTracker.formatSummary(modelIdentifier);
+      if (!timingSummary.isBlank()) {
+        log(Level.INFO, timingSummary);
+      }
       parent.tell(ModelTerminated.<T>builder()
           .simulationRunId(simulationRunId)
           .messageId(generateMessageId("ModelTerminated"))

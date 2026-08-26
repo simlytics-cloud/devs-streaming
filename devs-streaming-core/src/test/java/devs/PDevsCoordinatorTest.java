@@ -16,27 +16,29 @@
 
 package devs;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import devs.iso.DevsMessage;
 import devs.iso.ExecuteTransition;
+import devs.iso.ModelTerminated;
 import devs.iso.NextInternalTimeReport;
 import devs.iso.OutputReport;
+import devs.iso.OutputReportPayload;
 import devs.iso.PortValue;
 import devs.iso.RequestOutput;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
+import devs.iso.SimulationTerminate;
+import devs.iso.TransitionComplete;
 import devs.iso.time.LongSimTime;
-import example.generator.GeneratorModel;
-import example.storage.StorageModel;
-import example.storage.StorageState;
-import example.storage.StorageStateEnum;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
-import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.apache.pekko.actor.typed.Behavior;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,237 +60,275 @@ import org.junit.jupiter.api.Test;
  */
 public class PDevsCoordinatorTest {
 
-  /**
-   * A statically defined {@link ActorTestKit} used for setting up and testing actor-based behaviors
-   * within the context of PDEVS simulation testing.
-   * <ul>
-   * - Simplifies the creation and management of actor-based tests.
-   * - Allows spawning actors, creating probes, and managing the lifecycle of test scenarios.
-   * - Ensures proper cleanup of testing resources after execution.
-   * </ul>
-   */
   static final ActorTestKit testKit = ActorTestKit.create();
+  private static final String simulationId = "PDevsCoordinatorTest";
+  private static final String coordinatorName = "genStoreCoupled";
+  private static final String rootName = "root";
+  private static final String generatorName = "generator";
+  private static final String storageName = "storage";
+  private static final long noEventTime = Long.MAX_VALUE;
 
-  /**
-   * Cleans up resources used during the test execution. This method shuts down the testkit to
-   * release any resources and ensure no lingering threads remain after tests have completed. It is
-   * annotated with {@code @AfterAll} to ensure it is executed once after all test methods within
-   * this test class have run.
-   */
   @AfterAll
   public static void cleanup() {
     testKit.shutdownTestKit();
   }
 
-  private static final String simulationId = "PDevsCoordinatorTest";
-  static final String generatorName = "generator";
-  static final String storageName = "storage";
-
-  /**
-   * This method tests the functionality of a PDEVS (Parallel DEVS) coordinator and its interaction
-   * with model simulators, ensuring proper simulation message flows and transitions.
-   * <p>
-   * The method validates:
-   * <p>
-   * 1. Initialization of the coordinator with a coupled model "genStoreCoupled" consisting of
-   * generator and storage models. 2. Propagation of the `InitSim` messages to the individual
-   * simulators - generator and storage models. 3. Processing of the `NextTime` message by the
-   * root-level coordinator indicating the imminent next event time. 4. Handling of `SendOutput`
-   * messages, ensuring the imminent generator outputs a value according to its scheduled time. 5.
-   * Proper coordination of internal and external transitions, including: - Transition requests sent
-   * by the coordinator to simulators. - Processing of received outputs and corresponding model
-   * states and inputs. 6. Aggregation of `TransitionDone` responses from simulators and relaying of
-   * a `ModelOutputMessage` to the root-level coordinator. 7. Cyclic behavior of the PDEVS
-   * simulation, ensuring the second cycle of time-based transitions follows the expected flow. 8.
-   * Validation of inputs and outputs at each step, verifying the correctness of state progression
-   * and message handling mechanisms across the simulation lifecycle.
-   * <p>
-   * This test ensures that the PDEVS coordinator behaves as expected under the tested scenario,
-   * maintaining synchronization and message accuracy between multiple interacting simulation
-   * models.
-   */
-  @SuppressWarnings("unchecked")
   @Test
-  @DisplayName("Test PDEVS Coordinator")
-  void pdevsCoordinatorTest() {
-    TestProbe<DevsMessage> generatorInProbe = testKit.createTestProbe();
-    TestProbe<DevsMessage> storageInProbe = testKit.createTestProbe();
-    TestProbe<DevsMessage> rootInProbe = testKit.createTestProbe();
+  @DisplayName("Default coordinator creation remains backward compatible")
+  void defaultCoordinatorCreationStillCoordinatesExpectedMessageFlow() {
+    TestProbe<DevsMessage> generatorProbe = testKit.createTestProbe();
+    TestProbe<DevsMessage> storageProbe = testKit.createTestProbe();
+    TestProbe<DevsMessage> rootProbe = testKit.createTestProbe();
+    ActorRef<DevsMessage> coordinator = testKit.spawn(PDevsCoordinator.create(coordinatorName,
+        modelSimulators(generatorProbe, storageProbe), couplings()));
 
-    Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
-    modelSimulators.put("generator", generatorInProbe.getRef());
-    modelSimulators.put("storage", storageInProbe.getRef());
+    runThreeStepScenario(coordinator, generatorProbe, storageProbe, rootProbe);
+  }
 
-    PDevsCouplings genStoreCoupling = PDevsCouplings.builder("genStoreCoupled")
-        .addConnection("generator", "OUTPUT", "storage", "INPUT")
-        .build();
+  @Test
+  @DisplayName("Enabled timing tracker records aggregate and per-model stats")
+  void enabledTrackerAccumulatesAggregateAndPerModelStats() {
+    IncrementingNanoClock nanoClock = new IncrementingNanoClock();
+    StepTimingTracker tracker = StepTimingTracker.enabled(nanoClock);
+    TestProbe<DevsMessage> generatorProbe = testKit.createTestProbe();
+    TestProbe<DevsMessage> storageProbe = testKit.createTestProbe();
+    TestProbe<DevsMessage> rootProbe = testKit.createTestProbe();
+    ActorRef<DevsMessage> coordinator = testKit.spawn(PDevsCoordinator.create(coordinatorName,
+        modelSimulators(generatorProbe, storageProbe), couplings(), tracker));
 
-    ActorRef<DevsMessage> coordinator = testKit.spawn(PDevsCoordinator.create("genStoreCoupled",
-            modelSimulators, genStoreCoupling));
+    runThreeStepScenario(coordinator, generatorProbe, storageProbe, rootProbe);
 
-    coordinator.tell(new SimulationInitMessage(SimulationInit.<LongSimTime>builder()
+    assertStats(tracker.getAggregateStats(StepTimingTracker.AggregateCategory.OUTPUT_ROUND_TRIP),
+        3, 110, 30, 50);
+    assertStats(tracker.getAggregateStats(StepTimingTracker.AggregateCategory.COORDINATOR_PROCESSING),
+        3, 80, 20, 30);
+    assertStats(tracker.getAggregateStats(StepTimingTracker.AggregateCategory.TRANSITION_ROUND_TRIP),
+        3, 130, 30, 50);
+    assertStats(tracker.getAggregateStats(StepTimingTracker.AggregateCategory.TOTAL_STEP),
+        3, 300, 80, 120);
+
+    assertStats(tracker.getModelStats(StepTimingTracker.ModelCategory.OUTPUT_ROUND_TRIP,
+        generatorName), 2, 30, 10, 20);
+    assertStats(tracker.getModelStats(StepTimingTracker.ModelCategory.OUTPUT_ROUND_TRIP,
+        storageName), 2, 30, 10, 20);
+    assertStats(tracker.getModelStats(StepTimingTracker.ModelCategory.TRANSITION_ROUND_TRIP,
+        generatorName), 2, 60, 30, 30);
+    assertStats(tracker.getModelStats(StepTimingTracker.ModelCategory.TRANSITION_ROUND_TRIP,
+        storageName), 3, 80, 20, 30);
+
+    String summary = tracker.formatSummary(coordinatorName);
+    assertTrue(summary.contains("Aggregate step metrics:"));
+    assertTrue(summary.contains("Per-model RequestOutput -> OutputReport:"));
+    assertTrue(summary.contains("Per-model ExecuteTransition -> TransitionComplete:"));
+    assertTrue(summary.contains(generatorName + ": count=2"));
+    assertTrue(summary.contains(storageName + ": count=3"));
+  }
+
+  private void runThreeStepScenario(ActorRef<DevsMessage> coordinator,
+      TestProbe<DevsMessage> generatorProbe,
+      TestProbe<DevsMessage> storageProbe,
+      TestProbe<DevsMessage> rootProbe) {
+    coordinator.tell(new SimulationInitMessage<>(SimulationInit.<LongSimTime>builder()
         .eventTime(LongSimTime.create(0))
         .simulationRunId(simulationId)
         .messageId("SimulationInit")
-        .senderId("TestActor")
-        .receiverId(generatorName)
-        .build(), rootInProbe.getRef()));
+        .senderId(rootName)
+        .receiverId(coordinatorName)
+        .build(), rootProbe.getRef()));
 
-    // PDEVS Coordinator should pass InitSim message to Generator and Storage
-    ActorRef<DevsMessage> generatorSim = testKit.spawn(PDevsSimulator.create(
-            new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build()));
-    DevsMessage message1 = generatorInProbe.receiveMessage();
-    assert (message1 instanceof SimulationInitMessage<?>);
-    SimulationInitMessage<LongSimTime> initSimMessage = (SimulationInitMessage<LongSimTime>) message1;
-    assert (initSimMessage.getSimulationInit().getEventTime().getT() == 0L);
-    generatorSim.tell(initSimMessage);
+    assertInstanceOf(SimulationInitMessage.class, generatorProbe.receiveMessage());
+    assertInstanceOf(SimulationInitMessage.class, storageProbe.receiveMessage());
 
-    ActorRef<DevsMessage> storageSim = testKit.spawn(PDevsSimulator.create(
-            new StorageModel(new StorageState(StorageStateEnum.S0), storageName),
-            LongSimTime.builder().t(0L).build()));
-    DevsMessage message2 = storageInProbe.receiveMessage();
-    assert (message2 instanceof SimulationInitMessage<?>);
-    SimulationInitMessage<LongSimTime> initSimMessage2 = (SimulationInitMessage<LongSimTime>) message1;
-    assert (initSimMessage2.getSimulationInit().getEventTime().getT() == 0L);
-    storageSim.tell(initSimMessage2);
+    coordinator.tell(nextTimeReport(generatorName, 1));
+    coordinator.tell(nextTimeReport(storageName, noEventTime));
 
-    // Root coordinator should compile next event messages and tell root coordinator NextTime =
-    // 1
-    DevsMessage message3 = rootInProbe.receiveMessage();
-    assert (message3 instanceof NextInternalTimeReport<?>);
-    NextInternalTimeReport<LongSimTime> nextTime = (NextInternalTimeReport<LongSimTime>) message3;
-    assert (nextTime.getNextInternalTime().getT() == 1);
-    assert ("genStoreCoupled".equals(nextTime.getSenderId()));
+    NextInternalTimeReport<LongSimTime> nextTime = assertInstanceOf(NextInternalTimeReport.class,
+        rootProbe.receiveMessage());
+    assertEquals(1L, nextTime.getNextInternalTime().getT());
+    assertEquals(coordinatorName, nextTime.getSenderId());
 
-    // Root coordinator should tell imminent generator to send an output
-    coordinator.tell(RequestOutput.<LongSimTime>builder()
-        .eventTime(LongSimTime.create(1))
+    coordinator.tell(requestOutput(1));
+    RequestOutput<LongSimTime> firstGeneratorRequest = assertInstanceOf(RequestOutput.class,
+        generatorProbe.receiveMessage());
+    assertEquals(1L, firstGeneratorRequest.getEventTime().getT());
+    coordinator.tell(outputReport(generatorName, 1, 0));
+
+    ExecuteTransition<LongSimTime> storageTransitionStep1 = assertInstanceOf(
+        ExecuteTransition.class, storageProbe.receiveMessage());
+    assertEquals(1, storageTransitionStep1.getPayload().getInputs().size());
+    assertEquals(0, storageTransitionStep1.getPayload().getInputs().get(0).getValue());
+    ExecuteTransition<LongSimTime> generatorTransitionStep1 = assertInstanceOf(
+        ExecuteTransition.class, generatorProbe.receiveMessage());
+    assertTrue(generatorTransitionStep1.getPayload().getInputs().isEmpty());
+
+    coordinator.tell(transitionComplete(storageName, 1, 1));
+    coordinator.tell(transitionComplete(generatorName, 1, 1));
+
+    OutputReport<LongSimTime> firstRootOutput = assertInstanceOf(OutputReport.class,
+        rootProbe.receiveMessage());
+    assertEquals(1L, firstRootOutput.getNextInternalTime().getT());
+    assertEquals(coordinatorName, firstRootOutput.getSenderId());
+
+    coordinator.tell(requestOutput(1));
+    RequestOutput<LongSimTime> secondGeneratorRequest = assertInstanceOf(RequestOutput.class,
+        generatorProbe.receiveMessage());
+    RequestOutput<LongSimTime> secondStorageRequest = assertInstanceOf(RequestOutput.class,
+        storageProbe.receiveMessage());
+    assertEquals(1L, secondGeneratorRequest.getEventTime().getT());
+    assertEquals(1L, secondStorageRequest.getEventTime().getT());
+
+    coordinator.tell(outputReport(generatorName, 1, 1));
+    coordinator.tell(emptyOutputReport(storageName, 1));
+
+    ExecuteTransition<LongSimTime> storageTransitionStep2 = assertInstanceOf(
+        ExecuteTransition.class, storageProbe.receiveMessage());
+    assertEquals(1, storageTransitionStep2.getPayload().getInputs().size());
+    assertEquals(1, storageTransitionStep2.getPayload().getInputs().get(0).getValue());
+    ExecuteTransition<LongSimTime> generatorTransitionStep2 = assertInstanceOf(
+        ExecuteTransition.class, generatorProbe.receiveMessage());
+    assertTrue(generatorTransitionStep2.getPayload().getInputs().isEmpty());
+
+    coordinator.tell(transitionComplete(storageName, 1, 1));
+    coordinator.tell(transitionComplete(generatorName, 1, 2));
+
+    OutputReport<LongSimTime> secondRootOutput = assertInstanceOf(OutputReport.class,
+        rootProbe.receiveMessage());
+    assertEquals(1L, secondRootOutput.getNextInternalTime().getT());
+    assertEquals(coordinatorName, secondRootOutput.getSenderId());
+
+    coordinator.tell(requestOutput(1));
+    RequestOutput<LongSimTime> thirdStorageRequest = assertInstanceOf(RequestOutput.class,
+        storageProbe.receiveMessage());
+    assertEquals(1L, thirdStorageRequest.getEventTime().getT());
+    coordinator.tell(emptyOutputReport(storageName, 1));
+
+    ExecuteTransition<LongSimTime> storageTransitionStep3 = assertInstanceOf(
+        ExecuteTransition.class, storageProbe.receiveMessage());
+    assertTrue(storageTransitionStep3.getPayload().getInputs().isEmpty());
+    coordinator.tell(transitionComplete(storageName, 1, 2));
+
+    OutputReport<LongSimTime> thirdRootOutput = assertInstanceOf(OutputReport.class,
+        rootProbe.receiveMessage());
+    assertEquals(2L, thirdRootOutput.getNextInternalTime().getT());
+    assertEquals(coordinatorName, thirdRootOutput.getSenderId());
+
+    coordinator.tell(SimulationTerminate.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(2))
         .simulationRunId(simulationId)
-        .messageId("RequestOutput")
-        .senderId("TestActor")
-        .receiverId(generatorName)
+        .messageId("SimulationTerminate")
+        .senderId(rootName)
+        .receiverId(coordinatorName)
         .build());
-    DevsMessage message4 = generatorInProbe.receiveMessage();
-    assert (message4 instanceof RequestOutput<?>);
-    RequestOutput<LongSimTime> sendOutput = (RequestOutput<LongSimTime>) message4;
-    assert (sendOutput.getEventTime().getT() == 1L);
-    generatorSim.tell(sendOutput);
+    assertInstanceOf(SimulationTerminate.class, generatorProbe.receiveMessage());
+    assertInstanceOf(SimulationTerminate.class, storageProbe.receiveMessage());
 
-    // Root coordinator gets an output of 0 from the generator. It then tells the simulator to
-    // execute and external transition with an input of 0 and the generator to execute and
-    // internal transition
-    DevsMessage messag5 = storageInProbe.receiveMessage();
-    assert (messag5 instanceof ExecuteTransition<?>);
-    ExecuteTransition<LongSimTime> executeExternalTransition =
-        (ExecuteTransition<LongSimTime>) messag5;
-    assert (executeExternalTransition.getPayload().getInputs().size() > 0);
-    List<PortValue<?>> modelInputs = executeExternalTransition.getPayload().getInputs();
-    assert ((Integer) modelInputs.get(0).getValue() == 0);
-    assert (executeExternalTransition.getEventTime().getT() == 1L);
-    storageSim.tell(executeExternalTransition);
-
-    DevsMessage message6 = generatorInProbe.receiveMessage();
-    assert (message6 instanceof ExecuteTransition<?>);
-    ExecuteTransition<LongSimTime> executeInternalTransition =
-        (ExecuteTransition<LongSimTime>) message6;
-    assert (executeInternalTransition.getPayload().getInputs().isEmpty());
-    assert (executeInternalTransition.getEventTime().getT() == 1L);
-    generatorSim.tell(executeInternalTransition);
-
-    // Each of the models executes transition and sends a TransitionDone to the coordinator
-    // Coordinator aggregates and sends a ModelOutputMessage to the root coordinator with a next
-    // time of 1
-    DevsMessage message7 = rootInProbe.receiveMessage();
-    assert (message7 instanceof OutputReport<?>);
-    OutputReport<LongSimTime> modelOutputMessage =
-        (OutputReport<LongSimTime>) message7;
-    assert (modelOutputMessage.getNextInternalTime().getT() == 1L);
-    assert ("genStoreCoupled".equals(modelOutputMessage.getSenderId()));
-
-    // Root coordinator starts a new cycle with a SendOutput message
-    // Coordinator sends a SendOutput to the generator and the storage model
-    coordinator.tell(RequestOutput.<LongSimTime>builder()
-        .eventTime(LongSimTime.create(1))
+    coordinator.tell(ModelTerminated.<LongSimTime>builder()
         .simulationRunId(simulationId)
-        .messageId("RequestOutput")
-        .senderId("TestActor")
-        .receiverId(generatorName)
+        .messageId("GeneratorModelTerminated")
+        .senderId(generatorName)
+        .receiverId(coordinatorName)
         .build());
-    DevsMessage message8 = generatorInProbe.receiveMessage();
-    assert (message8 instanceof RequestOutput<?>);
-    RequestOutput<LongSimTime> sendOutput3 = (RequestOutput<LongSimTime>) message8;
-    assert (sendOutput3.getEventTime().getT() == 1L);
-    generatorSim.tell(sendOutput3);
-    DevsMessage message8a = storageInProbe.receiveMessage();
-    assert (message8a instanceof RequestOutput<?>);
-    RequestOutput<LongSimTime> sendOutput3a = (RequestOutput<LongSimTime>) message8a;
-    assert (sendOutput3a.getEventTime().getT() == 1L);
-    storageSim.tell(sendOutput3a);
-
-    // Root coordinator gets an output of 1 from the generator. It then tells the storage to
-    // execute and external transition with an input of 1 and the generator to execute and
-    // internal transition
-    DevsMessage message9 = storageInProbe.receiveMessage();
-    assert (message9 instanceof ExecuteTransition<?>);
-    ExecuteTransition<LongSimTime> executeExternalTransition2 =
-        (ExecuteTransition<LongSimTime>) message9;
-    assert (executeExternalTransition2.getPayload().getInputs().size() > 0);
-    List<PortValue<?>> modelInputs2 = executeExternalTransition2.getPayload().getInputs();
-    assert ((Integer) modelInputs2.get(0).getValue() == 1);
-    assert (executeExternalTransition2.getEventTime().getT() == 1L);
-    storageSim.tell(executeExternalTransition);
-
-    DevsMessage message10 = generatorInProbe.receiveMessage();
-    assert (message10 instanceof ExecuteTransition<?>);
-    ExecuteTransition<LongSimTime> executeInternalTransition2 =
-        (ExecuteTransition<LongSimTime>) message10;
-    assert (executeInternalTransition2.getPayload().getInputs().isEmpty());
-    assert (executeInternalTransition2.getEventTime().getT() == 1L);
-    generatorSim.tell(executeInternalTransition);
-
-    // Each of the models executes transition and sends a TransitionDone to the coordinator
-    // Coordinator aggregates and sends a ModelOutputMessage to the root coordinator with a next
-    // time of 1
-    DevsMessage message11 = rootInProbe.receiveMessage();
-    assert (message11 instanceof OutputReport<?>);
-    OutputReport<LongSimTime> modelOutputMessage2 =
-        (OutputReport<LongSimTime>) message11;
-    assert (modelOutputMessage2.getNextInternalTime().getT() == 1L);
-    assert ("genStoreCoupled".equals(modelOutputMessage2.getSenderId()));
-
-    // Root coordinator starts a new cycle with a SendOutput message
-    // Coordinator sends a SendOutput to the imminent storage model
-    coordinator.tell(RequestOutput.<LongSimTime>builder()
-        .eventTime(LongSimTime.create(1))
+    coordinator.tell(ModelTerminated.<LongSimTime>builder()
         .simulationRunId(simulationId)
-        .messageId("RequestOutput")
-        .senderId("TestActor")
-        .receiverId(generatorName)
+        .messageId("StorageModelTerminated")
+        .senderId(storageName)
+        .receiverId(coordinatorName)
         .build());
-    DevsMessage message12 = storageInProbe.receiveMessage();
-    assert (message12 instanceof RequestOutput<?>);
-    RequestOutput<LongSimTime> sendOutput4 = (RequestOutput<LongSimTime>) message12;
-    assert (sendOutput4.getEventTime().getT() == 1L);
-    storageSim.tell(sendOutput4);
 
-    // The storage model sends output to the coordinator, which in turn tells it to execute
-    // transition
-    DevsMessage message13 = storageInProbe.receiveMessage();
-    assert (message13 instanceof ExecuteTransition<?>);
-    ExecuteTransition<LongSimTime> executeInternalTransition3 =
-        (ExecuteTransition<LongSimTime>) message13;
-    assert (executeInternalTransition3.getEventTime().getT() == 1L);
-    assert (executeInternalTransition3.getPayload().getInputs().isEmpty());
-    storageSim.tell(executeInternalTransition3);
+    ModelTerminated<LongSimTime> terminated = assertInstanceOf(ModelTerminated.class,
+        rootProbe.receiveMessage());
+    assertEquals(coordinatorName, terminated.getSenderId());
+  }
 
-    // The storage model executes transition and sends a TransitionDone to the coordinator
-    // Coordinator sends a ModelOutputMessage to the root coordinator with a next time of 2
-    DevsMessage message14 = rootInProbe.receiveMessage();
-    assert (message14 instanceof OutputReport<?>);
-    OutputReport<LongSimTime> modelOutputMessage3 =
-        (OutputReport<LongSimTime>) message14;
-    assert (modelOutputMessage3.getNextInternalTime().getT() == 2L);
-    assert ("genStoreCoupled".equals(modelOutputMessage3.getSenderId()));
+  private Map<String, ActorRef<DevsMessage>> modelSimulators(TestProbe<DevsMessage> generatorProbe,
+      TestProbe<DevsMessage> storageProbe) {
+    Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
+    modelSimulators.put(generatorName, generatorProbe.getRef());
+    modelSimulators.put(storageName, storageProbe.getRef());
+    return modelSimulators;
+  }
 
+  private PDevsCouplings couplings() {
+    return PDevsCouplings.builder(coordinatorName)
+        .addConnection(generatorName, "OUTPUT", storageName, "INPUT")
+        .build();
+  }
+
+  private RequestOutput<LongSimTime> requestOutput(long eventTime) {
+    return RequestOutput.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(eventTime))
+        .simulationRunId(simulationId)
+        .messageId("RequestOutput-" + eventTime)
+        .senderId(rootName)
+        .receiverId(coordinatorName)
+        .build();
+  }
+
+  private NextInternalTimeReport<LongSimTime> nextTimeReport(String senderId, long nextTime) {
+    return NextInternalTimeReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(0))
+        .simulationRunId(simulationId)
+        .messageId("NextTime-" + senderId + "-" + nextTime)
+        .senderId(senderId)
+        .receiverId(coordinatorName)
+        .nextInternalTime(LongSimTime.create(nextTime))
+        .build();
+  }
+
+  private OutputReport<LongSimTime> outputReport(String senderId, long eventTime, int value) {
+    return OutputReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(eventTime))
+        .payload(OutputReportPayload.builder()
+            .addOutputs(PortValue.<Integer>builder().value(value).portName("OUTPUT").build())
+            .build())
+        .simulationRunId(simulationId)
+        .messageId("OutputReport-" + senderId + "-" + value)
+        .senderId(senderId)
+        .receiverId(coordinatorName)
+        .nextInternalTime(LongSimTime.create(eventTime))
+        .build();
+  }
+
+  private OutputReport<LongSimTime> emptyOutputReport(String senderId, long eventTime) {
+    return OutputReport.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(eventTime))
+        .payload(OutputReportPayload.builder().build())
+        .simulationRunId(simulationId)
+        .messageId("OutputReport-" + senderId + "-empty")
+        .senderId(senderId)
+        .receiverId(coordinatorName)
+        .nextInternalTime(LongSimTime.create(eventTime))
+        .build();
+  }
+
+  private TransitionComplete<LongSimTime> transitionComplete(String senderId, long eventTime,
+      long nextTime) {
+    return TransitionComplete.<LongSimTime>builder()
+        .eventTime(LongSimTime.create(eventTime))
+        .simulationRunId(simulationId)
+        .messageId("TransitionComplete-" + senderId + "-" + nextTime)
+        .senderId(senderId)
+        .receiverId(coordinatorName)
+        .nextInternalTime(LongSimTime.create(nextTime))
+        .build();
+  }
+
+  private void assertStats(StepTimingTracker.StatsSnapshot snapshot, long count, long total,
+      long min, long max) {
+    assertEquals(count, snapshot.getCount());
+    assertEquals(total, snapshot.getTotalNanos());
+    assertEquals(count == 0 ? 0 : total / count, snapshot.getAverageNanos());
+    assertEquals(min, snapshot.getMinNanos());
+    assertEquals(max, snapshot.getMaxNanos());
+  }
+
+  private static final class IncrementingNanoClock implements java.util.function.LongSupplier {
+    private long current;
+
+    @Override
+    public long getAsLong() {
+      current += 10;
+      return current;
+    }
   }
 }

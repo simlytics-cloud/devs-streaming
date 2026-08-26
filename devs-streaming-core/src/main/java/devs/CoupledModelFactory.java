@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -37,6 +38,7 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
   protected final String modelIdentifier;
   protected final List<SimulatorProvider<T>> simulatorProviders;
   protected final PDevsCouplings couplings;
+  protected final Supplier<StepTimingTracker> stepTimingTrackerSupplier;
 
   /**
    * Constructs a CoupledModelFactory.
@@ -46,9 +48,15 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
    */
   public CoupledModelFactory(String modelIdentifier, List<SimulatorProvider<T>> simulatorProviders,
       PDevsCouplings couplings) {
+    this(modelIdentifier, simulatorProviders, couplings, StepTimingTracker::disabled);
+  }
+
+  public CoupledModelFactory(String modelIdentifier, List<SimulatorProvider<T>> simulatorProviders,
+      PDevsCouplings couplings, Supplier<StepTimingTracker> stepTimingTrackerSupplier) {
     this.modelIdentifier = modelIdentifier;
     this.simulatorProviders = simulatorProviders;
     this.couplings = couplings;
+    this.stepTimingTrackerSupplier = stepTimingTrackerSupplier;
   }
 
 
@@ -67,7 +75,8 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
         context.watch(subordinateModel);
         modelSimulators.put(simulatorProvider.getModelIdentifier(), subordinateModel);
       }
-      return new PDevsCoordinator<>(modelIdentifier, modelSimulators, couplings, context);
+      return new PDevsCoordinator<>(modelIdentifier, modelSimulators, couplings, context,
+          stepTimingTrackerSupplier.get());
     });
   }
 
