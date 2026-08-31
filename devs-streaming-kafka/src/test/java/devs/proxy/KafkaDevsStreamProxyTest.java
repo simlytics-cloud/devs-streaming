@@ -51,7 +51,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
@@ -131,8 +131,9 @@ public class KafkaDevsStreamProxyTest {
     KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
     Thread.sleep(5000);
     KafkaUtils.createTopic(genStoreSystemTopic, adminClient, Optional.of(1), Optional.empty());
-    Producer<Long, String> producer =
-        KafkaUtils.createProducer(ConfigUtils.copyProperties(kafkaClusterProperties));
+    String runId = "KafkaDevsStreamProxyTest";
+    KafkaProducer<String, String> producer =
+        KafkaUtils.createStringKeyProducer(ConfigUtils.copyProperties(kafkaClusterProperties));
 
     ActorTestKit testKit = ActorTestKit.create();
 
@@ -140,7 +141,8 @@ public class KafkaDevsStreamProxyTest {
     final TestProbe<DevsMessage> fromSimulatorProbe = testKit.createTestProbe("fromSimulatorProbe");
 
     final ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create(generatorName, genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create(generatorName, runId, genStoreSystemTopic,
+            kafkaClusterConfig),
         "Proxy");
     
     final ActorRef<DevsMessage> simulator = testKit.spawn(
@@ -148,7 +150,7 @@ public class KafkaDevsStreamProxyTest {
             new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)));
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(toSimulatorProbe.getRef(),
-        fromSimulatorProbe.getRef(), generatorName, kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
+        fromSimulatorProbe.getRef(), generatorName, runId, kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
 
     // Initialize and expect next sim time to be 1
     SimulationInit<LongSimTime> simulationInit = SimulationInit.<LongSimTime>builder()
@@ -160,7 +162,7 @@ public class KafkaDevsStreamProxyTest {
         .build();
     String initSimString = objectMapper.writeValueAsString(simulationInit);
     final Long start = System.currentTimeMillis();
-    producer.send(new ProducerRecord<>(genStoreSystemTopic, 0L, initSimString));
+    producer.send(new ProducerRecord<>(genStoreSystemTopic, runId, initSimString));
     DevsMessage devsMessageFromKafka = toSimulatorProbe.receiveMessage(Duration.ofSeconds(10));
     assert (devsMessageFromKafka instanceof SimulationInitMessage<?>);
     SimulationInitMessage<LongSimTime> initSimFromKafka =
@@ -232,8 +234,10 @@ public class KafkaDevsStreamProxyTest {
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
             new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
+    String runId = "KafkaDevsStreamProxyTest";
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("generator", runId, genStoreSystemTopic,
+            kafkaClusterConfig),
         "generatorProxy");
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
@@ -242,7 +246,8 @@ public class KafkaDevsStreamProxyTest {
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("storage", genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("storage", runId, genStoreSystemTopic,
+            kafkaClusterConfig),
         "storageProxy");
 
     TestProbe<DevsMessage> toRecorderProbe = testKit.createTestProbe("toRecorderProbe");
@@ -266,15 +271,17 @@ public class KafkaDevsStreamProxyTest {
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =
-        testKit.spawn(KafkaDevsStreamProxy.create("coordinator", genStoreSystemTopic,
-            kafkaClusterConfig), "coordinatorProxy");
+        testKit.spawn(KafkaDevsStreamProxy.create("coordinator", runId,
+            genStoreSystemTopic, kafkaClusterConfig), "coordinatorProxy");
 
     Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
-        coordinatorProxy, "storage", kafkaConsumerConfig, genStoreSystemTopic), "storageReceiver");
+        coordinatorProxy, "storage", runId, kafkaConsumerConfig, genStoreSystemTopic),
+        "storageReceiver");
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(generator,
-        coordinatorProxy, "generator", kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
+        coordinatorProxy, "generator", runId, kafkaConsumerConfig, genStoreSystemTopic),
+        "generatorReceiver");
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
@@ -284,7 +291,8 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> coordinatorReceiver =
         testKit.spawn(KafkaReceiver.create(coordinator, rootCoordinator,
-            "genStoreCoupled", kafkaConsumerConfig, genStoreSystemTopic), "coordinatorReceiver");
+            "genStoreCoupled", runId, kafkaConsumerConfig, genStoreSystemTopic),
+            "coordinatorReceiver");
 
     final ActorRef<DevsMessage> recorderSim =
         testKit.spawn(
@@ -410,8 +418,10 @@ public class KafkaDevsStreamProxyTest {
         Behaviors.setup(context -> new PDevsSimulator<LongSimTime, Integer, GeneratorModel>(
             new GeneratorModel(0, generatorName), LongSimTime.builder().t(0L).build(), context)),
         "generatorSim");
+    String runId = "KafkaDevsStreamProxyTestNoProbes";
     ActorRef<DevsMessage> generatorProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("generator", genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("generator", runId, genStoreSystemTopic,
+            kafkaClusterConfig),
         "generatorProxy");
 
     ActorRef<DevsMessage> storage = testKit.spawn(Behaviors
@@ -420,7 +430,8 @@ public class KafkaDevsStreamProxyTest {
                 LongSimTime.builder().t(0L).build(), context)),
         "storageSim");
     ActorRef<DevsMessage> storageProxy = testKit.spawn(
-        KafkaDevsStreamProxy.create("storage", genStoreSystemTopic, kafkaClusterConfig),
+        KafkaDevsStreamProxy.create("storage", runId, genStoreSystemTopic,
+            kafkaClusterConfig),
         "storageProxy");
 
     ActorRef<DevsMessage> recorderSim =
@@ -450,14 +461,16 @@ public class KafkaDevsStreamProxyTest {
             "coordinator");
 
     ActorRef<DevsMessage> coordinatorProxy =
-        testKit.spawn(KafkaDevsStreamProxy.create("genStoreCoupled", genStoreSystemTopic,
-            kafkaClusterConfig), "coordinatorProxy");
+        testKit.spawn(KafkaDevsStreamProxy.create("genStoreCoupled", runId,
+            genStoreSystemTopic, kafkaClusterConfig), "coordinatorProxy");
     Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
-        coordinatorProxy, "storage", kafkaConsumerConfig, genStoreSystemTopic), "storageReceiver");
+        coordinatorProxy, "storage", runId, kafkaConsumerConfig, genStoreSystemTopic),
+        "storageReceiver");
 
     ActorRef<DevsMessage> generatorReceiver = testKit.spawn(KafkaReceiver.create(generator,
-        coordinatorProxy, "generator",kafkaConsumerConfig, genStoreSystemTopic), "generatorReceiver");
+        coordinatorProxy, "generator", runId, kafkaConsumerConfig, genStoreSystemTopic),
+        "generatorReceiver");
 
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(
@@ -467,7 +480,8 @@ public class KafkaDevsStreamProxyTest {
 
     ActorRef<DevsMessage> coordinatorReceiver =
         testKit.spawn(KafkaReceiver.create(coordinator, rootCoordinator,
-            "genStoreCoupled", kafkaConsumerConfig, genStoreSystemTopic), "coordinatorReceiver");
+            "genStoreCoupled", runId, kafkaConsumerConfig, genStoreSystemTopic),
+            "coordinatorReceiver");
 
     Thread.sleep(3000);
     rootCoordinator.tell(SimulationInit.<LongSimTime>builder()

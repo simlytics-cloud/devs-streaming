@@ -16,63 +16,26 @@
 
 package devs.proxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import devs.iso.DevsMessage;
-import devs.iso.DevsSimMessage;
-import devs.iso.ModelTerminated;
-import devs.iso.SimulationInit;
-import devs.iso.SimulationInitMessage;
-import devs.iso.SimulationTerminate;
 import devs.iso.time.SimTime;
-import devs.utils.DevsObjectMapper;
-import java.util.UUID;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.pekko.Done;
-import org.apache.pekko.NotUsed;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
-import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.apache.pekko.actor.typed.javadsl.Receive;
-import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
-import org.apache.pekko.kafka.ConsumerSettings;
-import org.apache.pekko.kafka.Subscriptions;
-import org.apache.pekko.kafka.javadsl.Consumer;
-import org.apache.pekko.stream.ActorAttributes;
-import org.apache.pekko.stream.Supervision;
-import org.apache.pekko.stream.javadsl.Sink;
-import org.slf4j.Logger;
 
 
 /**
  * KafkaReceiver is a Pekko actor implementation that interacts with a Kafka topic to consume
  * messages using the Pekko Kafka library. It processes incoming messages, transforms them into DEVS
  * framework messages, and forwards them to a given DEVS simulation component.
- * <p>
- * This class makes use of Pekko Streams for consuming messages from Kafka and manages the stream
- * lifecycle, including starting and shutting down the stream. It uses a custom ObjectMapper to
- * deserialize Kafka records into DevsMessage objects.
- * <p>
- * Key features include: - Setting up an Pekko Kafka consumer. - Processing Kafka records into DEVS
- * framework messages. - Forwarding processed DEVS messages to the appropriate component. - Graceful
- * shutdown when the simulation completes.
- * <p>
- * KafkaReceiver extends AbstractBehavior to define and handle incoming DEVS framework messages
- * within the Pekko framework.
+ *
+ * <p>This class is a thin Kafka wrapper over {@link AbstractDevsStreamReceiver}. All DEVS-specific
+ * receiver logic (deserialization, {@code receiverId} filtering, {@link devs.iso.SimulationInit}
+ * wrapping, forwarding, termination) lives in the base class; this class only constructs the
+ * Kafka-specific {@link KafkaMessageReceiver}.
  */
-public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
-
-  private final Consumer.DrainingControl<Done> control;
-  private final ActorRef<DevsMessage> sender;
-  private final String recieverId;
-
-  private final ActorRef<DevsMessage> devsComponent;
-  private final Logger logger;
-  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+public class KafkaReceiver extends AbstractDevsStreamReceiver {
 
   /**
    * Creates a new behavior instance of KafkaReceiver to handle Kafka message consumption and
@@ -84,19 +47,24 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
    *                                 with.
    * @param sender                   The actor reference responsible for sending messages to the
    *                                 KafkaReceiver.
+   * @param recieverId               The receiver ID used to filter inbound messages.
+   * @param runId                    Simulation run identifier; records with a different
+   *                                 {@code X-Run-Id} header are dropped before deserialization.
    * @param pekkoKafkaConsumerConfig The configuration for the Pekko Kafka consumer.
    * @param consumerTopic            The Kafka topic to subscribe to and consume messages from.
    * @return A behavior instance of type Behavior, configured to handle messages for KafkaReceiver.
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(
       ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String recieverId,
-      Config pekkoKafkaConsumerConfig, String consumerTopic) {
+      String runId, Config pekkoKafkaConsumerConfig, String consumerTopic) {
     return Behaviors.setup(context -> new KafkaReceiver(context, devsComponent, sender,
-        recieverId, pekkoKafkaConsumerConfig, consumerTopic));
+        recieverId, runId, pekkoKafkaConsumerConfig, consumerTopic));
   }
 
   /**
-   * Constructs a KafkaReceiver to handle Kafka message consumption and processing.
+   * Constructs a KafkaReceiver to handle Kafka message consumption and processing. Builds a
+   * {@link KafkaMessageReceiver} from the provided Kafka configuration and passes it to the
+   * abstract base class which owns all DEVS receiver behavior.
    *
    * @param context                  The actor context for this actor, providing access to the actor
    *                                 system, logging, and other contextual features.
@@ -104,94 +72,27 @@ public class KafkaReceiver extends AbstractBehavior<DevsMessage> {
    *                                 with.
    * @param sender                   The actor reference responsible for sending messages to the
    *                                 KafkaReceiver.
+   * @param receiverId               The receiver ID used to filter inbound messages.
+   * @param runId                    Simulation run identifier; forwarded to
+   *                                 {@link KafkaMessageReceiver} for stable group ID and header
+   *                                 filtering.
    * @param pekkoKafkaConsumerConfig The configuration for the Pekko Kafka consumer.
    * @param consumerTopic            The Kafka topic to subscribe to and consume messages from.
    */
   public KafkaReceiver(ActorContext<DevsMessage> context, ActorRef<DevsMessage> devsComponent,
-      ActorRef<DevsMessage> sender, String receiverId, Config pekkoKafkaConsumerConfig, 
-      String consumerTopic) {
-    super(context);
-    this.devsComponent = devsComponent;
-    this.sender = sender;
-    this.recieverId = receiverId;
-    this.logger = context.getLog();
-    ConsumerSettings<String, String> consumerSettings = ConsumerSettings
-        .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
-        .withGroupId(UUID.randomUUID().toString());
-
-    // Using a Kafka consumer from the Pekko Kafka project because this consumer does a better job
-    // of managing
-    // threads. For example, the Java Kafka consumer uses an infinite loop to poll for data
-    // consuming an entire thread for this purpose
-    // The planSource consumer does not auto commit and subscribes to the webLvcTopic
-    // The consumer's auto.offset.reset property is set to earliest so it always reads all data
-    this.control = Consumer.plainSource(consumerSettings, Subscriptions.topics(consumerTopic))
-        .map(record -> {
-          logger.debug("Kafka receiver for " + receiverId + " received record: " + record.value());
-          processRecord(record);
-          return NotUsed.notUsed();
-        })
-        // This supervisor strategy will drop the current record being processed in the event of
-        // an
-        // error and will continue consuming with the next message
-        .withAttributes(
-            ActorAttributes.withSupervisionStrategy(Supervision.getResumingDecider()))
-        // This statement enables logging of messages in the previous step of the stream
-        .log("LopConsumerLog")
-        // Connect to a sink to continuously run the stream and a materializer that gives a
-        // control
-        // to shut down the stream on command.
-        .toMat(Sink.ignore(), Consumer::createDrainingControl).run(getContext().getSystem());
+      ActorRef<DevsMessage> sender, String receiverId, String runId,
+      Config pekkoKafkaConsumerConfig, String consumerTopic) {
+    super(context, devsComponent, sender, receiverId,
+        new KafkaMessageReceiver(pekkoKafkaConsumerConfig, consumerTopic, runId, receiverId,
+            context.getSystem()));
   }
 
-
-  @Override
-  public Receive<DevsMessage> createReceive() {
-    ReceiveBuilder<DevsMessage> builder = newReceiveBuilder();
-    builder.onMessage(DevsMessage.class, this::onDevsMessage);
-    return builder.build();
-  }
-
-  Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
-    if (devsMessage instanceof DevsSimMessage devsSimMessage) {
-      String messageReceiverId = devsSimMessage.getReceiverId();
-      if (!messageReceiverId.equals(recieverId)) {
-        logger.debug("Dropping message for : " + devsSimMessage.getReceiverId()
-        + " because it is not for : " + recieverId);
-        return Behaviors.same();
-      } else {
-        if (devsMessage instanceof SimulationInit<?> simulationInit) {
-          devsMessage = new SimulationInitMessage<>(simulationInit, sender);
-        }
-        devsComponent.tell(devsMessage);
-        if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
-          control.shutdown();
-          return Behaviors.stopped();
-        } else {
-          return Behaviors.same();
-        }
-      }
-    } else {
-      logger.error("Received message that was not a DevsSimMessage: " 
-          + devsMessage.getClass().getName());
-      return Behaviors.same();
-    }
-
-  }
-
-  private void processRecord(ConsumerRecord<String, String> record) {
-    DevsMessage devsMessage = null;
-    try {
-      devsMessage = objectMapper.readValue(record.value(), DevsSimMessage.class);
-    } catch (JsonProcessingException e) {
-      logger.error("Could not deserialize JSON record " + record.value());
-      e.printStackTrace();
-    }
-    getContext().getSelf().tell(devsMessage);
-  }
-
-
+  /**
+   * Returns the receiver ID this actor filters inbound messages on.
+   *
+   * @return the receiver ID string
+   */
   public String getRecieverId() {
-    return recieverId;
+    return getReceiverId();
   }
 }

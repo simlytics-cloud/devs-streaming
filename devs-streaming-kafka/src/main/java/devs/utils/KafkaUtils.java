@@ -111,12 +111,19 @@ public class KafkaUtils {
    * Logs the deletion process and returns whether the deletion operation was completed
    * successfully.
    *
+   * <p><b>Deprecated:</b> Topic deletion is no longer required for run isolation. Records are now
+   * keyed by {@code runId} and consumers filter by the {@code X-Run-Id} header, so multiple runs
+   * can safely share a single topic. Rely on Kafka's time/size retention policy for cleanup
+   * instead of deleting topics between runs.
+   *
    * @param topics      a list of topic names to be deleted
    * @param adminClient an instance of {@link AdminClient} to connect to the Kafka cluster
    * @return true if the deletion operation was marked as done, false otherwise
    * @throws ExecutionException   if an error occurs during the topic deletion process
    * @throws InterruptedException if the operation is interrupted
+   * @deprecated No longer required for run isolation; use runId-based keying and header filtering.
    */
+  @Deprecated
   public static boolean deleteTopics(List<String> topics, AdminClient adminClient)
       throws ExecutionException, InterruptedException {
     System.out.print("Deleting topics " + String.join(", ", topics));
@@ -189,11 +196,36 @@ public class KafkaUtils {
    *
    * @param producerProperties the properties to configure the KafkaProducer
    * @return a KafkaProducer instance initialized with the provided properties
+   * @deprecated Use {@link #createStringKeyProducer(Properties)} instead. Records are now keyed by
+   *     {@code runId} (a String) rather than the monotonic sequence (Long).
    */
+  @Deprecated
   public static KafkaProducer<Long, String> createProducer(Properties producerProperties) {
     producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
     producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.LongSerializer");
+    producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringSerializer");
+    return new KafkaProducer<>(producerProperties);
+  }
+
+  /**
+   * Creates a {@link KafkaProducer}{@code <String, String>} configured to key records by
+   * {@code runId} (a String). Acknowledgments are required for all sent messages.
+   *
+   * <p>Use this producer in conjunction with {@code runId}-based record keying so that all records
+   * for a given run land in the same partition, preserving FIFO ordering within a run while
+   * allowing multiple runs to share a single topic.
+   *
+   * @param producerProperties the base properties to configure the KafkaProducer
+   * @return a {@link KafkaProducer}{@code <String, String>} initialized with the provided
+   *     properties
+   */
+  public static KafkaProducer<String, String> createStringKeyProducer(
+      Properties producerProperties) {
+    producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
+    producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+        "org.apache.kafka.common.serialization.StringSerializer");
     producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringSerializer");
     return new KafkaProducer<>(producerProperties);
