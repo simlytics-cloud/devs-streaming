@@ -68,7 +68,7 @@ public class PDevsCoordinator<T extends SimTime>
     extends AbstractBehavior<DevsMessage> {
 
   protected record NextInternalTimeCheck() implements DevsMessage {}
-  protected record OutputReportCheck() implements DevsMessage {}
+  protected record OutputReportCheck(SimTime checkTime) implements DevsMessage {}
   protected record AwaitTransitionCheck() implements DevsMessage {}
   protected record ModelTerminatedCheck() implements DevsMessage {}
 
@@ -356,7 +356,7 @@ public class PDevsCoordinator<T extends SimTime>
           );
       outputMap.put(m, Optional.empty());
     });
-    getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new OutputReportCheck());
+    getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new OutputReportCheck(requestOutput.getEventTime()));
     return this;
   }
 
@@ -471,13 +471,13 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   protected Behavior<DevsMessage> onOutputReportCheck(OutputReportCheck outputReportCheck) {
-    if (!haveAllOutputs()) {
+    if (!haveAllOutputs() && this.timeLast.compareTo(outputReportCheck.checkTime) <= 0) {
       for (String modelId: outputMap.keySet()) {
         if (!outputMap.get(modelId).isPresent()) {
           getContext().getLog().warn("{} waiting for outputReport from {}", modelIdentifier, modelId);
         }
       }
-      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), new OutputReportCheck());
+      getContext().scheduleOnce(Duration.ofSeconds(10), getContext().getSelf(), outputReportCheck);
     }
     return this;
   }
