@@ -111,7 +111,7 @@ public class KafkaUtils {
    * Logs the deletion process and returns whether the deletion operation was completed
    * successfully.
    *
-   * <p><b>Deprecated:</b> Topic deletion is no longer required for run isolation. Records are now
+   * <p><b>Note:</b> Topic deletion is no longer required for run isolation. Records are now
    * keyed by {@code runId} and consumers filter by the {@code X-Run-Id} header, so multiple runs
    * can safely share a single topic. Rely on Kafka's time/size retention policy for cleanup
    * instead of deleting topics between runs.
@@ -121,9 +121,7 @@ public class KafkaUtils {
    * @return true if the deletion operation was marked as done, false otherwise
    * @throws ExecutionException   if an error occurs during the topic deletion process
    * @throws InterruptedException if the operation is interrupted
-   * @deprecated No longer required for run isolation; use runId-based keying and header filtering.
    */
-  @Deprecated
   public static boolean deleteTopics(List<String> topics, AdminClient adminClient)
       throws ExecutionException, InterruptedException {
     System.out.print("Deleting topics " + String.join(", ", topics));
@@ -187,26 +185,6 @@ public class KafkaUtils {
     consumerProperties.put("enable.auto.commit", "false");
     consumerProperties.put("auto.offset.reset", "earliest");
     return new KafkaConsumer<>(consumerProperties);
-  }
-
-  /**
-   * Creates a KafkaProducer instance with the provided properties. The method configures the
-   * producer to use appropriate serializers for keys and values, and ensures that acknowledgments
-   * are required for all sent messages.
-   *
-   * @param producerProperties the properties to configure the KafkaProducer
-   * @return a KafkaProducer instance initialized with the provided properties
-   * @deprecated Use {@link #createStringKeyProducer(Properties)} instead. Records are now keyed by
-   *     {@code runId} (a String) rather than the monotonic sequence (Long).
-   */
-  @Deprecated
-  public static KafkaProducer<Long, String> createProducer(Properties producerProperties) {
-    producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
-    producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.LongSerializer");
-    producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
-        "org.apache.kafka.common.serialization.StringSerializer");
-    return new KafkaProducer<>(producerProperties);
   }
 
   /**
