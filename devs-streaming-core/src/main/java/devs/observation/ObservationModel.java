@@ -19,7 +19,7 @@ package devs.observation;
 import devs.PDEVSModel;
 import devs.PDevsSimulator;
 import devs.iso.PortValue;
-import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
 
@@ -32,14 +32,14 @@ import java.util.Set;
 /**
  * Backend-neutral observation model that forwards observations to discovered sink actors.
  */
-public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
+public class ObservationModel<T extends SimTime> extends PDEVSModel<T, Void> {
 
-  private final List<Observation<LongSimTime, Object>> pendingObservations = new ArrayList<>();
+  private final List<Observation<T, Object>> pendingObservations = new ArrayList<>();
   private final Set<ActorRef<DevsObservationMessage>> observationSinks = new LinkedHashSet<>();
   private final String runId;
   private final String branchId;
   private final String separator;
-  private LongSimTime currentTime = LongSimTime.create(0L);
+  private T currentTime;
 
   /**
    * Creates an observation router that uses the default producer separator.
@@ -73,7 +73,8 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
    * @param simulator simulator that provides access to the Pekko actor system
    */
   @Override
-  public void initialize(PDevsSimulator<LongSimTime, Void, ?> simulator) {
+  public void initialize(PDevsSimulator<T, Void, ?> simulator) {
+    currentTime = simulator.getTimeLast();
     super.initialize(simulator);
     simulator.getContext().getSystem().receptionist().tell(
         Receptionist.subscribe(ObservationSinkKeys.OBSERVATION_SINK_KEY,
@@ -99,10 +100,10 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
   }
 
   @Override
-  public void externalStateTransitionFunction(LongSimTime elapsedTime, List<PortValue<?>> inputs) {
-    currentTime = currentTime.plus(elapsedTime);
+  public void externalStateTransitionFunction(T elapsedTime, List<PortValue<?>> inputs) {
+    currentTime = (T) currentTime.plus(elapsedTime);
     for (PortValue<?> input : inputs) {
-      Observation<LongSimTime, Object> observation = buildObservation(input);
+      Observation<T, Object> observation = buildObservation(input);
       if (observation != null) {
         if (observationSinks.isEmpty()) {
           pendingObservations.add(observation);
@@ -119,7 +120,7 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
    * @param input incoming port value emitted by an observed model
    * @return observation message to forward to registered sinks
    */
-  protected Observation<LongSimTime, Object> buildObservation(PortValue<?> input) {
+  protected Observation<T, Object> buildObservation(PortValue<?> input) {
     String producerId = ObservationUtils.extractProducerId(input.getPortName(), separator,
         modelIdentifier);
 
@@ -127,7 +128,7 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
       assert !producerId.equals(modelIdentifier) : "Producer ID should be extracted from port name";
     }
 
-    return Observation.<LongSimTime, Object>builder()
+    return Observation.<T, Object>builder()
         .runId(runId)
         .branchId(branchId)
         .time(currentTime)
@@ -139,12 +140,13 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
 
   @Override
   public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
-    externalStateTransitionFunction(LongSimTime.create(0L), inputs);
+    
+    externalStateTransitionFunction((T) currentTime.createZeroTime(), inputs);
   }
 
   @Override
-  public LongSimTime timeAdvanceFunction() {
-    return LongSimTime.buildMaxValue();
+  public T timeAdvanceFunction() {
+    return (T) currentTime.getMaxValue();
   }
 
   @Override
@@ -156,13 +158,13 @@ public class ObservationModel extends PDEVSModel<LongSimTime, Void> {
     if (observationSinks.isEmpty() || pendingObservations.isEmpty()) {
       return;
     }
-    for (Observation<LongSimTime, Object> observation : pendingObservations) {
+    for (Observation<T, Object> observation : pendingObservations) {
       tellObservationSinks(observation);
     }
     pendingObservations.clear();
   }
 
-  private void tellObservationSinks(Observation<LongSimTime, Object> observation) {
+  private void tellObservationSinks(Observation<T, Object> observation) {
     for (ActorRef<DevsObservationMessage> observationSink : observationSinks) {
       observationSink.tell(observation);
     }

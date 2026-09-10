@@ -140,6 +140,11 @@ public abstract class AbstractDoubleSimTime extends SimTime {
   public SimTime getTimeUntilMax() {
     return DoubleSimTime.maxValue((DoubleSimTime) this);
   }
+  
+  @Override
+  public SimTime createZeroTime() {
+    return DoubleSimTime.create(0.0);
+  }
 
   /**
    * Compares this {@code AbstractDoubleSimTime} instance with the specified {@code SimTime} operand

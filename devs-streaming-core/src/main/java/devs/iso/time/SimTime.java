@@ -38,6 +38,9 @@ public abstract class SimTime implements Comparable<SimTime> {
 
   @JsonIgnore
   public abstract SimTime getMaxValue();
+  
+  @JsonIgnore
+  public abstract SimTime createZeroTime();
 
   @JsonIgnore
   public abstract SimTime getTimeUntilMax();

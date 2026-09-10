@@ -357,4 +357,7 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
 
+  public T getTimeLast() {
+    return timeLast;
+  }
 }

@@ -134,6 +134,11 @@ public abstract class AbstractLongSimTime extends SimTime {
   public SimTime getTimeUntilMax() {
     return LongSimTime.maxValue((LongSimTime) this);
   }
+  
+  @Override
+  public SimTime createZeroTime() {
+    return LongSimTime.create(0L);
+  }
 
   /**
    * Compares this instance of simulation time with the specified {@link SimTime} instance.
