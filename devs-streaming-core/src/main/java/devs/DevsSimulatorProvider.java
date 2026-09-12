@@ -2,6 +2,7 @@ package devs;
 
 import devs.iso.DevsMessage;
 import devs.iso.time.SimTime;
+import devs.pekko.Actors;
 import devs.utils.ModelUtils;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -21,7 +22,7 @@ public class DevsSimulatorProvider<T extends SimTime> implements SimulatorProvid
    */
   @Override
   public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context, T initialTime) {
-    return context.spawn(PDevsSimulator.create(devsModel, initialTime),
+    return Actors.spawn(context, PDevsSimulator.create(devsModel, initialTime),
         ModelUtils.toLegalActorName(devsModel.getModelIdentifier()));
   }
 

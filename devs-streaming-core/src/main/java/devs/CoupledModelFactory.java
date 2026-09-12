@@ -17,7 +17,9 @@
 package devs;
 
 import devs.iso.DevsMessage;
-import java.util.ArrayList;
+import devs.iso.time.SimTime;
+import devs.pekko.Actors;
+import devs.utils.ModelUtils;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,8 +28,6 @@ import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import devs.iso.time.SimTime;
-import devs.utils.ModelUtils;
 
 /**
  * A factory to create a PDevsCoordinator for a DEVS coupled model consisting of subordinate atomic
@@ -44,54 +44,62 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
    * Constructs a CoupledModelFactory.
    *
    * @param modelIdentifier the unique string identifying this model
-   * @param couplings a list of PDevsCouplings used to coupled subordinate DEVS models
+   * @param simulatorProviders providers for the subordinate DEVS model simulators
+   * @param couplings a list of PDevsCouplings used to couple subordinate DEVS models
    */
-  public CoupledModelFactory(String modelIdentifier, List<SimulatorProvider<T>> simulatorProviders,
+  public CoupledModelFactory(
+      String modelIdentifier,
+      List<SimulatorProvider<T>> simulatorProviders,
       PDevsCouplings couplings) {
     this(modelIdentifier, simulatorProviders, couplings, StepTimingTracker::disabled);
   }
 
-  public CoupledModelFactory(String modelIdentifier, List<SimulatorProvider<T>> simulatorProviders,
-      PDevsCouplings couplings, Supplier<StepTimingTracker> stepTimingTrackerSupplier) {
+  public CoupledModelFactory(
+      String modelIdentifier,
+      List<SimulatorProvider<T>> simulatorProviders,
+      PDevsCouplings couplings,
+      Supplier<StepTimingTracker> stepTimingTrackerSupplier) {
     this.modelIdentifier = modelIdentifier;
     this.simulatorProviders = simulatorProviders;
     this.couplings = couplings;
     this.stepTimingTrackerSupplier = stepTimingTrackerSupplier;
   }
 
-
   /**
    * Creates the PDevsCoordinator for the coupled model.
    *
    * @param initialTime the initial time for the simulation
-   * @return the created PDevsCoordinator
+   * @return the created PDevsCoordinator behavior
    */
   public Behavior<DevsMessage> create(T initialTime) {
-    return Behaviors.setup(context -> {
-      Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
-      for (SimulatorProvider<T> simulatorProvider : simulatorProviders) {
-        ActorRef<DevsMessage> subordinateModel =
-            simulatorProvider.provideSimulator(context, initialTime);
-        context.watch(subordinateModel);
-        modelSimulators.put(simulatorProvider.getModelIdentifier(), subordinateModel);
-      }
-      return new PDevsCoordinator<>(modelIdentifier, modelSimulators, couplings, context,
-          stepTimingTrackerSupplier.get());
-    });
+    return Behaviors.setup(
+        context -> {
+          Map<String, ActorRef<DevsMessage>> modelSimulators = new HashMap<>();
+          for (SimulatorProvider<T> simulatorProvider : simulatorProviders) {
+            ActorRef<DevsMessage> subordinateModel =
+                simulatorProvider.provideSimulator(context, initialTime);
+            context.watch(subordinateModel);
+            modelSimulators.put(simulatorProvider.getModelIdentifier(), subordinateModel);
+          }
+          return new PDevsCoordinator<>(
+              modelIdentifier,
+              modelSimulators,
+              couplings,
+              context,
+              stepTimingTrackerSupplier.get());
+        });
   }
 
-  /**
-   * Returns the model identifier of the underlying coupled model.
-   */
+  /** Returns the model identifier of the underlying coupled model. */
   public String getModelIdentifier() {
     return modelIdentifier;
   }
 
-  /**
-   * Provides the PDevsCoordinator for the underlying coupled model.
-   */
+  /** Provides the PDevsCoordinator for the underlying coupled model. */
   @Override
-  public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context, T initialTime) {
-    return context.spawn(create(initialTime), ModelUtils.toLegalActorName(modelIdentifier));
+  public ActorRef<DevsMessage> provideSimulator(
+      ActorContext<DevsMessage> context, T initialTime) {
+    return Actors.spawn(
+        context, create(initialTime), ModelUtils.toLegalActorName(modelIdentifier));
   }
 }

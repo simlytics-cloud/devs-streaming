@@ -64,7 +64,21 @@ public abstract class ScheduledDevsModel<T extends SimTime, S extends ScheduleSt
   }
   
   public abstract void handleScheduledEvents(List<Object> events);
+
   
+  
+  /**  
+   * For a ScheduledDevsModel, the internalStateTranisionFunction clears the
+   * list of outputs, so it must be before the externalStateTransitioinFunction.
+   * 
+   * @see devs.PDevsInterface#confluentStateTransitionFunction(java.util.List)
+   */
+  @Override
+  public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
+    internalStateTransitionFunction();
+    externalStateTransitionFunction((T) modelState.getCurrentTime().createZeroTime(), inputs);
+    
+  }
 
   /**
    * Determines the next scheduled internal state transition time for the model based on its
