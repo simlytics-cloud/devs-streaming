@@ -50,15 +50,15 @@ public class KafkaReceiver extends AbstractDevsStreamReceiver {
    * @param recieverId               The receiver ID used to filter inbound messages.
    * @param runId                    Simulation run identifier; records with a different
    *                                 {@code X-Run-Id} header are dropped before deserialization.
-   * @param pekkoKafkaConsumerConfig The configuration for the Pekko Kafka consumer.
+   * @param kafkaConfig              Shared Kafka client configuration.
    * @param consumerTopic            The Kafka topic to subscribe to and consume messages from.
    * @return A behavior instance of type Behavior, configured to handle messages for KafkaReceiver.
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(
       ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String recieverId,
-      String runId, Config pekkoKafkaConsumerConfig, String consumerTopic) {
+      String runId, Config kafkaConfig, String consumerTopic) {
     return Behaviors.setup(context -> new KafkaReceiver(context, devsComponent, sender,
-        recieverId, runId, pekkoKafkaConsumerConfig, consumerTopic));
+       recieverId, runId, kafkaConfig, consumerTopic));
   }
 
   /**
@@ -76,14 +76,14 @@ public class KafkaReceiver extends AbstractDevsStreamReceiver {
    * @param runId                    Simulation run identifier; forwarded to
    *                                 {@link KafkaMessageReceiver} for stable group ID and header
    *                                 filtering.
-   * @param pekkoKafkaConsumerConfig The configuration for the Pekko Kafka consumer.
+   * @param kafkaConfig              Shared Kafka client configuration.
    * @param consumerTopic            The Kafka topic to subscribe to and consume messages from.
    */
   public KafkaReceiver(ActorContext<DevsMessage> context, ActorRef<DevsMessage> devsComponent,
       ActorRef<DevsMessage> sender, String receiverId, String runId,
-      Config pekkoKafkaConsumerConfig, String consumerTopic) {
+      Config kafkaConfig, String consumerTopic) {
     super(context, devsComponent, sender, receiverId,
-        new KafkaMessageReceiver(pekkoKafkaConsumerConfig, consumerTopic, runId, receiverId,
+       new KafkaMessageReceiver(kafkaConfig, consumerTopic, runId, receiverId,
             context.getSystem()));
   }
 

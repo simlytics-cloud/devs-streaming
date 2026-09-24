@@ -26,14 +26,14 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
 public class KafkaDevsStreamProxyProvider<T extends SimTime> implements SimulatorProvider<T> {
   private final String componentName;
   private final String runId;
-  private final Config pekkoProducerConfig;
+  private final Config kafkaConfig;
   private final String producerTopic;
 
   public KafkaDevsStreamProxyProvider(String componentName, String runId,
-      String producerTopic, Config pekkoProducerConfig) {
+      String producerTopic, Config kafkaConfig) {
     this.componentName = componentName;
     this.runId = runId;
-    this.pekkoProducerConfig = pekkoProducerConfig;
+    this.kafkaConfig = kafkaConfig;
     this.producerTopic = producerTopic;
   }
 
@@ -41,7 +41,7 @@ public class KafkaDevsStreamProxyProvider<T extends SimTime> implements Simulato
   public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context, T initialTime) {
     return context.spawn(
         KafkaDevsStreamProxy.create(componentName, runId, producerTopic,
-            pekkoProducerConfig),
+            kafkaConfig),
         componentName + "KafkaDevsStreamProxy");
   }
 

@@ -16,13 +16,19 @@
 
 package devs.utils;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.CreateTopicsOptions;
@@ -31,10 +37,14 @@ import org.apache.kafka.clients.admin.DeleteTopicsResult;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.ListTopicsResult;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.errors.TopicExistsException;
+import org.apache.kafka.common.errors.UnknownTopicOrPartitionException;
+import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.pekko.kafka.ConsumerSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,6 +56,8 @@ import org.slf4j.LoggerFactory;
 public class KafkaUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(KafkaUtils.class);
+  private static final long TOPIC_OPERATION_TIMEOUT_MS = 30_000;
+  private static final long TOPIC_OPERATION_RETRY_DELAY_MS = 250;
 
   /**
    * Creates multiple topics in Kafka using the provided {@link AdminClient}. The number of
@@ -107,6 +119,99 @@ public class KafkaUtils {
   }
 
   /**
+   * Ensures a topic is ready for a remote model start.
+   *
+   * <p>{@link TopicResetMode#USE_OR_CREATE} retains an existing topic or creates an absent one.
+   * {@link TopicResetMode#RECREATE} deletes an existing topic, waits for Kafka to remove it, then
+   * creates a fresh topic. Kafka topic deletion is asynchronous, so both operations use a bounded
+   * retry period.
+   *
+   * @param topic topic to retain, create, or recreate
+   * @param adminClient Kafka admin client
+   * @param resetMode requested topic lifecycle behavior
+   * @throws ExecutionException if Kafka rejects a topic operation
+   * @throws InterruptedException if the current thread is interrupted while waiting
+   * @throws TimeoutException if Kafka does not finish deleting or creating the topic in time
+   */
+  public static void ensureTopic(String topic, AdminClient adminClient, TopicResetMode resetMode)
+      throws ExecutionException, InterruptedException, TimeoutException {
+    long deadlineNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(TOPIC_OPERATION_TIMEOUT_MS);
+
+    if (resetMode == TopicResetMode.RECREATE && topicExists(topic, adminClient, deadlineNanos)) {
+      deleteTopicIfPresent(topic, adminClient, deadlineNanos);
+      waitForTopicAbsence(topic, adminClient, deadlineNanos);
+    }
+
+    createTopicWhenAvailable(topic, adminClient, deadlineNanos);
+  }
+
+  private static void deleteTopicIfPresent(String topic, AdminClient adminClient, long deadlineNanos)
+      throws ExecutionException, InterruptedException, TimeoutException {
+    try {
+      adminClient.deleteTopics(List.of(topic)).all()
+          .get(remainingMillis(topic, deadlineNanos), TimeUnit.MILLISECONDS);
+    } catch (ExecutionException e) {
+      if (!(e.getCause() instanceof UnknownTopicOrPartitionException)) {
+        throw e;
+      }
+    }
+  }
+
+  private static boolean topicExists(String topic, AdminClient adminClient, long deadlineNanos)
+      throws ExecutionException, InterruptedException, TimeoutException {
+    return adminClient.listTopics(new ListTopicsOptions())
+        .names()
+        .get(remainingMillis(topic, deadlineNanos), TimeUnit.MILLISECONDS)
+        .contains(topic);
+  }
+
+  private static void waitForTopicAbsence(String topic, AdminClient adminClient, long deadlineNanos)
+      throws ExecutionException, InterruptedException, TimeoutException {
+    while (topicExists(topic, adminClient, deadlineNanos)) {
+      sleepUntilRetry(topic, deadlineNanos);
+    }
+  }
+
+  private static void createTopicWhenAvailable(String topic, AdminClient adminClient,
+      long deadlineNanos) throws ExecutionException, InterruptedException, TimeoutException {
+    while (true) {
+      try {
+        adminClient.createTopics(List.of(new NewTopic(topic, 1, (short) 1))).all()
+            .get(remainingMillis(topic, deadlineNanos), TimeUnit.MILLISECONDS);
+        return;
+      } catch (ExecutionException e) {
+        if (!(e.getCause() instanceof TopicExistsException)) {
+          throw e;
+        }
+        if (e.getCause().getMessage() != null && e.getCause().getMessage()
+            .toLowerCase(Locale.ROOT).contains("marked for deletion")) {
+          sleepUntilRetry(topic, deadlineNanos);
+          continue;
+        }
+        if (topicExists(topic, adminClient, deadlineNanos)) {
+          return;
+        }
+        sleepUntilRetry(topic, deadlineNanos);
+      }
+    }
+  }
+
+  private static long remainingMillis(String topic, long deadlineNanos) throws TimeoutException {
+    long remainingNanos = deadlineNanos - System.nanoTime();
+    if (remainingNanos <= 0) {
+      throw new TimeoutException("Timed out waiting for Kafka topic " + topic
+          + " to become available; it may still be marked for deletion");
+    }
+    return Math.max(1, TimeUnit.NANOSECONDS.toMillis(remainingNanos));
+  }
+
+  private static void sleepUntilRetry(String topic, long deadlineNanos)
+      throws InterruptedException, TimeoutException {
+    long delayMillis = Math.min(TOPIC_OPERATION_RETRY_DELAY_MS, remainingMillis(topic, deadlineNanos));
+    Thread.sleep(delayMillis);
+  }
+
+  /**
    * Deletes the specified topics from the Kafka cluster using the provided {@link AdminClient}.
    * Logs the deletion process and returns whether the deletion operation was completed
    * successfully.
@@ -162,8 +267,65 @@ public class KafkaUtils {
    * @return an instance of {@link AdminClient} initialized with the provided properties
    */
   public static AdminClient createAdminClient(Properties props) {
-    props.put(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
-    return AdminClient.create(props);
+    Properties adminProperties = ConfigUtils.copyProperties(props);
+    adminProperties.putIfAbsent(AdminClientConfig.REQUEST_TIMEOUT_MS_CONFIG, 5000);
+    return AdminClient.create(adminProperties);
+  }
+
+  /**
+   * Creates an admin client from the shared, user-facing Kafka client configuration.
+   *
+   * @param kafkaConfig standard Kafka client configuration
+   * @return an admin client configured with an independent property set
+   */
+  public static AdminClient createAdminClient(Config kafkaConfig) {
+    return createAdminClient(toProperties(kafkaConfig));
+  }
+
+  /**
+   * Converts the user-facing Kafka configuration to independent client properties.
+   *
+   * @param kafkaConfig standard Kafka client configuration
+   * @return independent Kafka client properties
+   */
+  public static Properties toProperties(Config kafkaConfig) {
+    return ConfigUtils.toProperties(kafkaConfig);
+  }
+
+  /**
+   * Converts the shared Kafka configuration into the string properties carried by a remote model
+   * start request.
+   *
+   * @param kafkaConfig standard Kafka client configuration
+   * @return Kafka client properties keyed and valued as strings
+   */
+  public static Map<String, String> toStringProperties(Config kafkaConfig) {
+    return kafkaConfig.entrySet().stream()
+        .collect(java.util.stream.Collectors.toMap(
+            Map.Entry::getKey, entry -> String.valueOf(entry.getValue().unwrapped())));
+  }
+
+  /**
+   * Creates Pekko Kafka consumer settings from the shared Kafka client configuration.
+   *
+   * <p>The adapter keeps Pekko connector defaults internal while preserving all standard Kafka
+   * client properties supplied by users.
+   *
+   * @param kafkaConfig standard Kafka client configuration
+   * @param groupId consumer group id
+   * @return settings for a String-keyed and String-valued Pekko Kafka consumer
+   */
+  public static ConsumerSettings<String, String> createStringConsumerSettings(Config kafkaConfig,
+      String groupId) {
+    Properties consumerProperties = toProperties(kafkaConfig);
+    consumerProperties.putIfAbsent(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+    consumerProperties.putIfAbsent(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+    Config pekkoConsumerConfig = ConfigFactory.parseProperties(consumerProperties)
+        .atPath("kafka-clients")
+        .withFallback(ConfigFactory.load().getConfig("pekko.kafka.consumer"));
+    return ConsumerSettings.create(pekkoConsumerConfig, new StringDeserializer(),
+        new StringDeserializer()).withGroupId(groupId);
   }
 
   /**
@@ -201,12 +363,23 @@ public class KafkaUtils {
    */
   public static KafkaProducer<String, String> createStringKeyProducer(
       Properties producerProperties) {
-    producerProperties.put(ProducerConfig.ACKS_CONFIG, "all");
-    producerProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+    Properties properties = ConfigUtils.copyProperties(producerProperties);
+    properties.putIfAbsent(ProducerConfig.ACKS_CONFIG, "all");
+    properties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringSerializer");
-    producerProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+    properties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
         "org.apache.kafka.common.serialization.StringSerializer");
-    return new KafkaProducer<>(producerProperties);
+    return new KafkaProducer<>(properties);
+  }
+
+  /**
+   * Creates a String-keyed producer from the shared, user-facing Kafka client configuration.
+   *
+   * @param kafkaConfig standard Kafka client configuration
+   * @return a producer configured with the supplied properties and library-owned serializers
+   */
+  public static KafkaProducer<String, String> createStringKeyProducer(Config kafkaConfig) {
+    return createStringKeyProducer(toProperties(kafkaConfig));
   }
 
   /**

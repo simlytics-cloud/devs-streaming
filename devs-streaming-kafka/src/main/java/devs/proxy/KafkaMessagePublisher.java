@@ -17,7 +17,6 @@
 package devs.proxy;
 
 import com.typesafe.config.Config;
-import devs.utils.ConfigUtils;
 import devs.utils.KafkaUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -54,23 +53,22 @@ public class KafkaMessagePublisher implements MessagePublisher {
 
   /**
    * Constructs a publisher that will send to {@code producerTopic} using the Kafka producer
-   * properties derived from {@code pekkoProducerConfig}.
+   * properties derived from {@code kafkaConfig}.
    *
    * @param componentName       name of the component (used for error logging)
    * @param runId               simulation run identifier; used as the Kafka record key and as the
    *                            value of the {@code X-Run-Id} header
    * @param receiverId          target component name; written to the {@code X-Receiver-Id} header
    * @param producerTopic       the Kafka topic to publish to
-   * @param pekkoProducerConfig Pekko config block containing Kafka producer properties
+   * @param kafkaConfig shared Kafka client configuration
    */
   public KafkaMessagePublisher(String componentName, String runId, String receiverId,
-      String producerTopic, Config pekkoProducerConfig) {
+      String producerTopic, Config kafkaConfig) {
     this.componentName = componentName;
     this.runId = runId;
     this.receiverId = receiverId;
     this.producerTopic = producerTopic;
-    Properties producerProperties = ConfigUtils.toProperties(pekkoProducerConfig);
-    this.producer = KafkaUtils.createStringKeyProducer(producerProperties);
+    this.producer = KafkaUtils.createStringKeyProducer(kafkaConfig);
   }
 
   /**

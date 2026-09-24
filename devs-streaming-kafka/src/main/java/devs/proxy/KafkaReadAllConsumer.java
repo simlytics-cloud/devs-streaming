@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.typesafe.config.Config;
 import devs.utils.DevsObjectMapper;
+import devs.utils.KafkaUtils;
 import java.util.UUID;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
 import org.apache.pekko.NotUsed;
 import org.apache.pekko.actor.ActorSystem;
@@ -50,18 +50,16 @@ public abstract class KafkaReadAllConsumer {
    * Creates a consumer that constantly reads a Kafka topic for records and procceses each record
    * with the processRecord method.
    *
-   * @param pekkoKafkaConsumerConfig A HOCON configuration for the Pekko Kafka consumer, see
-   *                                 https://github.com/apache/pekko-connectors-kafka/blob/main/core/src/main/resources/reference.conf
+   * @param kafkaConfig              shared Kafka client configuration
    * @param classicActorSystem       classic actor system in which the stream runs
    * @param topic                    topic where messages are stored
    */
-  public KafkaReadAllConsumer(Config pekkoKafkaConsumerConfig, ActorSystem classicActorSystem,
+  public KafkaReadAllConsumer(Config kafkaConfig, ActorSystem classicActorSystem,
                               String topic) {
     this.classicActorSystem = classicActorSystem;
     objectMapper.registerModule(new Jdk8Module());
-    ConsumerSettings<String, String> consumerSettings = ConsumerSettings
-        .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
-        .withGroupId(UUID.randomUUID().toString());
+    ConsumerSettings<String, String> consumerSettings = KafkaUtils.createStringConsumerSettings(
+        kafkaConfig, UUID.randomUUID().toString());
 
     // Using a Kafka consumer from the Pekko Kafka project because this consumer does a better job
     // of managing

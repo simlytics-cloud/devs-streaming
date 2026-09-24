@@ -17,10 +17,10 @@
 package devs.proxy;
 
 import com.typesafe.config.Config;
+import devs.utils.KafkaUtils;
 import java.nio.charset.StandardCharsets;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.common.header.Header;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.pekko.Done;
 import org.apache.pekko.NotUsed;
 import org.apache.pekko.actor.typed.ActorSystem;
@@ -54,7 +54,7 @@ public class KafkaMessageReceiver implements MessageReceiver {
 
   private static final Logger logger = LoggerFactory.getLogger(KafkaMessageReceiver.class);
 
-  private final Config pekkoKafkaConsumerConfig;
+  private final Config kafkaConfig;
   private final String consumerTopic;
   private final String runId;
   private final String receiverId;
@@ -65,7 +65,7 @@ public class KafkaMessageReceiver implements MessageReceiver {
    * Constructs a receiver that will consume from {@code consumerTopic}, accepting only records
    * whose {@code X-Run-Id} header equals {@code runId}.
    *
-   * @param pekkoKafkaConsumerConfig Pekko config block containing Kafka consumer properties
+   * @param kafkaConfig            shared Kafka client configuration
    * @param consumerTopic            the Kafka topic to subscribe to
    * @param runId                    simulation run identifier; records with a different (or absent)
    *                                 {@code X-Run-Id} header are dropped before deserialization
@@ -73,9 +73,9 @@ public class KafkaMessageReceiver implements MessageReceiver {
    *                                 stable consumer group id {@code runId:receiverId}
    * @param system                   the Pekko actor system used to materialize the stream
    */
-  public KafkaMessageReceiver(Config pekkoKafkaConsumerConfig, String consumerTopic,
+  public KafkaMessageReceiver(Config kafkaConfig, String consumerTopic,
       String runId, String receiverId, ActorSystem<?> system) {
-    this.pekkoKafkaConsumerConfig = pekkoKafkaConsumerConfig;
+    this.kafkaConfig = kafkaConfig;
     this.consumerTopic = consumerTopic;
     this.runId = runId;
     this.receiverId = receiverId;
@@ -99,9 +99,8 @@ public class KafkaMessageReceiver implements MessageReceiver {
    */
   @Override
   public void subscribe(java.util.function.Consumer<String> handler) {
-    ConsumerSettings<String, String> consumerSettings = ConsumerSettings
-        .create(pekkoKafkaConsumerConfig, new StringDeserializer(), new StringDeserializer())
-        .withGroupId(runId + ":" + receiverId);
+    ConsumerSettings<String, String> consumerSettings = KafkaUtils.createStringConsumerSettings(
+        kafkaConfig, runId + ":" + receiverId);
 
     // Using a Kafka consumer from the Pekko Kafka project because this consumer does a better job
     // of managing threads. For example, the Java Kafka consumer uses an infinite loop to poll for

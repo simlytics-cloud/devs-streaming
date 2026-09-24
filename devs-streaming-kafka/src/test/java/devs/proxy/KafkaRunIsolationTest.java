@@ -70,19 +70,17 @@ public class KafkaRunIsolationTest {
   static final String receiverId = "testReceiver";
 
   Config config;
-  Config kafkaClusterConfig;
-  Config kafkaConsumerConfig;
-  Properties kafkaClusterProperties;
+  Config kafkaConfig;
+  Properties kafkaProperties;
   AdminClient adminClient;
   ActorSystem<Void> system;
 
   @BeforeEach
   void setUp() throws Exception {
     config = ConfigFactory.load();
-    kafkaClusterConfig = config.getConfig("kafka-cluster");
-    kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
-    kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
-    adminClient = KafkaUtils.createAdminClient(ConfigUtils.copyProperties(kafkaClusterProperties));
+    kafkaConfig = config.getConfig("kafka.properties");
+    kafkaProperties = ConfigUtils.toProperties(kafkaConfig);
+    adminClient = KafkaUtils.createAdminClient(ConfigUtils.copyProperties(kafkaProperties));
     KafkaUtils.deleteTopics(Arrays.asList(testTopic), adminClient);
     Thread.sleep(3000);
     KafkaUtils.createTopics(Arrays.asList(testTopic), adminClient, Optional.of(4),
@@ -107,12 +105,12 @@ public class KafkaRunIsolationTest {
   @DisplayName("Published record has correct key and X-Run-Id/X-Receiver-Id/X-Sequence headers")
   void publishedRecordHasCorrectKeyAndHeaders() throws Exception {
     KafkaMessagePublisher publisher = new KafkaMessagePublisher("testComponent", runIdA,
-        receiverId, testTopic, kafkaClusterConfig);
+        receiverId, testTopic, kafkaConfig);
     publisher.publish(42L, "{\"test\":\"payload\"}");
     publisher.close();
 
     // Read the raw record back from Kafka to inspect key and headers
-    Properties consumerProperties = ConfigUtils.copyProperties(kafkaClusterProperties);
+    Properties consumerProperties = ConfigUtils.copyProperties(kafkaProperties);
     consumerProperties.put("group.id", "header-check-" + System.currentTimeMillis());
     consumerProperties.put("key.deserializer",
         "org.apache.kafka.common.serialization.StringDeserializer");
@@ -164,7 +162,7 @@ public class KafkaRunIsolationTest {
     CountDownLatch latch = new CountDownLatch(1);
     AtomicReference<String> received = new AtomicReference<>();
 
-    KafkaMessageReceiver receiver = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiver = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiver.subscribe(payload -> {
       received.set(payload);
@@ -174,7 +172,7 @@ public class KafkaRunIsolationTest {
     Thread.sleep(2000); // let consumer start
 
     KafkaMessagePublisher publisher = new KafkaMessagePublisher("testComponent", runIdA,
-        receiverId, testTopic, kafkaClusterConfig);
+        receiverId, testTopic, kafkaConfig);
     publisher.publish(1L, "same-run-payload");
     publisher.close();
 
@@ -194,7 +192,7 @@ public class KafkaRunIsolationTest {
   void crossRunMessageIsDropped() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
 
-    KafkaMessageReceiver receiverA = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiverA = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiverA.subscribe(payload -> latch.countDown());
 
@@ -202,7 +200,7 @@ public class KafkaRunIsolationTest {
 
     // Publish a message for run B — receiver A must ignore it
     KafkaMessagePublisher publisherB = new KafkaMessagePublisher("testComponent", runIdB,
-        receiverId, testTopic, kafkaClusterConfig);
+        receiverId, testTopic, kafkaConfig);
     publisherB.publish(1L, "run-b-payload");
     publisherB.close();
 
@@ -224,14 +222,14 @@ public class KafkaRunIsolationTest {
     AtomicReference<String> receivedByA = new AtomicReference<>();
     AtomicReference<String> receivedByB = new AtomicReference<>();
 
-    KafkaMessageReceiver receiverA = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiverA = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiverA.subscribe(payload -> {
       receivedByA.set(payload);
       latchA.countDown();
     });
 
-    KafkaMessageReceiver receiverB = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiverB = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdB, receiverId + "-B", system);
     receiverB.subscribe(payload -> {
       receivedByB.set(payload);
@@ -241,12 +239,12 @@ public class KafkaRunIsolationTest {
     Thread.sleep(2000); // let consumers start
 
     KafkaMessagePublisher publisherA = new KafkaMessagePublisher("testComponent", runIdA,
-        receiverId, testTopic, kafkaClusterConfig);
+        receiverId, testTopic, kafkaConfig);
     publisherA.publish(1L, "payload-for-run-A");
     publisherA.close();
 
     KafkaMessagePublisher publisherB = new KafkaMessagePublisher("testComponent", runIdB,
-        receiverId + "-B", testTopic, kafkaClusterConfig);
+        receiverId + "-B", testTopic, kafkaConfig);
     publisherB.publish(1L, "payload-for-run-B");
     publisherB.close();
 
@@ -271,14 +269,14 @@ public class KafkaRunIsolationTest {
   void recordWithMissingHeaderIsDropped() throws Exception {
     CountDownLatch latch = new CountDownLatch(1);
 
-    KafkaMessageReceiver receiver = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiver = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiver.subscribe(payload -> latch.countDown());
 
     Thread.sleep(2000); // let consumer start
 
     // Produce a record without any headers (old-style producer)
-    Properties producerProperties = ConfigUtils.copyProperties(kafkaClusterProperties);
+    Properties producerProperties = ConfigUtils.copyProperties(kafkaProperties);
     try (KafkaProducer<String, String> rawProducer = KafkaUtils.createStringKeyProducer(
         producerProperties)) {
       // No X-Run-Id header
@@ -306,7 +304,7 @@ public class KafkaRunIsolationTest {
   void stableGroupIdIsUsed() throws Exception {
     // Publish one message for run A
     KafkaMessagePublisher publisher = new KafkaMessagePublisher("testComponent", runIdA,
-        receiverId, testTopic, kafkaClusterConfig);
+        receiverId, testTopic, kafkaConfig);
     publisher.publish(1L, "stable-group-test-payload");
     publisher.close();
 
@@ -314,7 +312,7 @@ public class KafkaRunIsolationTest {
 
     // First consumer reads the message
     CountDownLatch latch1 = new CountDownLatch(1);
-    KafkaMessageReceiver receiver1 = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiver1 = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiver1.subscribe(payload -> latch1.countDown());
     boolean firstArrived = latch1.await(15, TimeUnit.SECONDS);
@@ -325,7 +323,7 @@ public class KafkaRunIsolationTest {
     // because auto.offset.reset=earliest and we use a new group ID per run (stable within a run).
     // The message is re-read because the first consumer did not commit offsets.
     CountDownLatch latch2 = new CountDownLatch(1);
-    KafkaMessageReceiver receiver2 = new KafkaMessageReceiver(kafkaConsumerConfig, testTopic,
+    KafkaMessageReceiver receiver2 = new KafkaMessageReceiver(kafkaConfig, testTopic,
         runIdA, receiverId, system);
     receiver2.subscribe(payload -> latch2.countDown());
     boolean secondArrived = latch2.await(15, TimeUnit.SECONDS);

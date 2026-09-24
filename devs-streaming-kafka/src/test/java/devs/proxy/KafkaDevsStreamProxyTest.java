@@ -124,8 +124,8 @@ public class KafkaDevsStreamProxyTest {
   void kafkaDevsStreamProxyTest() throws IOException, ExecutionException, InterruptedException {
     // create the producer and consumer topics
     Config config = ConfigFactory.load();
-    Config kafkaClusterConfig = config.getConfig("kafka-cluster");
-    Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
+    Config kafkaClusterConfig = config.getConfig("kafka.properties");
+    Config kafkaConsumerConfig = kafkaClusterConfig;
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
     KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
@@ -219,7 +219,7 @@ public class KafkaDevsStreamProxyTest {
   @DisplayName("Test Kafka Proxy for an entire simulation")
   void kafkaDevsStreamSimulation() throws IOException, ExecutionException, InterruptedException {
     Config config = ConfigFactory.load();
-    Config kafkaClusterConfig = config.getConfig("kafka-cluster");
+    Config kafkaClusterConfig = config.getConfig("kafka.properties");
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
     KafkaUtils.deleteTopics(
@@ -274,7 +274,7 @@ public class KafkaDevsStreamProxyTest {
         testKit.spawn(KafkaDevsStreamProxy.create("coordinator", runId,
             genStoreSystemTopic, kafkaClusterConfig), "coordinatorProxy");
 
-    Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
+    Config kafkaConsumerConfig = kafkaClusterConfig;
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
         coordinatorProxy, "storage", runId, kafkaConsumerConfig, genStoreSystemTopic),
         "storageReceiver");
@@ -403,7 +403,7 @@ public class KafkaDevsStreamProxyTest {
   void kafkaDevsStreamSimulationWithoutProbes()
       throws IOException, ExecutionException, InterruptedException {
     Config config = ConfigFactory.load();
-    Config kafkaClusterConfig = config.getConfig("kafka-cluster");
+    Config kafkaClusterConfig = config.getConfig("kafka.properties");
     Properties kafkaClusterProperties = ConfigUtils.toProperties(kafkaClusterConfig);
     AdminClient adminClient = KafkaUtils.createAdminClient(kafkaClusterProperties);
     KafkaUtils.deleteTopics(
@@ -463,7 +463,7 @@ public class KafkaDevsStreamProxyTest {
     ActorRef<DevsMessage> coordinatorProxy =
         testKit.spawn(KafkaDevsStreamProxy.create("genStoreCoupled", runId,
             genStoreSystemTopic, kafkaClusterConfig), "coordinatorProxy");
-    Config kafkaConsumerConfig = config.getConfig("kafka-readall-consumer");
+    Config kafkaConsumerConfig = kafkaClusterConfig;
     ActorRef<DevsMessage> storageReceiver = testKit.spawn(KafkaReceiver.create(storage,
         coordinatorProxy, "storage", runId, kafkaConsumerConfig, genStoreSystemTopic),
         "storageReceiver");

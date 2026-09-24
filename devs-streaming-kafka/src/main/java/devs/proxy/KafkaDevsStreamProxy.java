@@ -47,13 +47,13 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractDevsStreamP
    * @param runId               simulation run identifier; used as the Kafka record key and as the
    *                            value of the {@code X-Run-Id} header on every published record
    * @param producerTopic       the Kafka topic to which DEVS messages will be published
-   * @param pekkoProducerConfig the Pekko configuration containing Kafka producer properties
+   * @param kafkaConfig         shared Kafka client configuration
    * @return a Behavior instance for the KafkaDevsStreamProxy actor
    */
   public static Behavior<DevsMessage> create(String componentName, String runId,
-      String producerTopic, Config pekkoProducerConfig) {
+      String producerTopic, Config kafkaConfig) {
     return Behaviors.setup(context -> new KafkaDevsStreamProxy<>(context, componentName, runId,
-        producerTopic, pekkoProducerConfig));
+       producerTopic, kafkaConfig));
   }
 
   /**
@@ -66,12 +66,12 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractDevsStreamP
    *                            is forwarded to {@link KafkaMessagePublisher} as the receiver id
    * @param runId               simulation run identifier; forwarded to {@link KafkaMessagePublisher}
    * @param producerTopic       the Kafka topic to which DEVS messages will be published
-   * @param pekkoProducerConfig the Pekko configuration containing Kafka producer properties
+   * @param kafkaConfig         shared Kafka client configuration
    */
   public KafkaDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
-      String runId, String producerTopic, Config pekkoProducerConfig) {
+      String runId, String producerTopic, Config kafkaConfig) {
     super(context, componentName,
         new KafkaMessagePublisher(componentName, runId, componentName, producerTopic,
-            pekkoProducerConfig));
+           kafkaConfig));
   }
 }

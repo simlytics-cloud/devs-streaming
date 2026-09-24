@@ -56,17 +56,14 @@ public class KafkaLocalProxy<T extends SimTime> extends AbstractLocalProxy<T> {
    *   <li>{@code localComponentName}: Specifies the local component name using the proxy, which
    *       helps in identifying the proxy's role.</li>
    *   <li>{@code producerTopic}: Defines the Kafka topic to which the producer sends messages.</li>
-   *   <li>{@code kafkaProducerConfig}: Holds configuration for initializing the Kafka producer.</li>
+   *   <li>{@code kafkaConfig}: Shared Kafka client configuration used by both directions.</li>
    *   <li>{@code remoteComponentName}: The remote component name.</li>
    *   <li>{@code consumerTopic}: Specifies the Kafka topic from which the consumer reads
    *       messages.</li>
-   *   <li>{@code kafkaConsumerConfig}: Contains configuration for initializing the Kafka
-   *       consumer.</li>
    * </ul>
    */
   public static record ProxyProperties(String runId, String localComponentName,
-      String producerTopic, Config kafkaProducerConfig, String remoteComponentName,
-      String consumerTopic, Config kafkaConsumerConfig) {
+      String producerTopic, String remoteComponentName, String consumerTopic, Config kafkaConfig) {
 
   }
 
@@ -122,8 +119,8 @@ public class KafkaLocalProxy<T extends SimTime> extends AbstractLocalProxy<T> {
         props.remoteComponentName(),
         props.localComponentName(),
         new KafkaMessagePublisher(props.remoteComponentName(), props.runId(),
-            props.remoteComponentName(), props.producerTopic(), props.kafkaProducerConfig()),
-        new KafkaMessageReceiver(props.kafkaConsumerConfig(), props.consumerTopic(),
+            props.remoteComponentName(), props.producerTopic(), props.kafkaConfig()),
+        new KafkaMessageReceiver(props.kafkaConfig(), props.consumerTopic(),
             props.runId(), props.localComponentName, context.getSystem()));
   }
 }
