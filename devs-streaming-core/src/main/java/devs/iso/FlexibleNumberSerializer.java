@@ -22,10 +22,22 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import devs.iso.time.DoubleSimTime;
 import devs.iso.time.LongSimTime;
 import devs.iso.time.SimTime;
+import devs.iso.time.ExactTimeJsonCodec;
+import devs.proxy.TimeWireProfile;
 import java.io.IOException;
 
+/** Writes numeric long/double times and enables tagged exact times only under the exact profile. */
 public class FlexibleNumberSerializer extends JsonSerializer<SimTime> {
 
+  /**
+   * Serializes a timestamp without converting its concrete time representation.
+   *
+   * @param simTime the timestamp to encode
+   * @param jsonGenerator the destination JSON generator
+   * @param serializers the provider supplying the wire profile
+   * @throws IOException if writing the timestamp fails
+   * @throws IllegalArgumentException if the timestamp type is unsupported by the selected profile
+   */
   @Override
   public void serialize(SimTime simTime, JsonGenerator jsonGenerator, SerializerProvider serializers) throws IOException {
     if (simTime instanceof LongSimTime) {
@@ -34,6 +46,8 @@ public class FlexibleNumberSerializer extends JsonSerializer<SimTime> {
     } else if (simTime instanceof DoubleSimTime) {
       // Write as double number
       jsonGenerator.writeNumber(((DoubleSimTime) simTime).getT());
+    } else if (serializers.getAttribute(TimeWireProfile.class) == TimeWireProfile.EXACT_TIME_V1) {
+      ExactTimeJsonCodec.write(simTime, jsonGenerator);
     } else {
       throw new IllegalArgumentException("Unsupported SimTime type: " + simTime.getClass().getName());
     }

@@ -57,6 +57,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     return create(FileObservationConfig.fromConfig(config));
   }
 
+  /** Validates storage, restores the type catalog, and registers this actor as an observation sink. */
   FileObservationActor(
       ActorContext<DevsObservationMessage> context,
       FileObservationConfig config,
@@ -71,6 +72,11 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     context.getLog().info("Initialized file observation actor at {}", outputDirectory);
   }
 
+  /**
+   * Handles observations and metadata by appending them to files; stops on {@link StopLogger}.
+   *
+   * @return observation sink message handlers
+   */
   @Override
   public Receive<DevsObservationMessage> createReceive() {
     return newReceiveBuilder()
@@ -82,6 +88,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
         .build();
   }
 
+  /** Adds unseen observation types to the catalog before appending their first observation. */
   private Behavior<DevsObservationMessage> onObservation(Observation<?, ?> observation) {
     String observationType = observation.getObservationType();
     if (knownObservationTypes.add(observationType)) {
@@ -110,6 +117,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     return Behaviors.same();
   }
 
+  /** Resolves an absolute path and rejects missing, non-directory, or non-writable storage. */
   private Path validateOutputDirectory(Path configuredDirectory) {
     Path normalizedDirectory = configuredDirectory.toAbsolutePath().normalize();
     if (!Files.exists(normalizedDirectory)) {
@@ -124,6 +132,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     return normalizedDirectory;
   }
 
+  /** Restores catalog type IDs, skipping malformed entries but failing on file read errors. */
   private Set<String> loadKnownObservationTypes() {
     Path catalog = resolve(OBSERVATION_TYPES_FILE);
     if (!Files.exists(catalog)) {
@@ -152,6 +161,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     }
   }
 
+  /** Appends one UTF-8 JSON line, logging serialization or write failures without stopping the actor. */
   private void append(DevsObservationMessage message, String filename) {
     Path target = resolve(filename);
     try {
@@ -169,6 +179,7 @@ public final class FileObservationActor extends AbstractBehavior<DevsObservation
     }
   }
 
+  /** Resolves a direct child of the output directory, rejecting traversal and nested paths. */
   private Path resolve(String filename) {
     Path target = outputDirectory.resolve(filename).normalize();
     if (!target.getParent().equals(outputDirectory)) {

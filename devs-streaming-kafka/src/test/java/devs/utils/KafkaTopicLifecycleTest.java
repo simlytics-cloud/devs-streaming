@@ -23,11 +23,17 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
-@Disabled("Requires KAFKA instance")
+/** Opt in with -Ddevs.kafka.integration=true and a running local broker at localhost:9092. */
+@EnabledIfSystemProperty(named = "devs.kafka.integration", matches = "true")
 class KafkaTopicLifecycleTest {
+  @BeforeAll
+  static void requireBroker() throws Exception {
+    KafkaIntegrationSupport.requireBroker();
+  }
 
   @Test
   void createsRetainsAndExplicitlyRecreatesTopics() throws Exception {

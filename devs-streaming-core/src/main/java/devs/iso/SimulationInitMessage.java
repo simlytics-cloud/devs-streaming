@@ -17,6 +17,8 @@
 package devs.iso;
 
 import devs.iso.time.SimTime;
+import devs.time.EnhancedClockContext;
+import java.util.Optional;
 import org.apache.pekko.actor.typed.ActorRef;
 
 /**
@@ -31,6 +33,7 @@ public class SimulationInitMessage<T extends SimTime> implements DevsMessage {
 
   private final ActorRef<DevsMessage> parent;
   private final SimulationInit<T> simulationInit;
+  private final EnhancedClockContext enhancedClock;
 
   /**
    * Constructs an InitSimMessage instance to initialize a simulation.
@@ -39,8 +42,22 @@ public class SimulationInitMessage<T extends SimTime> implements DevsMessage {
    * @param parent  the reference to the parent actor for communication.
    */
   public SimulationInitMessage(SimulationInit<T> simulationInit, ActorRef<DevsMessage> parent) {
+    this(simulationInit, parent, null);
+  }
+
+  /**
+   * Constructs a local initialization wrapper with optional enhanced clock context.
+   * The context is local-only; transport validation rejects wrappers that carry it.
+   *
+   * @param simulationInit the simulation initialization configuration
+   * @param parent the parent actor used as the return path
+   * @param enhancedClock the enhanced clock context, or {@code null} for legacy initialization
+   */
+  public SimulationInitMessage(SimulationInit<T> simulationInit, ActorRef<DevsMessage> parent,
+      EnhancedClockContext enhancedClock) {
     this.parent = parent;
     this.simulationInit = simulationInit;
+    this.enhancedClock = enhancedClock;
   }
 
   public ActorRef<DevsMessage> getParent() {
@@ -49,5 +66,10 @@ public class SimulationInitMessage<T extends SimTime> implements DevsMessage {
 
   public SimulationInit<T> getSimulationInit() {
     return simulationInit;
+  }
+
+  /** @return the local enhanced clock context, or empty for legacy initialization */
+  public Optional<EnhancedClockContext> getEnhancedClock() {
+    return Optional.ofNullable(enhancedClock);
   }
 }

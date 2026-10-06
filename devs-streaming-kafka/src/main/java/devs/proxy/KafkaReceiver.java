@@ -57,8 +57,27 @@ public class KafkaReceiver extends AbstractDevsStreamReceiver {
   public static <TT extends SimTime> Behavior<DevsMessage> create(
       ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String recieverId,
       String runId, Config kafkaConfig, String consumerTopic) {
+    return create(devsComponent, sender, recieverId, runId, kafkaConfig, consumerTopic, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Creates an inbound Kafka receiver with an explicit time endpoint policy.
+   *
+   * @param <TT> simulation time type
+   * @param devsComponent component receiving decoded DEVS messages
+   * @param sender actor used as the sender of forwarded messages
+   * @param recieverId receiver identifier used to filter inbound messages
+   * @param runId simulation run used for consumer grouping and run-header filtering
+   * @param kafkaConfig shared Kafka client configuration
+   * @param consumerTopic topic to consume
+   * @param policy time representation policy at the receiver boundary
+   * @return configured receiver behavior
+   */
+  public static <TT extends SimTime> Behavior<DevsMessage> create(
+      ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String recieverId,
+      String runId, Config kafkaConfig, String consumerTopic, TimeEndpointPolicy policy) {
     return Behaviors.setup(context -> new KafkaReceiver(context, devsComponent, sender,
-       recieverId, runId, kafkaConfig, consumerTopic));
+       recieverId, runId, kafkaConfig, consumerTopic, policy));
   }
 
   /**
@@ -82,9 +101,27 @@ public class KafkaReceiver extends AbstractDevsStreamReceiver {
   public KafkaReceiver(ActorContext<DevsMessage> context, ActorRef<DevsMessage> devsComponent,
       ActorRef<DevsMessage> sender, String receiverId, String runId,
       Config kafkaConfig, String consumerTopic) {
+    this(context, devsComponent, sender, receiverId, runId, kafkaConfig, consumerTopic, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Builds a Kafka message source and delegates inbound DEVS handling to the receiver base class.
+   *
+   * @param context receiver actor context
+   * @param devsComponent component receiving decoded DEVS messages
+   * @param sender actor used as the sender of forwarded messages
+   * @param receiverId receiver identifier used to filter inbound messages
+   * @param runId simulation run used for consumer grouping and run-header filtering
+   * @param kafkaConfig shared Kafka client configuration
+   * @param consumerTopic topic to consume
+   * @param policy time representation policy at the receiver boundary
+   */
+  public KafkaReceiver(ActorContext<DevsMessage> context, ActorRef<DevsMessage> devsComponent,
+      ActorRef<DevsMessage> sender, String receiverId, String runId,
+      Config kafkaConfig, String consumerTopic, TimeEndpointPolicy policy) {
     super(context, devsComponent, sender, receiverId,
        new KafkaMessageReceiver(kafkaConfig, consumerTopic, runId, receiverId,
-            context.getSystem()));
+             context.getSystem()), policy);
   }
 
   /**

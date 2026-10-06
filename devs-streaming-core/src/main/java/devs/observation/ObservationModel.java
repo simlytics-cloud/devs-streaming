@@ -99,6 +99,12 @@ public class ObservationModel<T extends SimTime> extends PDEVSModel<T, Void> {
     // No internal transitions
   }
 
+  /**
+   * Advances observation time and forwards inputs to sinks, buffering them until a sink is known.
+   *
+   * @param elapsedTime elapsed simulation time since the previous transition
+   * @param inputs observed port values to timestamp and route
+   */
   @Override
   public void externalStateTransitionFunction(T elapsedTime, List<PortValue<?>> inputs) {
     currentTime = (T) currentTime.plus(elapsedTime);
@@ -144,6 +150,11 @@ public class ObservationModel<T extends SimTime> extends PDEVSModel<T, Void> {
     externalStateTransitionFunction((T) currentTime.createZeroTime(), inputs);
   }
 
+  /**
+   * Keeps this input-driven model passive by returning the time type's maximum value.
+   *
+   * @return maximum time value, representing no scheduled internal transition
+   */
   @Override
   public T timeAdvanceFunction() {
     return (T) currentTime.getMaxValue();
@@ -164,6 +175,7 @@ public class ObservationModel<T extends SimTime> extends PDEVSModel<T, Void> {
     pendingObservations.clear();
   }
 
+  /** Sends the same timestamped observation to every currently discovered sink. */
   private void tellObservationSinks(Observation<T, Object> observation) {
     for (ActorRef<DevsObservationMessage> observationSink : observationSinks) {
       observationSink.tell(observation);

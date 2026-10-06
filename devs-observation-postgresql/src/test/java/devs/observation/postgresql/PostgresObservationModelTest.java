@@ -1,5 +1,6 @@
 package devs.observation.postgresql;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.ConfigFactory;
 import devs.msg.Branch;
 import devs.msg.Run;
@@ -8,14 +9,16 @@ import devs.observation.Observation;
 import devs.observation.ObservationSinkKeys;
 import devs.observation.StopLogger;
 import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
+import devs.utils.DevsObjectMapper;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -25,11 +28,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@Disabled("Requires PostgreSQL instance and configured application.conf")
+@EnabledIfSystemProperty(named = "devs.postgresql.integration", matches = "true")
 class PostgresObservationModelTest {
 
   private static final ActorTestKit TEST_KIT = ActorTestKit.create();
@@ -143,6 +148,53 @@ class PostgresObservationModelTest {
 
     Assertions.assertEquals(1, countRows("observation_type_catalog"));
     Assertions.assertEquals(1, countRows(archiveName));
+  }
+
+  @Test
+  void historicalAndExactTimesCoexistAfterRestartAndShutdown() throws Exception {
+    ObjectMapper mapper = DevsObjectMapper.buildObjectMapper();
+    List<Observation<SimTime, String>> observations = new ArrayList<>();
+    for (SimTime time : PostgresObservationSerializationTest.times()) {
+      observations.add(PostgresObservationSerializationTest.observation(time, UUID.randomUUID().toString()));
+    }
+    ActorRef<DevsObservationMessage> legacyActor = TEST_KIT.spawn(PostgresObservationActor.create(config));
+    legacyActor.tell(observations.get(0));
+    legacyActor.tell(observations.get(1));
+    legacyActor.tell(StopLogger.builder().build());
+    TEST_KIT.createTestProbe().expectTerminated(legacyActor, Duration.ofSeconds(10));
+
+    ActorRef<DevsObservationMessage> exactActor = TEST_KIT.spawn(PostgresObservationActor.create(config));
+    observations.subList(2, observations.size()).forEach(exactActor::tell);
+    exactActor.tell(StopLogger.builder().build());
+    TEST_KIT.createTestProbe().expectTerminated(exactActor, Duration.ofSeconds(10));
+
+    String archiveName = archiveNameStrategy.archiveNameForObservationType("ExactTime");
+    String sql = "SELECT time, payload, document FROM " + quotedIdentifier(config.schema()) + "."
+        + quotedIdentifier(archiveName) + " WHERE id = ?";
+    try (Connection connection = openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+      for (Observation<SimTime, String> observation : observations) {
+        statement.setString(1, observation._id());
+        try (ResultSet resultSet = statement.executeQuery()) {
+          Assertions.assertTrue(resultSet.next());
+          String timeJson = resultSet.getString("time");
+          String documentJson = resultSet.getString("document");
+          Assertions.assertEquals(mapper.readTree(PostgresObservationActor.writeJson(mapper, observation.getTime())),
+              mapper.readTree(timeJson));
+          Assertions.assertEquals(mapper.readTree(timeJson), mapper.readTree(documentJson).get("time"));
+          Assertions.assertEquals(mapper.readTree("\"unchanged\""), mapper.readTree(resultSet.getString("payload")));
+          Assertions.assertEquals(mapper.readTree(PostgresObservationActor.writeJson(mapper, observation)),
+              mapper.readTree(documentJson));
+          Observation<?, ?> restored = mapper.readValue(documentJson, Observation.class);
+          Assertions.assertEquals(observation.getTime().getClass(), restored.getTime().getClass());
+          Assertions.assertEquals(0, observation.getTime().compareTo(restored.getTime()));
+          Assertions.assertEquals(observation._id(), restored._id());
+          Assertions.assertFalse(resultSet.next());
+        }
+      }
+    }
+    Assertions.assertEquals(Set.of("ExactTime"), loadObservationTypeIds());
+    Assertions.assertEquals(1, countRows("observation_type_catalog"));
+    Assertions.assertEquals(observations.size(), countRows(archiveName));
   }
 
   private void awaitRegistration() {

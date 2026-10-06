@@ -95,6 +95,7 @@ public class ExampleGenStoreApp extends AbstractBehavior<ExampleGenStoreApp.GenS
    * @param args command-line arguments passed to the application
    */
   public static void main(String[] args) {
+    System.out.println("Starting ExampleGenStoreApp with class " + ExampleGenStoreApp.class.getCanonicalName());
     ActorSystem<GenStoreApp> system =
         ActorSystem.create(ExampleGenStoreApp.create(), "ExampleGenStoreApp");
     system.tell(new GenStoreStart());

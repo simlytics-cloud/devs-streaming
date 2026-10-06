@@ -164,6 +164,7 @@ public class MongoObservationActor extends AbstractBehavior<DevsObservationMessa
             // Create indices if this is the first time we see this observation type in this session
             if (!initializedCollections.contains(collectionName)) {
                 // Compound index for replay performance: runId, branchId, and simulationTime (mapped to time in Observation)
+                // BSON object/string ordering is not exact numerical chronological time ordering.
                 mongoCollection.createIndex(new Document("runId", 1)
                         .append("branchId", 1)
                         .append("time", 1))
@@ -240,13 +241,24 @@ public class MongoObservationActor extends AbstractBehavior<DevsObservationMessa
 
     protected Optional<Document> toDocument(DevsObservationMessage message) {
         try {
-            String json = objectMapper.writeValueAsString(message);
-            Document doc = Document.parse(json);
-            return Optional.of(doc);
+            return Optional.of(toDocument(objectMapper, message));
         } catch (JsonProcessingException e) {
             getContext().getLog().warn("Error creating BSON Document from message", e);
         }
         return Optional.empty();
+    }
+
+    /**
+     * Converts an observation message to BSON using the supplied mapper's JSON representation.
+     *
+     * @param objectMapper mapper configured for observation message serialization
+     * @param message observation or metadata message to store
+     * @return BSON document parsed from the serialized message
+     * @throws JsonProcessingException if the message cannot be serialized
+     */
+    static Document toDocument(ObjectMapper objectMapper, DevsObservationMessage message)
+            throws JsonProcessingException {
+        return Document.parse(objectMapper.writeValueAsString(message));
     }
 
     protected Behavior<DevsObservationMessage> onInsertResult(InsertResult insertResult) {

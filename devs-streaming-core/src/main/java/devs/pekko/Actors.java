@@ -42,10 +42,22 @@ public final class Actors {
             this.configValue = configValue;
         }
 
+        /**
+         * Returns the value used to select this policy in HOCON configuration.
+         *
+         * @return canonical, lowercase configuration value
+         */
         public String configValue() {
             return configValue;
         }
 
+        /**
+         * Reads the framework failure policy, defaulting to {@link #STOP_ACTOR} when absent.
+         *
+         * @param config actor system configuration
+         * @return configured policy or the default stop policy
+         * @throws IllegalArgumentException if the configured value is unsupported
+         */
         public static FailurePolicy fromConfig(Config config) {
             Objects.requireNonNull(config, "config");
             if (!config.hasPath(FAILURE_POLICY_CONFIG_PATH)) {
@@ -54,6 +66,13 @@ public final class Actors {
             return parse(config.getString(FAILURE_POLICY_CONFIG_PATH));
         }
 
+        /**
+         * Resolves a configuration value after trimming whitespace and ignoring case.
+         *
+         * @param value policy configuration value
+         * @return matching failure policy
+         * @throws IllegalArgumentException if no policy matches the value
+         */
         public static FailurePolicy parse(String value) {
             Objects.requireNonNull(value, "value");
             String normalized = value.trim().toLowerCase(Locale.ROOT);
@@ -151,6 +170,7 @@ public final class Actors {
             super((Class<T>) (Class<?>) Object.class);
         }
 
+        /** Starts the wrapped behavior and terminates the system if startup throws an exception. */
         @Override
         public Behavior<T> aroundStart(
                 TypedActorContext<T> context,
@@ -163,6 +183,7 @@ public final class Actors {
             }
         }
 
+        /** Delegates a message, terminating the system if its handler throws an exception. */
         @Override
         public Behavior<T> aroundReceive(
                 TypedActorContext<T> context,
@@ -176,6 +197,7 @@ public final class Actors {
             }
         }
 
+        /** Delegates a signal, terminating the system if its handler throws an exception. */
         @Override
         public Behavior<T> aroundSignal(
                 TypedActorContext<T> context,
@@ -192,6 +214,7 @@ public final class Actors {
             }
         }
 
+        /** Logs the original failure and actor path before requesting actor system termination. */
         private void terminate(
                 TypedActorContext<T> context, Exception exception, String operation) {
             ActorContext<T> javaContext = context.asJava();

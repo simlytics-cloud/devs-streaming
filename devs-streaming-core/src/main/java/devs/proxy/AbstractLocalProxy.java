@@ -16,18 +16,18 @@
 
 package devs.proxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.DevsMessage;
 import devs.iso.DevsSimMessage;
 import devs.iso.ModelTerminated;
 import devs.iso.SimulationInitMessage;
 import devs.iso.time.SimTime;
-import devs.utils.DevsObjectMapper;
+import java.io.IOException;
 import java.util.Optional;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
+import org.apache.pekko.actor.typed.javadsl.Behaviors;
+import org.slf4j.Logger;
 
 /**
  * Abstract base actor that implements the bidirectional DEVS local proxy behavior.
@@ -38,7 +38,7 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
  * like any local simulator.
  *
  * <p><strong>Outbound path</strong> (parent coordinator → transport):
- * Delegates to {@link AbstractDevsStreamProxy#onDevsMessage(DevsMessage)} after:
+ * Validates and encodes the message completely before:
  * <ul>
  *   <li>Capturing {@code localParentCoordinator} from an outbound {@link SimulationInitMessage}'s
  *       parent reference.</li>
@@ -49,7 +49,8 @@ import org.apache.pekko.actor.typed.javadsl.ActorContext;
  * The {@link MessageReceiver} delivers each raw JSON payload to {@link #onInboundPayload(String)},
  * which:
  * <ul>
- *   <li>Deserializes to {@link DevsSimMessage}.</li>
+ *   <li>Validates and deserializes to {@link DevsSimMessage}, then dispatches through the actor
+ *       mailbox before inspecting the learned parent.</li>
  *   <li>Drops the message (with an error log) if {@code localParentCoordinator} is not yet
  *       known (replaces the original {@code System.exit(1)} — an intentional, safer change).</li>
  *   <li>Forwards the message to {@code localParentCoordinator} if the message's
@@ -65,7 +66,11 @@ public abstract class AbstractLocalProxy<T extends SimTime>
   private final MessageReceiver receiver;
   private final String localComponentName;
   private Optional<ActorRef<DevsMessage>> localParentCoordinator;
-  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+  private final ActorRef<DevsMessage> self;
+  private final Logger log;
+
+  /** Mailbox wrapper distinguishing validated transport input from outbound coordinator messages. */
+  private record InboundMessage(DevsSimMessage message) implements DevsMessage {}
 
   /**
    * Constructs the bidirectional local proxy base and starts the inbound transport subscription
@@ -80,10 +85,29 @@ public abstract class AbstractLocalProxy<T extends SimTime>
    */
   protected AbstractLocalProxy(ActorContext<DevsMessage> context, String componentName,
       String localComponentName, MessagePublisher publisher, MessageReceiver receiver) {
-    super(context, componentName, publisher);
+    this(context, componentName, localComponentName, publisher, receiver, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Constructs a bidirectional proxy using one time policy for both transport directions.
+   * The inbound subscription starts immediately; the parent is learned from outbound initialization.
+   *
+   * @param context the Pekko actor context
+   * @param componentName the remote component name used for outbound identity
+   * @param localComponentName the receiver identifier for inbound filtering
+   * @param publisher the outbound transport publisher
+   * @param receiver the inbound transport receiver
+   * @param policy the wire profile and accepted timestamp types for both directions
+   */
+  protected AbstractLocalProxy(ActorContext<DevsMessage> context, String componentName,
+      String localComponentName, MessagePublisher publisher, MessageReceiver receiver,
+      TimeEndpointPolicy policy) {
+    super(context, componentName, publisher, policy);
     this.receiver = receiver;
     this.localComponentName = localComponentName;
     this.localParentCoordinator = Optional.empty();
+    this.self = context.getSelf();
+    this.log = context.getLog();
     // Subscribe at construction time to preserve ordering guarantees.
     this.receiver.subscribe(this::onInboundPayload);
   }
@@ -91,22 +115,26 @@ public abstract class AbstractLocalProxy<T extends SimTime>
   /**
    * Handles an outbound DEVS message from the local parent coordinator.
    *
-   * <p>Captures the {@code localParentCoordinator} from an outbound {@link SimulationInitMessage},
-   * shuts down the inbound receiver on {@link ModelTerminated}, then delegates to the outbound
-   * base to serialize and publish the message.
+   * <p>Validates and encodes before capturing the {@code localParentCoordinator} from an outbound
+   * {@link SimulationInitMessage} or shutting down the inbound receiver on {@link ModelTerminated},
+   * then delegates to the outbound base to publish the message.
    *
    * @param devsMessage the outbound DEVS message
    * @return the next actor behavior
    */
   @Override
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
+    if (devsMessage instanceof InboundMessage inbound) {
+      return onInboundMessage(inbound.message());
+    }
+    String json = encode(devsMessage);
     if (devsMessage instanceof SimulationInitMessage<?> initSimMessage) {
       this.localParentCoordinator = Optional.of(initSimMessage.getParent());
     }
     if (devsMessage instanceof ModelTerminated<?>) {
       this.receiver.shutdown();
     }
-    return super.onDevsMessage(devsMessage);
+    return onEncodedMessage(devsMessage, json);
   }
 
   /**
@@ -124,23 +152,38 @@ public abstract class AbstractLocalProxy<T extends SimTime>
   private void onInboundPayload(String payload) {
     DevsSimMessage devsMessage;
     try {
-      devsMessage = objectMapper.readValue(payload, DevsSimMessage.class);
-    } catch (JsonProcessingException e) {
-      getContext().getLog().error("Could not deserialize JSON record: {}", payload, e);
+      devsMessage = binding.decode(payload);
+    } catch (IOException | IllegalArgumentException e) {
+      log.error("Rejected inbound DEVS record: {}", DevsJsonBinding.diagnostic(e));
       return;
     }
+    self.tell(new InboundMessage(devsMessage));
+  }
 
+  /**
+   * Revalidates inbound mailbox messages and forwards matching records to the learned parent.
+   * Messages arriving before initialization or failing validation are dropped without stopping.
+   */
+  private Behavior<DevsMessage> onInboundMessage(DevsSimMessage message) {
+    DevsSimMessage devsMessage;
+    try {
+      devsMessage = binding.validate(message);
+    } catch (IllegalArgumentException e) {
+      getContext().getLog().error("Rejected inbound DEVS message: {}", DevsJsonBinding.diagnostic(e));
+      return Behaviors.same();
+    }
     if (localParentCoordinator.isEmpty()) {
       getContext().getLog().error(
-          "Message received before parent coordinator known; dropping: {}", payload);
-      return;
+          "Message received before parent coordinator known; dropping");
+      return Behaviors.same();
     }
 
     if (devsMessage.getReceiverId().equals(localComponentName)) {
       localParentCoordinator.get().tell(devsMessage);
     } else {
       getContext().getLog().debug(
-          "Received message for another component, ignoring: {}", devsMessage);
+          "Received DEVS message for another component, ignoring");
     }
+    return Behaviors.same();
   }
 }

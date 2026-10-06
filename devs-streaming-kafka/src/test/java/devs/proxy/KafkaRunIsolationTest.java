@@ -40,10 +40,11 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.pekko.actor.typed.ActorSystem;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Integration tests for runId-based Kafka record keying and per-run consumer isolation.
@@ -59,10 +60,15 @@ import org.junit.jupiter.api.Test;
  *       handler.</li>
  * </ul>
  *
- * <p>These tests require a running Kafka broker at {@code localhost:29092}.
+ * <p>Opt in with {@code -Ddevs.kafka.integration=true}; requires a local Kafka broker at
+ * {@code localhost:9092}.
  */
-@Disabled("Requires KAFKA instance")
+@EnabledIfSystemProperty(named = "devs.kafka.integration", matches = "true")
 public class KafkaRunIsolationTest {
+  @BeforeAll
+  static void requireBroker() throws Exception {
+    devs.utils.KafkaIntegrationSupport.requireBroker();
+  }
 
   static final String testTopic = "runIsolationTest";
   static final String runIdA = "run-A";

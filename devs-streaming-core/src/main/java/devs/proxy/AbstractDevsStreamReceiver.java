@@ -16,15 +16,13 @@
 
 package devs.proxy;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.DevsMessage;
 import devs.iso.DevsSimMessage;
 import devs.iso.ModelTerminated;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
-import devs.utils.DevsObjectMapper;
+import java.io.IOException;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
@@ -63,7 +61,7 @@ public abstract class AbstractDevsStreamReceiver extends AbstractBehavior<DevsMe
   private final ActorRef<DevsMessage> devsComponent;
   private final ActorRef<DevsMessage> sender;
   private final String receiverId;
-  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+  private final DevsJsonBinding binding;
 
   /**
    * Constructs the inbound receiver base and starts the transport subscription immediately.
@@ -77,21 +75,41 @@ public abstract class AbstractDevsStreamReceiver extends AbstractBehavior<DevsMe
   protected AbstractDevsStreamReceiver(ActorContext<DevsMessage> context,
       ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String receiverId,
       MessageReceiver receiver) {
+    this(context, devsComponent, sender, receiverId, receiver, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Constructs a receiver with an explicit time policy and immediately subscribes to transport.
+   * Invalid payloads are rejected before dispatch to the actor mailbox.
+   *
+   * @param context the Pekko actor context
+   * @param devsComponent the fixed target for accepted inbound messages
+   * @param sender the return-path actor reference supplied in initialization wrappers
+   * @param receiverId the receiver identifier used to filter messages
+   * @param receiver the inbound transport subscription
+   * @param policy the required wire profile and accepted timestamp types
+   */
+  protected AbstractDevsStreamReceiver(ActorContext<DevsMessage> context,
+      ActorRef<DevsMessage> devsComponent, ActorRef<DevsMessage> sender, String receiverId,
+      MessageReceiver receiver, TimeEndpointPolicy policy) {
     super(context);
     this.devsComponent = devsComponent;
     this.sender = sender;
     this.receiverId = receiverId;
     this.receiver = receiver;
+    this.binding = new DevsJsonBinding(policy);
+    var log = context.getLog();
+    ActorRef<DevsMessage> self = context.getSelf();
     // Subscribe at construction time to preserve the same ordering guarantees as before.
     this.receiver.subscribe(payload -> {
       DevsMessage devsMessage;
       try {
-        devsMessage = objectMapper.readValue(payload, DevsSimMessage.class);
-      } catch (JsonProcessingException e) {
-        context.getLog().error("Could not deserialize JSON record: {}", payload, e);
+        devsMessage = binding.decode(payload);
+      } catch (IOException | IllegalArgumentException e) {
+        log.error("Rejected inbound DEVS record: {}", DevsJsonBinding.diagnostic(e));
         return;
       }
-      context.getSelf().tell(devsMessage);
+      self.tell(devsMessage);
     });
   }
 
@@ -115,28 +133,28 @@ public abstract class AbstractDevsStreamReceiver extends AbstractBehavior<DevsMe
    * @return the next actor behavior
    */
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
-    if (devsMessage instanceof DevsSimMessage devsSimMessage) {
-      String messageReceiverId = devsSimMessage.getReceiverId();
-      if (!messageReceiverId.equals(receiverId)) {
-        getContext().getLog().debug("Dropping message for: {} because it is not for: {}",
-            devsSimMessage.getReceiverId(), receiverId);
-        return Behaviors.same();
-      }
-      DevsMessage toForward = devsMessage;
-      if (devsMessage instanceof SimulationInit<?> simulationInit) {
-        toForward = new SimulationInitMessage<>(simulationInit, sender);
-      }
-      devsComponent.tell(toForward);
-      if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
-        receiver.shutdown();
-        return Behaviors.stopped();
-      }
-      return Behaviors.same();
-    } else {
-      getContext().getLog().error("Received message that was not a DevsSimMessage: {}",
-          devsMessage.getClass().getName());
+    DevsSimMessage devsSimMessage;
+    try {
+      devsSimMessage = binding.validate(devsMessage);
+    } catch (IllegalArgumentException e) {
+      getContext().getLog().error("Rejected inbound DEVS message: {}", DevsJsonBinding.diagnostic(e));
       return Behaviors.same();
     }
+    String messageReceiverId = devsSimMessage.getReceiverId();
+    if (!messageReceiverId.equals(receiverId)) {
+      getContext().getLog().debug("Dropping DEVS message for another component");
+      return Behaviors.same();
+    }
+    DevsMessage toForward = devsSimMessage;
+    if (devsSimMessage instanceof SimulationInit<?> simulationInit) {
+      toForward = new SimulationInitMessage<>(simulationInit, sender);
+    }
+    devsComponent.tell(toForward);
+    if (devsSimMessage instanceof SimulationTerminate<?> || devsSimMessage instanceof ModelTerminated<?>) {
+      receiver.shutdown();
+      return Behaviors.stopped();
+    }
+    return Behaviors.same();
   }
 
   /**

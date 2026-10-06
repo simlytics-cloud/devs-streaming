@@ -73,15 +73,41 @@ public class KafkaLocalProxy<T extends SimTime> extends AbstractLocalProxy<T> {
   public static class KafkaProxySimulatorProvider<T extends SimTime> implements
       SimulatorProvider<T> {
     protected final ProxyProperties properties;
+    private final TimeEndpointPolicy policy;
 
+    /**
+     * Creates a bidirectional proxy provider using the legacy time endpoint policy.
+     *
+     * @param properties Kafka topics, run, component identifiers, and client configuration
+     */
     public KafkaProxySimulatorProvider(ProxyProperties properties) {
+      this(properties, TimeEndpointPolicy.legacy());
+    }
+
+    /**
+     * Creates a bidirectional proxy provider with an explicit time endpoint policy.
+     *
+     * @param properties Kafka topics, run, component identifiers, and client configuration
+     * @param policy time representation policy passed to spawned proxies
+     */
+    public KafkaProxySimulatorProvider(ProxyProperties properties, TimeEndpointPolicy policy) {
       this.properties = properties;
+      this.policy = java.util.Objects.requireNonNull(policy);
+    }
+
+    /**
+     * Returns the time endpoint policy passed to spawned proxies.
+     *
+     * @return configured time endpoint policy
+     */
+    public TimeEndpointPolicy getTimeEndpointPolicy() {
+      return policy;
     }
 
     @Override
     public ActorRef<DevsMessage> provideSimulator(ActorContext<DevsMessage> context,
         T initialTime) {
-      return context.spawn(KafkaLocalProxy.create(properties),
+      return context.spawn(KafkaLocalProxy.create(properties, policy),
           ModelUtils.toLegalActorName(properties.remoteComponentName()));
     }
 
@@ -101,7 +127,19 @@ public class KafkaLocalProxy<T extends SimTime> extends AbstractLocalProxy<T> {
    * @return A behavior that initializes and returns a KafkaLocalProxy actor.
    */
   public static <TT extends SimTime> Behavior<DevsMessage> create(ProxyProperties props) {
-    return Behaviors.setup(context -> new KafkaLocalProxy<TT>(context, props));
+    return create(props, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Creates a bidirectional Kafka proxy with an explicit time endpoint policy.
+   *
+   * @param <TT> simulation time type
+   * @param props Kafka topics, run, component identifiers, and client configuration
+   * @param policy time representation policy at the proxy boundary
+   * @return configured local proxy behavior
+   */
+  public static <TT extends SimTime> Behavior<DevsMessage> create(ProxyProperties props, TimeEndpointPolicy policy) {
+    return Behaviors.setup(context -> new KafkaLocalProxy<TT>(context, props, policy));
   }
 
   /**
@@ -115,12 +153,23 @@ public class KafkaLocalProxy<T extends SimTime> extends AbstractLocalProxy<T> {
    *                producer, including topics, component name, and Kafka configurations.
    */
   public KafkaLocalProxy(ActorContext<DevsMessage> context, ProxyProperties props) {
+    this(context, props, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Builds Kafka publisher and receiver adapters for the bidirectional proxy base class.
+   *
+   * @param context proxy actor context
+   * @param props Kafka topics, run, component identifiers, and client configuration
+   * @param policy time representation policy at the proxy boundary
+   */
+  public KafkaLocalProxy(ActorContext<DevsMessage> context, ProxyProperties props, TimeEndpointPolicy policy) {
     super(context,
         props.remoteComponentName(),
         props.localComponentName(),
         new KafkaMessagePublisher(props.remoteComponentName(), props.runId(),
             props.remoteComponentName(), props.producerTopic(), props.kafkaConfig()),
         new KafkaMessageReceiver(props.kafkaConfig(), props.consumerTopic(),
-            props.runId(), props.localComponentName, context.getSystem()));
+            props.runId(), props.localComponentName, context.getSystem()), policy);
   }
 }

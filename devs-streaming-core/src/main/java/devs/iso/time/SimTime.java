@@ -39,6 +39,12 @@ public abstract class SimTime implements Comparable<SimTime> {
   @JsonIgnore
   public abstract SimTime getMaxValue();
   
+  /**
+   * Creates the additive zero for this time representation without subtracting values that may
+   * represent infinity.
+   *
+   * @return a finite zero compatible with this representation's arithmetic
+   */
   @JsonIgnore
   public abstract SimTime createZeroTime();
 

@@ -83,6 +83,7 @@ public class StorageModel extends PDEVSModel<LongSimTime, StorageState> {
       throw new IllegalArgumentException(
           "Received illegal inputs value of " + storageValue + ". Should be 1 or 2.");
     }
+    System.out.println("Storage state set to " + modelState.getStateValue() + " after " + elapsedTime + " seconds");
   }
 
   /**

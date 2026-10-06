@@ -17,13 +17,11 @@
 package devs.proxy;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import devs.iso.DevsMessage;
 import devs.iso.ModelTerminated;
 import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.time.SimTime;
-import devs.utils.DevsObjectMapper;
 import org.apache.pekko.actor.typed.Behavior;
 import org.apache.pekko.actor.typed.javadsl.AbstractBehavior;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -56,7 +54,7 @@ public abstract class AbstractDevsStreamProxy<T extends SimTime>
   private final MessagePublisher publisher;
   private final String componentName;
   private long index = 0;
-  private final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
+  protected final DevsJsonBinding binding;
 
   /**
    * Constructs the outbound proxy base.
@@ -67,9 +65,23 @@ public abstract class AbstractDevsStreamProxy<T extends SimTime>
    */
   protected AbstractDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
       MessagePublisher publisher) {
+    this(context, componentName, publisher, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Constructs an outbound proxy with explicit transport timestamp permissions.
+   *
+   * @param context the Pekko actor context
+   * @param componentName the local component name used for logging
+   * @param publisher the transport publisher for validated outbound messages
+   * @param policy the wire profile and accepted timestamp types
+   */
+  protected AbstractDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
+      MessagePublisher publisher, TimeEndpointPolicy policy) {
     super(context);
     this.componentName = componentName;
     this.publisher = publisher;
+    this.binding = new DevsJsonBinding(policy);
   }
 
   /**
@@ -91,17 +103,34 @@ public abstract class AbstractDevsStreamProxy<T extends SimTime>
    * @return the next actor behavior
    */
   Behavior<DevsMessage> onDevsMessage(DevsMessage devsMessage) {
-    String json;
+    return onEncodedMessage(devsMessage, encode(devsMessage));
+  }
+
+  /**
+   * Validates and encodes before any publishing or lifecycle side effects occur.
+   *
+   * @param devsMessage the outbound message
+   * @return the encoded transport envelope
+   * @throws IllegalArgumentException if validation or serialization fails
+   */
+  protected final String encode(DevsMessage devsMessage) {
     try {
-      if (devsMessage instanceof SimulationInitMessage<?> initSimMessage) {
-        json = objectMapper.writeValueAsString(initSimMessage.getSimulationInit());
-      } else {
-        json = objectMapper.writeValueAsString(devsMessage);
-      }
+      return binding.encode(devsMessage);
     } catch (JsonProcessingException e) {
-      getContext().getLog().error("Could not serialize message to JSON: {}", devsMessage, e);
-      throw new RuntimeException(e);
+      String diagnostic = DevsJsonBinding.diagnostic(e);
+      getContext().getLog().error("Could not serialize DEVS message: {}", diagnostic);
+      throw new IllegalArgumentException(diagnostic);
     }
+  }
+
+  /**
+   * Publishes an already validated envelope with the next sequence number and handles termination.
+   *
+   * @param devsMessage the original message used to determine whether to close the publisher
+   * @param json the envelope produced by {@link #encode(DevsMessage)}
+   * @return stopped behavior for termination messages, otherwise the current behavior
+   */
+  protected final Behavior<DevsMessage> onEncodedMessage(DevsMessage devsMessage, String json) {
     publisher.publish(index, json);
     index = index + 1;
     if (devsMessage instanceof SimulationTerminate<?> || devsMessage instanceof ModelTerminated<?>) {
@@ -110,6 +139,7 @@ public abstract class AbstractDevsStreamProxy<T extends SimTime>
     }
     return Behaviors.same();
   }
+
 
   /**
    * Returns the component name this proxy represents.

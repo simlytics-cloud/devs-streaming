@@ -433,6 +433,18 @@ public class PostgresObservationActor extends AbstractBehavior<DevsObservationMe
   }
 
   private String writeJson(Object value) {
+    return writeJson(objectMapper, value);
+  }
+
+  /**
+   * Serializes a database value using the supplied mapper, wrapping JSON serialization failures.
+   *
+   * @param objectMapper mapper configured for observation data
+   * @param value observation payload or metadata value
+   * @return JSON text suitable for storage
+   * @throws IllegalStateException if the value cannot be serialized
+   */
+  static String writeJson(ObjectMapper objectMapper, Object value) {
     try {
       return objectMapper.writeValueAsString(value);
     } catch (JsonProcessingException e) {

@@ -1,5 +1,6 @@
 package devs.observation.mongodb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoDatabase;
@@ -13,6 +14,7 @@ import devs.couplings.SourceMappingResolver;
 import devs.iso.DevsMessage;
 import devs.iso.SimulationInit;
 import devs.iso.time.LongSimTime;
+import devs.iso.time.SimTime;
 import devs.msg.Branch;
 import devs.msg.Run;
 import devs.observation.DevsObservationMessage;
@@ -20,6 +22,7 @@ import devs.observation.Observation;
 import devs.observation.ObservationModel;
 import devs.observation.ObservationSinkKeys;
 import devs.observation.StopLogger;
+import devs.utils.DevsObjectMapper;
 import example.generator.GeneratorModel;
 import org.apache.pekko.actor.typed.receptionist.Receptionist;
 import example.storage.StorageModel;
@@ -29,6 +32,7 @@ import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.bson.Document;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
@@ -40,7 +44,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-@Disabled("Requires MongoDB instance running")
+@EnabledIfSystemProperty(named = "devs.mongodb.integration", matches = "true")
 @DisplayName("MongoDB Observation Test")
 public class MongoObservationTest {
 
@@ -184,7 +188,10 @@ public class MongoObservationTest {
         // So the collection name should be "String".
         verifyData("Integer", 4);
         verifyData("String", 4);
-        verifyData(MongoObservationActor.OBSERVATION_TYPES_COLLECTION, 2);
+        Assertions.assertEquals(1, findDocuments(database, MongoObservationActor.OBSERVATION_TYPES_COLLECTION,
+                new Document("_id", "Integer")).size());
+        Assertions.assertEquals(1, findDocuments(database, MongoObservationActor.OBSERVATION_TYPES_COLLECTION,
+                new Document("_id", "String")).size());
     }
 
     @Test
@@ -211,7 +218,8 @@ public class MongoObservationTest {
         testKit.createTestProbe().expectTerminated(mongoActor1, java.time.Duration.ofSeconds(10));
 
         // Verify it was written
-        verifyData(MongoObservationActor.OBSERVATION_TYPES_COLLECTION, 3); // 2 from previous test + 1 new
+        Assertions.assertEquals(1, findDocuments(database, MongoObservationActor.OBSERVATION_TYPES_COLLECTION,
+                new Document("_id", type)).size());
 
         // 2. Spawn a new actor, it should load the type from DB
         ActorRef<DevsObservationMessage> mongoActor2 = testKit.spawn(MongoObservationActor.create(MONGO_CONN, TEST_DB));
@@ -221,8 +229,65 @@ public class MongoObservationTest {
         mongoActor2.tell(StopLogger.builder().build());
         testKit.createTestProbe().expectTerminated(mongoActor2, java.time.Duration.ofSeconds(10));
 
-        // Still should be 3 entries (no duplicates added)
-        verifyData(MongoObservationActor.OBSERVATION_TYPES_COLLECTION, 3);
+        // No duplicate catalog entries after reinitialization.
+        Assertions.assertEquals(1, findDocuments(database, MongoObservationActor.OBSERVATION_TYPES_COLLECTION,
+                new Document("_id", type)).size());
+    }
+
+    @Test
+    public void historicalAndExactTimesCoexistAfterRestartAndShutdown() throws Exception {
+        String databaseName = "test_db_" + UUID.randomUUID().toString().replace("-", "");
+        MongoDatabase testDatabase = mongoClient.getDatabase(databaseName);
+        ObjectMapper mapper = DevsObjectMapper.buildObjectMapper();
+        List<Observation<SimTime, String>> observations = new ArrayList<>();
+        for (SimTime time : MongoObservationSerializationTest.times()) {
+            observations.add(MongoObservationSerializationTest.observation(time, UUID.randomUUID().toString()));
+        }
+        try {
+            ActorRef<DevsObservationMessage> legacyActor = testKit.spawn(MongoObservationActor.create(MONGO_CONN, databaseName));
+            legacyActor.tell(observations.get(0));
+            legacyActor.tell(observations.get(1));
+            legacyActor.tell(StopLogger.builder().build());
+            testKit.createTestProbe().expectTerminated(legacyActor, java.time.Duration.ofSeconds(10));
+
+            ActorRef<DevsObservationMessage> exactActor = testKit.spawn(MongoObservationActor.create(MONGO_CONN, databaseName));
+            observations.subList(2, observations.size()).forEach(exactActor::tell);
+            exactActor.tell(StopLogger.builder().build());
+            testKit.createTestProbe().expectTerminated(exactActor, java.time.Duration.ofSeconds(10));
+
+            for (Observation<SimTime, String> observation : observations) {
+                List<Document> documents = findDocuments(testDatabase, "ExactTime", new Document("_id", observation._id()));
+                Assertions.assertEquals(1, documents.size());
+                String json = documents.getFirst().toJson();
+                Assertions.assertEquals(mapper.readTree(mapper.writeValueAsString(observation)), mapper.readTree(json));
+                Observation<?, ?> restored = mapper.readValue(json, Observation.class);
+                Assertions.assertEquals(observation.getTime().getClass(), restored.getTime().getClass());
+                Assertions.assertEquals(0, observation.getTime().compareTo(restored.getTime()));
+                Assertions.assertEquals(observation._id(), restored._id());
+            }
+            List<Document> catalog = findDocuments(testDatabase, MongoObservationActor.OBSERVATION_TYPES_COLLECTION,
+                    new Document("_id", "ExactTime"));
+            Assertions.assertEquals(1, catalog.size());
+            Assertions.assertEquals("ExactTime", catalog.getFirst().getString("archiveName"));
+        } finally {
+            dropDatabase(testDatabase);
+        }
+    }
+
+    private List<Document> findDocuments(MongoDatabase mongoDatabase, String collectionName, Document filter)
+            throws InterruptedException {
+        List<Document> documents = new ArrayList<>();
+        List<Throwable> errors = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+        mongoDatabase.getCollection(collectionName).find(filter).subscribe(new Subscriber<Document>() {
+            @Override public void onSubscribe(Subscription s) { s.request(Long.MAX_VALUE); }
+            @Override public void onNext(Document document) { documents.add(document); }
+            @Override public void onError(Throwable t) { errors.add(t); latch.countDown(); }
+            @Override public void onComplete() { latch.countDown(); }
+        });
+        Assertions.assertTrue(latch.await(10, TimeUnit.SECONDS), "Timeout reading " + collectionName);
+        Assertions.assertTrue(errors.isEmpty(), () -> "MongoDB read failed: " + errors);
+        return documents;
     }
 
     @Test

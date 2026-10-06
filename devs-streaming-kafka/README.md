@@ -111,3 +111,49 @@ the topic and all configured Kafka client properties, including broker and secur
 remote model. Construct a `RemoteModelStartRequest` and call
 `startRemoteModel(request)`; the request makes topic reset behavior and run-ID suffix generation
 explicit.
+
+## Exact-time endpoints (explicit opt-in)
+
+Existing constructors and factories retain the legacy numeric profile. Upgrade and explicitly
+configure **both ends** before sending tagged decimal or rational timestamps:
+
+```java
+TimeEndpointPolicy policy = TimeEndpointPolicy.decimalNative();
+Behavior<DevsMessage> proxy = KafkaLocalProxy.create(properties, policy);
+SimulatorProvider<DecimalSimTime> provider =
+    new KafkaLocalProxy.KafkaProxySimulatorProvider<>(properties, policy);
+```
+
+`KafkaDevsStreamProxy.create`, `KafkaReceiver.create`, their constructors, and both proxy
+providers also have additive policy-last overloads. Use `nativeEndpoint(type, mapping)` to
+enforce existing representability/lattice rules without adaptation; `rationalCompatible()` or
+`recorder(Set.of(...))` explicitly authorize canonical rational recording/compatible transport.
+The generic time parameter never selects the profile.
+
+Exact messages require `wireProfile: "devs-exact-time-v1"`, including numeric or timestamp-free
+messages. Exact endpoints reject missing/unknown markers and legacy endpoints reject exact
+markers/object timestamp fields. Tagged values retain their concrete time type, use exact
+string components and typed positive infinity, and are never downgraded to double.
+See [the versioned schema](../docs/devs-messages-v2.schema.json) and
+[exact-v1 contract](../docs/time-semantics/exact-time-wire-v1.md) for grammar, limits and migration.
+
+Run-ID String record keys, `X-Run-Id`, `X-Receiver-Id`, `X-Sequence`, group IDs and partition
+selection are unchanged. Non-Java peers must independently agree to this profile and parse
+components using exact arithmetic. `RemoteModelStarter` remains legacy: its external server
+DTOs have no negotiated exact capability. Configure the additive adapters directly with a
+compatible remote endpoint; do not add undeclared startup fields.
+
+All enhanced-clock initialization wrappers remain blocked under every profile. Rational JSON
+support does **not** enable distributed enhanced coordinators or clock-context export.
+
+### Kafka integration tests
+
+Broker-free API/binding tests run normally. Broker-dependent cases are explicitly gated:
+
+```bash
+mvn -pl devs-streaming-kafka -am -Ddevs.kafka.integration=true test
+```
+
+Supply the test broker configuration (the integration tests default to `localhost:9092`).
+These tests create disposable topics; do not run them against production brokers. A gated test
+not executed is not evidence of broker interoperability.

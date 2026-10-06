@@ -159,6 +159,7 @@ public class PDevsSimulator<T extends SimTime, S,
     this.parent = simulationInitMessage.getParent();
     this.parentId = simulationInitMessage.getSimulationInit().getSenderId();
     this.simulationRunId = simulationInitMessage.getSimulationInit().getSimulationRunId();
+    timeLast = simulationInitMessage.getSimulationInit().getEventTime();
     timeNext = timeAdvance(simulationInitMessage.getSimulationInit().getEventTime());
     parent.tell(
         NextInternalTimeReport.builder()
@@ -357,6 +358,12 @@ public class PDevsSimulator<T extends SimTime, S,
   }
 
 
+  /**
+   * Returns the initialization time or the time of the most recently completed transition.
+   * This native model time is the reference used to compute elapsed time for external transitions.
+   *
+   * @return the last committed simulation time
+   */
   public T getTimeLast() {
     return timeLast;
   }

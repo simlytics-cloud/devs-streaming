@@ -145,6 +145,7 @@ public class KafkaUtils {
     createTopicWhenAvailable(topic, adminClient, deadlineNanos);
   }
 
+  /** Deletes a topic within the shared deadline, tolerating an already-absent topic. */
   private static void deleteTopicIfPresent(String topic, AdminClient adminClient, long deadlineNanos)
       throws ExecutionException, InterruptedException, TimeoutException {
     try {
@@ -157,6 +158,7 @@ public class KafkaUtils {
     }
   }
 
+  /** Checks broker topic metadata without exceeding the shared operation deadline. */
   private static boolean topicExists(String topic, AdminClient adminClient, long deadlineNanos)
       throws ExecutionException, InterruptedException, TimeoutException {
     return adminClient.listTopics(new ListTopicsOptions())
@@ -165,6 +167,7 @@ public class KafkaUtils {
         .contains(topic);
   }
 
+  /** Polls metadata until asynchronous deletion removes the topic or the deadline expires. */
   private static void waitForTopicAbsence(String topic, AdminClient adminClient, long deadlineNanos)
       throws ExecutionException, InterruptedException, TimeoutException {
     while (topicExists(topic, adminClient, deadlineNanos)) {
@@ -172,6 +175,7 @@ public class KafkaUtils {
     }
   }
 
+  /** Creates a single-partition topic, retrying pending deletion and accepting an existing topic. */
   private static void createTopicWhenAvailable(String topic, AdminClient adminClient,
       long deadlineNanos) throws ExecutionException, InterruptedException, TimeoutException {
     while (true) {

@@ -135,6 +135,11 @@ public abstract class AbstractLongSimTime extends SimTime {
     return LongSimTime.maxValue((LongSimTime) this);
   }
   
+  /**
+   * Creates a long-backed zero, independent of this instance's value.
+   *
+   * @return a {@link LongSimTime} with value {@code 0}
+   */
   @Override
   public SimTime createZeroTime() {
     return LongSimTime.create(0L);

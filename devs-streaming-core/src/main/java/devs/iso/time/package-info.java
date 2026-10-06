@@ -15,8 +15,16 @@
  */
 
 /**
- * In DEVS, there can be different ways to represent time. It can b using integers, floating point
- * numbers, or even constructs with multiple values. The classes in this package support the ssnding
- * of time values as json serializable messages.
+ * Simulation time representations and JSON bindings for timed DEVS messages.
+ *
+ * <p>Use {@link devs.iso.time.LongSimTime} for integer ticks and
+ * {@link devs.iso.time.DoubleSimTime} for binary floating-point native time. Choose
+ * {@link devs.iso.time.DecimalSimTime} when finite decimal timestamps and intervals must remain
+ * exact, or {@link devs.iso.time.QuantizedSimTime} for rational canonical scheduling across models
+ * with different units and time quanta. Time mappings, not the value classes, enforce unit
+ * conversion and lattice constraints.
+ *
+ * <p>{@link devs.iso.time.ExactTimeJsonModule} provides standalone exact-time JSON binding.
+ * Message transport separately requires an appropriate wire profile and endpoint policy.
  */
 package devs.iso.time;

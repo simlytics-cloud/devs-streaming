@@ -22,31 +22,64 @@ import java.util.Map;
 
 
 /**
- * The OutputCouplingMessages class represents a structure containing output messages and internal
- * messages for a coupled PDevs model. It is used to encapsulate and transport these message types
- * during the model's execution.
- * <p>
- * This class includes the following attributes: - An output message encapsulated in a Bag object. -
- * Internal messages mapped to their corresponding Bag instances, organized by string keys.
- * <p>
- * This structure provides convenience methods for accessing the output message and the internal
- * messages mapping.
+ * Contains external outputs and child input bags produced by routing a coupled model's messages.
+ * Ordered source-aware deliveries additionally retain coupling provenance for enhanced scheduling.
  */
 public class OutputCouplingMessages {
 
   final List<PortValue<?>> externalOutputMessages;
   final Map<String, List<PortValue<?>>> internalMessages;
+  private final List<RoutedDelivery> routedDeliveries;
 
+  /**
+   * Constructs legacy routing results without source-aware deliveries.
+   *
+   * @param externalOutputMessages messages emitted by the coupled model
+   * @param internalMessages input bags keyed by target model identifier
+   */
   public OutputCouplingMessages(List<PortValue<?>> externalOutputMessages, Map<String, List<PortValue<?>>> internalMessages) {
-    this.externalOutputMessages = externalOutputMessages;
-    this.internalMessages = internalMessages;
+    this(externalOutputMessages, internalMessages, List.of());
   }
 
+  /**
+   * Constructs routing results with an immutable snapshot of the ordered deliveries.
+   * The external output list and internal message map are retained without copying.
+   *
+   * @param externalOutputMessages messages emitted by the coupled model
+   * @param internalMessages input bags keyed by target model identifier
+   * @param routedDeliveries resolved internal and external deliveries in routing order
+   */
+  public OutputCouplingMessages(List<PortValue<?>> externalOutputMessages,
+      Map<String, List<PortValue<?>>> internalMessages, List<RoutedDelivery> routedDeliveries) {
+    this.externalOutputMessages = externalOutputMessages;
+    this.internalMessages = internalMessages;
+    this.routedDeliveries = List.copyOf(routedDeliveries);
+  }
+
+  /**
+   * Returns the coupled model's external output bag.
+   *
+   * @return external output messages
+   */
   public List<PortValue<?>> getExternalOutputMessages() {
     return externalOutputMessages;
   }
 
+  /**
+   * Returns routed input bags by child model identifier.
+   *
+   * @return the internal message map
+   */
   public Map<String, List<PortValue<?>>> getInternalMessages() {
     return internalMessages;
+  }
+
+  /**
+   * Returns the immutable source-aware delivery list in routing order.
+   *
+   * @return resolved deliveries, or an empty list for legacy-only routing results
+   */
+  public List<RoutedDelivery> getRoutedDeliveries() {
+    return routedDeliveries;
   }
 }

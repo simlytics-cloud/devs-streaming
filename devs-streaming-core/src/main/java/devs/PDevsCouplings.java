@@ -24,6 +24,8 @@ import devs.iso.PortValue;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -203,20 +205,88 @@ public class PDevsCouplings {
    * in a Bag and the internal messages mapped to Bags by their keys.
    */
   public OutputCouplingMessages handleOutputBag(Map<String, Optional<List<PortValue<?>>>> outputMap) {
-    Map<String, List<PortValue<?>>> receiverMap = new HashMap<>();
-    List<PortValue<?>> outputMessages = new ArrayList<>();
+    return handleOutputBag(outputMap,
+        outputMap == null ? List.of() : new ArrayList<>(outputMap.keySet()));
+  }
 
-    handleOutputs(outputMap, receiverMap, outputMessages);
-
-    // Create input lists for all of the internal messages
-    Map<String, List<PortValue<?>>> internalMessages = new HashMap<>();
-    for (String key : receiverMap.keySet()) {
-      List<PortValue<?>> portValues = receiverMap.get(key);
-      internalMessages.put(key, portValues);
+  /**
+   * Routes outputs in the supplied source order, then bag order, then resolver/target order.
+   * Sources without an entry in the output map are allowed. Every map key must appear exactly
+   * once in the source order; missing or duplicate sources are rejected before routing.
+   *
+   * @param outputMap output bags keyed by source model
+   * @param sourceOrder explicit model order supplied by the coordinator
+   * @return legacy bags and ordered source-aware internal and external deliveries
+   */
+  public OutputCouplingMessages handleOutputBag(
+      Map<String, Optional<List<PortValue<?>>>> outputMap, List<String> sourceOrder) {
+    Set<String> sources = new HashSet<>(sourceOrder);
+    if (sources.size() != sourceOrder.size()
+        || (outputMap != null && !sources.containsAll(outputMap.keySet()))) {
+      throw new IllegalArgumentException("Source order must include every output source exactly once");
     }
+    Map<String, List<PortValue<?>>> internalMessages = new LinkedHashMap<>();
+    List<PortValue<?>> outputMessages = new ArrayList<>();
+    List<RoutedDelivery> routedDeliveries = new ArrayList<>();
+    if (outputMap != null) {
+      for (String source : sourceOrder) {
+        Optional<List<PortValue<?>>> bag = outputMap.get(source);
+        if (bag != null && bag.isPresent()) {
+          routeBag(source, bag.get(), internalMessages, outputMessages, routedDeliveries, true);
+        }
+      }
+    }
+    return new OutputCouplingMessages(outputMessages, internalMessages, routedDeliveries);
+  }
 
-    // Create an output list because this coupling does not product output messages
-    return new OutputCouplingMessages(outputMessages, internalMessages);
+  /**
+   * Routes parent inputs in bag and resolver/target order using the coupled model ID as source.
+   * As with {@link #handleInputMessage(List)}, all targets are included in the internal bags.
+   *
+   * @param modelInput input bag sent to this coupled model
+   * @return legacy input bags and ordered source-aware deliveries
+   */
+  public OutputCouplingMessages handleInputBag(List<PortValue<?>> modelInput) {
+    Map<String, List<PortValue<?>>> internalMessages = new LinkedHashMap<>();
+    List<PortValue<?>> outputMessages = new ArrayList<>();
+    List<RoutedDelivery> routedDeliveries = new ArrayList<>();
+    routeBag(coupledModelName, modelInput, internalMessages, outputMessages, routedDeliveries, false);
+    return new OutputCouplingMessages(outputMessages, internalMessages, routedDeliveries);
+  }
+
+  /**
+   * Resolves a source bag in bag and resolver order, appending transformed values and provenance.
+   * Null or empty bags produce no deliveries.
+   *
+   * @param source identifier of the source model
+   * @param bag original source port values
+   * @param internalMessages destination input bags to populate
+   * @param outputMessages coupled-model output bag to populate
+   * @param routedDeliveries ordered resolved deliveries to populate
+   * @param routeExternalOutputs whether coupled-model targets are treated as external outputs
+   */
+  private void routeBag(String source, List<PortValue<?>> bag,
+      Map<String, List<PortValue<?>>> internalMessages, List<PortValue<?>> outputMessages,
+      List<RoutedDelivery> routedDeliveries, boolean routeExternalOutputs) {
+    if (bag == null || bag.isEmpty()) {
+      return;
+    }
+    for (PortValue<?> portValue : bag) {
+      List<CouplingTarget> destinations = getDestinationsForMessage(source, portValue);
+      if (destinations == null || destinations.isEmpty()) {
+        continue;
+      }
+      for (CouplingTarget destination : destinations) {
+        PortValue<?> mapped = destination.targetPortValue();
+        routedDeliveries.add(new RoutedDelivery(source, portValue.getPortName(),
+            destination.targetModel(), mapped));
+        if (routeExternalOutputs && coupledModelName.equals(destination.targetModel())) {
+          outputMessages.add(mapped);
+        } else {
+          addInputPortValue(mapped, destination.targetModel(), internalMessages);
+        }
+      }
+    }
   }
 
   /**

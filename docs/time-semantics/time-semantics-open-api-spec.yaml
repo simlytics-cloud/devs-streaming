@@ -1,0 +1,652 @@
+openapi: 3.1.0
+
+info:
+  title: DEVS Model API
+  version: 2.0.0
+
+paths:
+
+  /v1/models:
+    get:
+      summary: List available models
+      operationId: listModels
+      responses:
+        '200':
+          description: Available models
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelListResponse'
+
+  /v1/models/{modelId}:
+    get:
+      summary: Get model definition
+      operationId: getModel
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      responses:
+        '200':
+          description: Model definition
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/models/{modelId}/run:
+    put:
+      summary: Start a model run
+      operationId: startModelRun
+      parameters:
+        - $ref: '#/components/parameters/ModelId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartModelRunRequest'
+      responses:
+        '202':
+          description: Run request accepted and queued for execution startup
+          headers:
+            Location:
+              description: URL for polling run status
+              schema:
+                type: string
+                example: /v1/runs/run-001
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartModelRunResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/runs:
+    get:
+      summary: List all runs
+      operationId: listRuns
+      responses:
+        '200':
+          description: List of run statuses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RunStatusResponse'
+
+  /v1/runs/{runId}:
+    get:
+      summary: Get run status
+      operationId: getRunStatus
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Cancel run
+      operationId: deleteRun
+      parameters:
+        - $ref: '#/components/parameters/RunId'
+      responses:
+        '200':
+          description: Run status after cancel request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /v1/run-config/defaults:
+    get:
+      summary: Get default run configuration values
+      operationId: getRunConfigDefaults
+      responses:
+        '200':
+          description: Default Kafka values for run configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KafkaDefaultsResponse'
+
+components:
+
+  parameters:
+    ModelId:
+      name: modelId
+      in: path
+      required: true
+      schema:
+        type: string
+    RunId:
+      name: runId
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+
+    ModelListResponse:
+      type: object
+      required:
+        - models
+      properties:
+        models:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModelSummary'
+
+    ModelSummary:
+      type: object
+      required:
+        - modelId
+        - name
+        - description
+        - implementationLanguage
+      properties:
+        modelId:
+          type: string
+          example: battery-model-v1
+        name:
+          type: string
+          example: Battery Energy Model
+        description:
+          type: string
+        timeMode:
+          $ref: '#/components/schemas/TimeMode'
+        timeSemantics:
+          $ref: '#/components/schemas/TimeSemantics'
+          description: Supplier-declared native time contract, independent of pacing. Conflicting catalog, context, or deprecated nested declarations must be reported, not silently prioritized.
+        implementationLanguage:
+          type: string
+          example: Java
+
+    Model:
+      type: object
+      required:
+        - modelId
+        - name
+        - description
+        - inputPorts
+        - outputPorts
+        - parameters
+        - implementationLanguage
+        - messageSchemas
+        - initializationSchema
+      properties:
+        modelId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        implementationLanguage:
+          type: string
+          example: Java
+
+        inputPorts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortDefinition'
+
+        outputPorts:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortDefinition'
+
+        parameters:
+          type: array
+          description: High-level list of model initialization parameters.
+          items:
+            $ref: '#/components/schemas/ParameterDefinition'
+
+        messageSchemas:
+          type: object
+          description: JSON Schemas for port message payloads.
+          additionalProperties:
+            $ref: '#/components/schemas/JsonSchema'
+
+        initializationSchema:
+          $ref: '#/components/schemas/JsonSchema'
+
+        timeSemantics:
+          $ref: '#/components/schemas/TimeSemantics'
+          description: Supplier-declared native time contract, independent of pacing. Conflicting catalog, context, or deprecated nested declarations must be reported, not silently prioritized.
+
+        defaultParameterSet:
+          $ref: '#/components/schemas/ModelDefaultParameterSet'
+
+        behaviorDescription:
+          type: string
+          description: Optional code, pseudo-code, or behavioral explanation.
+
+        metadata:
+          type: object
+          additionalProperties: true
+
+    PortDefinition:
+      type: object
+      required:
+        - name
+        - direction
+        - messageType
+      properties:
+        name:
+          type: string
+          example: powerDemand
+        direction:
+          type: string
+          enum: [input, output]
+        messageType:
+          type: string
+          example: BatteryPowerRequest
+        description:
+          type: string
+
+    ParameterDefinition:
+      type: object
+      required:
+        - name
+        - type
+        - required
+      properties:
+        name:
+          type: string
+          example: initialStateOfCharge
+        type:
+          type: string
+          example: number
+        required:
+          type: boolean
+        defaultValue: {}
+        description:
+          type: string
+
+    StartModelRunRequest:
+      type: object
+      required:
+        - initializationParameters
+        - kafka
+      properties:
+        runId:
+          type: string
+          description: Optional caller-provided run identifier.
+          example: run-001
+
+        initializationParameters:
+          type: object
+          description: |
+            Model-specific initialization values. This object must validate
+            against the model's initializationSchema.
+          additionalProperties: true
+
+        kafka:
+          $ref: '#/components/schemas/KafkaConfiguration'
+
+        simulation:
+          $ref: '#/components/schemas/SimulationContext'
+
+    KafkaConfiguration:
+      type: object
+      required:
+        - bootstrapServers
+        - topic
+      properties:
+        bootstrapServers:
+          type: string
+          example: kafka.example.com:9092
+        topic:
+          type: string
+          example: simulation.run.001
+        consumerGroup:
+          type: string
+        securityProtocol:
+          type: string
+          example: SASL_SSL
+        saslMechanism:
+          type: string
+          example: SCRAM-SHA-512
+        properties:
+          type: object
+          additionalProperties:
+            type: string
+
+    SimulationContext:
+      type: object
+      description: |
+        Run context, not composition adaptation configuration. Legacy common-time
+        execution may omit semantics. Enhanced execution requires complete approved
+        developer-supplied execution configuration outside this model-library API.
+        Conflicting catalog, context, or deprecated nested semantics declarations
+        must be reported by the application, never silently prioritized.
+      properties:
+        simulationId:
+          type: string
+          example: sim-001
+        modelInstanceId:
+          type: string
+          example: instance-001
+        coordinatorId:
+          type: string
+          example: mission-coordinator-alpha
+        timeMode:
+          $ref: '#/components/schemas/TimeMode'
+        timeSemantics:
+          $ref: '#/components/schemas/TimeSemantics'
+          description: Identifies an expected supplier-supported native time contract; does not redefine the model clock or supply composition alignment or adaptation rules.
+
+    TimeModeType:
+      type: string
+      description: Runtime pacing strategy for simulation time.
+      enum: [real-time, scaled-real-time, virtual-time]
+
+    TimeDomain:
+      type: string
+      description: Logical time domain for model semantics.
+      enum: [discrete, continuous]
+
+    TimeValueEncoding:
+      type: string
+      description: Supplier-native value encoding, not canonical coordinator transport. Exact message profiles are documented separately in ../devs-messages-v2.schema.json and require independently configured endpoint agreement; rational wire timestamps do not introduce a supplier-native encoding.
+      enum: [int64, decimal-string, float64]
+
+    TimeInfinityPolicy:
+      type: string
+      description: Native logical infinity representation. Supplier-documented sentinel details must be decoded explicitly, not used as finite arithmetic operands.
+      enum: [max-finite, string-sentinel]
+
+    RationalTime:
+      type: object
+      required:
+        - numerator
+        - denominator
+      properties:
+        numerator:
+          type: integer
+          format: int64
+          example: 1
+        denominator:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+
+    TimeGranularity:
+      $ref: '#/components/schemas/RationalTime'
+      properties:
+        numerator:
+          exclusiveMinimum: 0
+      description: |
+        Additional supplier-declared positive exact timestamp grid spacing in native units.
+        Finite timestamps must be integer multiples from native local zero, including zero
+        and negative multiples, subject to mandatory encoding, range, and sentinel limits.
+        Declare this when off-grid values are unsupported, including silent rounding or
+        incorrect behavior. Not a minimum advance, integration step, tolerance, or common tick.
+
+    TimeSemantics:
+      type: object
+      description: |
+        Supplier-native clock facts and supported timestamp representation, not
+        composition alignment, conversion, delivery adaptation, rounding, or
+        timing-error budgets. The composition developer supplies and approves
+        execution rules outside this API; an enhanced coordinator executes them
+        deterministically without choosing policies or assessing modeling validity.
+        Native reference epoch and infinity sentinel details are supplier-documented.
+      required:
+        - timeDomain
+        - valueEncoding
+        - unitSeconds
+        - originOffset
+        - infinityPolicy
+      properties:
+        timeDomain:
+          $ref: '#/components/schemas/TimeDomain'
+        valueEncoding:
+          $ref: '#/components/schemas/TimeValueEncoding'
+        unitSeconds:
+          $ref: '#/components/schemas/RationalTime'
+          properties:
+            numerator:
+              exclusiveMinimum: 0
+          description: Positive rational number of SI seconds represented by one local model time unit.
+        timeGranularity:
+          $ref: '#/components/schemas/TimeGranularity'
+          description: Optional additional native timestamp restriction for any domain or encoding. Omission means no supplier-imposed grid, not unknown semantics or unrestricted representability. Explicit null is invalid. Does not authorize adaptation or initialization rounding.
+        originOffset:
+          $ref: '#/components/schemas/RationalTime'
+          description: Native epoch offset in rational seconds from a supplier-documented reference to local model time zero; may be zero or negative. Not composition-specific alignment to a coordinator clock.
+        infinityPolicy:
+          $ref: '#/components/schemas/TimeInfinityPolicy'
+      not:
+        required: [quantum]
+
+    TimeMode:
+      type: object
+      description: Runtime pacing independent of native logical-time semantics. Pacing-only configurations may omit semantics.
+      required:
+        - mode
+      properties:
+        mode:
+          $ref: '#/components/schemas/TimeModeType'
+          description: Runtime pacing mode independent from logical time semantics.
+        timeSemantics:
+          $ref: '#/components/schemas/TimeSemantics'
+          deprecated: true
+          description: Optional legacy location for native semantics. Use catalog or context timeSemantics instead. Conflicting declarations must be reported, not silently prioritized; this property never supplies composition adaptation rules.
+        realTimeFactor:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Scaling factor for `scaled-real-time` mode (for example, `2.0` runs at 2x wall-clock speed).
+          example: 2.0
+      allOf:
+        - if:
+            properties:
+              mode:
+                const: scaled-real-time
+          then:
+            required: [realTimeFactor]
+
+    StartModelRunResponse:
+      type: object
+      required:
+        - runId
+        - modelId
+        - status
+        - statusUrl
+      properties:
+        runId:
+          type: string
+          description: Server-assigned run identifier for status polling.
+          example: run-7f83a9c2
+        modelId:
+          type: string
+          example: irpsystem.irpmodel.Vehicle
+        status:
+          $ref: '#/components/schemas/RunStatus'
+        statusUrl:
+          type: string
+          description: Relative URL to retrieve current run status.
+          example: /v1/runs/run-7f83a9c2
+        acceptedAt:
+          type: string
+          format: date-time
+          description: Timestamp when the server accepted the run request.
+          example: '2026-06-14T12:00:00Z'
+        message:
+          type: string
+
+    RunStatusResponse:
+      type: object
+      required:
+        - runId
+        - modelId
+        - status
+      properties:
+        runId:
+          type: string
+          example: run-7f83a9c2
+        modelId:
+          type: string
+          example: irpsystem.irpmodel.Vehicle
+        status:
+          $ref: '#/components/schemas/RunStatus'
+        acceptedAt:
+          type: string
+          format: date-time
+          example: '2026-06-14T12:00:00Z'
+        readyAt:
+          type: string
+          format: date-time
+          description: Set when runtime signals readiness for execution.
+          example: '2026-06-14T12:00:05Z'
+        startedAt:
+          type: string
+          format: date-time
+          example: '2026-06-14T12:00:06Z'
+        completedAt:
+          type: string
+          format: date-time
+          example: '2026-06-14T12:03:20Z'
+        message:
+          type: string
+        currentSimulationTime:
+          $ref: '#/components/schemas/CurrentSimulationTime'
+
+    KafkaDefaultsResponse:
+      type: object
+      required:
+        - bootstrapServers
+        - topic
+        - consumerGroup
+        - securityProtocol
+        - saslMechanism
+      properties:
+        bootstrapServers:
+          type: string
+          example: localhost:9092
+        topic:
+          type: string
+          example: simulation.${simulationId}.${coordinatorId}
+        consumerGroup:
+          type: string
+          example: ${modelInstanceId}
+        securityProtocol:
+          type: string
+          example: PLAINTEXT
+        saslMechanism:
+          type: string
+          example: ''
+
+    CurrentSimulationTime:
+      type: object
+      description: Supplier-native status value, not a tagged timestamp object or canonical scheduling time. Rational exact-profile messages and observations are separate from this native status contract. Message profiles require independent endpoint agreement; these status identifiers do not negotiate startup capabilities.
+      required:
+        - value
+        - sourceMessageType
+        - updatedAt
+      properties:
+        value:
+          type: string
+          description: Encoded supplier-native logical time value. Native decimal examples include "0.1" and "1E+1000"; native infinity uses the supplier-declared string sentinel under its infinity policy, not a tagged exact-wire infinity object.
+          example: '125.0'
+        timeType:
+          type: string
+          enum: [long, double, decimal]
+          description: Optional concrete native type. New decimal status reports identify both decimal and the exact wire profile; historical long/double responses may omit these identifiers.
+        wireProfile:
+          type: string
+          enum: [devs-exact-time-v1]
+          description: Optional source message profile identifier; legacy numeric messages have no marker and historical status responses may omit this field. See ../devs-messages-v2.schema.json; profile support does not imply native representability or execution permission.
+        timeSemantics:
+          $ref: '#/components/schemas/TimeSemantics'
+          description: Native semantics of the reported encoded value, not canonical scheduling time or composition adaptation policy.
+        sourceMessageType:
+          type: string
+          example: NextInternalTimeReport
+        sourceMessageId:
+          type: string
+          example: message-123
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2026-07-01T12:34:56Z'
+      allOf:
+        - if:
+            required: [timeType]
+            properties:
+              timeType:
+                const: decimal
+          then:
+            required: [wireProfile]
+            properties:
+              wireProfile:
+                const: devs-exact-time-v1
+        - if:
+            required: [timeSemantics]
+            properties:
+              timeSemantics:
+                required: [valueEncoding]
+                properties:
+                  valueEncoding:
+                    const: decimal-string
+          then:
+            required: [timeType, wireProfile]
+            properties:
+              timeType:
+                const: decimal
+              wireProfile:
+                const: devs-exact-time-v1
+
+    RunStatus:
+      type: string
+      description: Lifecycle state for a submitted run.
+      enum: [accepted, starting, ready, running, completed, failed, canceled]
+
+    JsonSchema:
+      type: object
+      description: Embedded JSON Schema 2020-12 document.
+      additionalProperties: true
+
+    ModelDefaultParameterSet:
+      type: object
+      description: |
+        Model-specific initialization default values.
+        This object must validate against the model's initializationSchema.
+      additionalProperties: true
+
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

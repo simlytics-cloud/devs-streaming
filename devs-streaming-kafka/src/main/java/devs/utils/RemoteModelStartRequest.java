@@ -52,6 +52,11 @@ public record RemoteModelStartRequest(
     JsonNode initializationParameters,
     @Nullable CoordinatorHelperCallbackConfigurationDto coordinatorHelper) {
 
+  /**
+   * Validates required start parameters; the coordinator helper callback may be absent.
+   *
+   * @throws NullPointerException if any required reference is null
+   */
   public RemoteModelStartRequest {
     Objects.requireNonNull(hostUrl, "hostUrl");
     Objects.requireNonNull(modelId, "modelId");

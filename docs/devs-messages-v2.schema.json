@@ -1,0 +1,445 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://simlytics.cloud/schemas/devs-messages-v2.schema.json",
+  "title": "DEVS Streaming Messages v2 — Exact Time Extension",
+  "description": "Framework-specific successor extending the numeric ISO 21175-2-derived binding with the devs-exact-time-v1 profile. This is not unchanged ISO JSON compatibility. Schema version 2 and time profile version 1 are independent; endpoints must explicitly agree on the profile and permitted concrete time types. Original envelope, payload, and additional-property constraints are retained. Runtime enforces coefficient/component digit counts (4096), explicit and canonical exponent magnitude and effective scale (10000), normalized precision, full timestamp fragment size (8256 characters including whitespace/escapes), duplicate keys, canonicalization, and endpoint/native representability. Schema length ceilings do not replace those runtime checks.",
+  "x-schema-version": "2",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/SimulationInit" },
+    { "$ref": "#/$defs/SimulationTerminate" },
+    { "$ref": "#/$defs/ModelTerminated" },
+    { "$ref": "#/$defs/NextInternalTimeReport" },
+    { "$ref": "#/$defs/RequestOutput" },
+    { "$ref": "#/$defs/OutputReport" },
+    { "$ref": "#/$defs/ExecuteTransition" },
+    { "$ref": "#/$defs/TransitionComplete" },
+    { "$ref": "#/$defs/MonitoringMessage" },
+    { "$ref": "#/$defs/ErrorReport" }
+  ],
+  "$defs": {
+    "MessageType": {
+      "type": "string",
+      "description": "Controlled message type vocabulary defined by ISO 21175-2 Table 1.",
+      "enum": ["SimulationInit", "SimulationTerminate", "ModelTerminated", "NextInternalTimeReport", "RequestOutput", "OutputReport", "ExecuteTransition", "TransitionComplete", "MonitoringMessage", "ErrorReport"]
+    },
+    "Identifier": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier string. The standard recommends UUIDs, URIs, or other schemes with a low probability of collision. This schema does not impose a lexical identifier format. ErrorReport.simulationRunId may be an empty string when no simulation run can be linked to the error."
+    },
+    "OptionalSimulationRunId": {
+      "type": "string",
+      "description": "Simulation run identifier. For ErrorReport only, the standard requires this to be an empty string when no simulation run can be linked to the error."
+    },
+    "LogicalTime": {
+      "description": "Legacy numeric time or a type-preserving exact-v1 timestamp. Numeric decoding remains long-first/double-fallback; tagged objects never imply conversion or endpoint permission.",
+      "oneOf": [
+        { "type": "number" },
+        { "$ref": "#/$defs/ExactTimestamp" }
+      ]
+    },
+    "ExactTimestamp": {
+      "oneOf": [
+        { "$ref": "#/$defs/DecimalTimestamp" },
+        { "$ref": "#/$defs/RationalTimestamp" },
+        { "$ref": "#/$defs/DecimalInfinity" },
+        { "$ref": "#/$defs/RationalInfinity" }
+      ]
+    },
+    "DecimalString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 8256,
+      "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$(?![\\s\\S])",
+      "description": "ASCII decimal text; trailing zeros and exponent forms are accepted. Runtime separately checks at most 4096 coefficient digits before normalization, normalized precision, explicit/canonical exponent magnitude, effective scale, and complete fragment length. Output is normalized BigDecimal.toString(), with zero as 0."
+    },
+    "IntegerString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4097,
+      "pattern": "^-?(0|[1-9][0-9]{0,4095})$(?![\\s\\S])",
+      "description": "At most 4096 ASCII digits excluding an optional minus sign. Runtime reduces fractions and normalizes negative zero."
+    },
+    "PositiveIntegerString": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "^[1-9][0-9]{0,4095}$(?![\\s\\S])"
+    },
+    "DecimalTimestamp": {
+      "type": "object",
+      "required": ["timeType", "value"],
+      "properties": {
+        "timeType": { "const": "decimal" },
+        "value": { "$ref": "#/$defs/DecimalString" }
+      },
+      "additionalProperties": false
+    },
+    "RationalTimestamp": {
+      "type": "object",
+      "required": ["timeType", "numerator", "denominator"],
+      "properties": {
+        "timeType": { "const": "rational" },
+        "numerator": { "$ref": "#/$defs/IntegerString" },
+        "denominator": { "$ref": "#/$defs/PositiveIntegerString" }
+      },
+      "additionalProperties": false
+    },
+    "DecimalInfinity": {
+      "type": "object",
+      "required": ["timeType", "infinity"],
+      "properties": {
+        "timeType": { "const": "decimal" },
+        "infinity": { "const": "positive" }
+      },
+      "additionalProperties": false
+    },
+    "RationalInfinity": {
+      "type": "object",
+      "required": ["timeType", "infinity"],
+      "properties": {
+        "timeType": { "const": "rational" },
+        "infinity": { "const": "positive" }
+      },
+      "additionalProperties": false
+    },
+    "PrimitiveValue": {
+      "description": "Primitive or structured payload value. ISO 21175-2 permits boolean, int32/int64 as JSON integer numbers, float32/float64 as JSON numbers, string, objects, and arrays. The document also mentions bytes as Base64 strings in the JSON binding. Null is intentionally not included.",
+      "anyOf": [
+        { "type": "boolean" },
+        {
+          "type": "integer",
+          "description": "Portable integer values should remain within the range exactly representable by IEEE 754 double precision: +/-9007199254740991. Wider integer values should be encoded as strings by agreement of all participants.",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        { "type": "number" },
+        { "type": "string" },
+        { "$ref": "#/$defs/PrimitiveObject" },
+        { "$ref": "#/$defs/PrimitiveArray" }
+      ]
+    },
+    "PrimitiveObject": {
+      "type": "object",
+      "description": "Object built from primitive values, nested objects, and arrays. Used for structured payloads and state snapshots.",
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "PrimitiveArray": {
+      "type": "array",
+      "description": "Array containing primitive values, nested objects, and arrays.",
+      "items": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "NamedPrimitiveValues": {
+      "type": "object",
+      "description": "JSON object whose properties are named primitive values defined by the standard or by the relevant port/message profile.",
+      "minProperties": 1,
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "PortValue": {
+      "type": "object",
+      "description": "Port-level value used in OutputReport.outputs and ExecuteTransition.inputs. The portName must identify a declared model port of the appropriate direction; this cannot be fully checked without the ISO 21175-3 model representation.",
+      "required": ["portName", "value"],
+      "properties": {
+        "portName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of an input or output port, unique within the model scope."
+        },
+        "value": {
+          "$ref": "#/$defs/NamedPrimitiveValues",
+          "description": "Payload object containing one or more named primitive values."
+        }
+      },
+      "additionalProperties": true
+    },
+    "CommonMessage": {
+      "type": "object",
+      "description": "Common message envelope fields defined by ISO 21175-2 Table 2. Message-specific schemas add required fields and payload constraints.",
+      "required": ["messageId", "messageType", "senderId", "receiverId", "wireProfile"],
+      "properties": {
+        "wireProfile": { "type": "string", "const": "devs-exact-time-v1" },
+        "simulationRunId": {
+          "$ref": "#/$defs/OptionalSimulationRunId",
+          "description": "Identifier of the simulation run to which this message belongs. May be omitted only for errors not associated with a run in the abstract model; this schema's ErrorReport profile uses an empty string when no run can be linked, following the JSON binding text."
+        },
+        "messageId": {
+          "$ref": "#/$defs/Identifier",
+          "description": "Message identifier unique within the scope of the simulation run."
+        },
+        "messageType": { "$ref": "#/$defs/MessageType" },
+        "senderId": {
+          "$ref": "#/$defs/Identifier",
+          "description": "Identifier of the sender within the simulation run, such as coordinator identifier, model identifier for a runner, or another participant."
+        },
+        "receiverId": {
+          "$ref": "#/$defs/Identifier",
+          "description": "Identifier of the receiver within the simulation run, such as coordinator identifier, model identifier for a runner, or another participant."
+        },
+        "correlationId": {
+          "type": "string",
+          "description": "Optional identifier used to correlate related messages, for example a request/response pair."
+        },
+        "eventTime": { "$ref": "#/$defs/LogicalTime" },
+        "nextInternalTime": {
+          "$ref": "#/$defs/LogicalTime",
+          "description": "Next internal event time reported by the sender, when applicable."
+        },
+        "payload": {
+          "$ref": "#/$defs/PrimitiveObject",
+          "description": "Message payload. The shape depends on messageType and, for port-level messages, on port definitions."
+        },
+        "wallClockTime": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional ISO 8601 wall-clock timestamp for monitoring or logging. It does not affect simulation semantics."
+        }
+      },
+      "additionalProperties": true
+    },
+    "SimulationInit": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "SimulationInit",
+          "description": "Coordinator-to-runner initialization of an already instantiated and parameterized subordinate model. The receiverId is the runner's model identifier and eventTime is the initial logical time.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime"],
+          "properties": { "messageType": { "const": "SimulationInit" } },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "SimulationTerminate": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "SimulationTerminate",
+          "description": "Coordinator-to-runner termination request. payload.reason may contain a termination reason code or message.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime"],
+          "properties": {
+            "messageType": { "const": "SimulationTerminate" },
+            "payload": { "$ref": "#/$defs/SimulationTerminatePayload" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "SimulationTerminatePayload": {
+      "type": "object",
+      "description": "Optional SimulationTerminate payload.",
+      "properties": {
+        "reason": {
+          "description": "Termination reason code or human-readable termination message.",
+          "oneOf": [
+            { "type": "string" },
+            { "type": "integer" },
+            { "type": "number" },
+            { "$ref": "#/$defs/PrimitiveObject" }
+          ]
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "ModelTerminated": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "ModelTerminated",
+          "description": "Optional runner-to-coordinator acknowledgement that termination processing is complete.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId"],
+          "properties": { "messageType": { "const": "ModelTerminated" } },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "NextInternalTimeReport": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "NextInternalTimeReport",
+          "description": "Runner-to-coordinator report of the next internal event time computed by the model's time advance function.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime", "nextInternalTime"],
+          "properties": { "messageType": { "const": "NextInternalTimeReport" } },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "RequestOutput": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "RequestOutput",
+          "description": "Coordinator-to-runner request to evaluate the model output function at eventTime. The eventTime should equal the latest nextInternalTime reported by the runner; that temporal relation is a protocol rule outside JSON Schema validation.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime"],
+          "properties": { "messageType": { "const": "RequestOutput" } },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "OutputReport": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "OutputReport",
+          "description": "Runner-to-coordinator report of model outputs at eventTime. The payload.outputs array carries zero or more output port values. The JSON binding says nextInternalTime is included together with outputs.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime", "nextInternalTime", "payload"],
+          "properties": {
+            "messageType": { "const": "OutputReport" },
+            "payload": { "$ref": "#/$defs/OutputReportPayload" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "OutputReportPayload": {
+      "type": "object",
+      "description": "OutputReport payload containing output port values. All outputs correspond to the enclosing message eventTime.",
+      "required": ["outputs"],
+      "properties": {
+        "outputs": {
+          "type": "array",
+          "description": "Zero or more output port values produced by the model's output function.",
+          "items": { "$ref": "#/$defs/PortValue" }
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "ExecuteTransition": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "ExecuteTransition",
+          "description": "Coordinator-to-runner request to execute an internal, external, or confluent transition at eventTime. payload.inputs is optional; absent or empty inputs indicate an internal transition when eventTime equals the latest reported nextInternalTime.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime"],
+          "properties": {
+            "messageType": { "const": "ExecuteTransition" },
+            "payload": { "$ref": "#/$defs/ExecuteTransitionPayload" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "ExecuteTransitionPayload": {
+      "type": "object",
+      "description": "Optional ExecuteTransition payload containing input port values. All inputs correspond to the enclosing message eventTime.",
+      "properties": {
+        "inputs": {
+          "type": "array",
+          "description": "Zero or more input port values available to the model at eventTime.",
+          "items": { "$ref": "#/$defs/PortValue" }
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "TransitionComplete": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "TransitionComplete",
+          "description": "Runner-to-coordinator acknowledgement that a requested transition completed at eventTime, with the updated next internal event time.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "eventTime", "nextInternalTime"],
+          "properties": { "messageType": { "const": "TransitionComplete" } },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "MonitoringMessage": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "MonitoringMessage",
+          "description": "Optional monitoring, logging, or result reporting message. It observes the run without changing simulation state evolution.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "payload"],
+          "properties": {
+            "messageType": { "const": "MonitoringMessage" },
+            "payload": { "$ref": "#/$defs/MonitoringPayload" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "MonitoringPayload": {
+      "type": "object",
+      "description": "Monitoring payload. Category examples include stateSnapshot, metric, trace, debug, and runSummary.",
+      "required": ["category", "values"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Nature of the observation, such as stateSnapshot, metric, trace, debug, or runSummary."
+        },
+        "values": {
+          "$ref": "#/$defs/NamedPrimitiveValues",
+          "description": "Named primitive values whose interpretation depends on category."
+        },
+        "sourceRole": {
+          "type": "string",
+          "description": "Optional source role identifier. The standard names coordinator, runner, and another participant; exact casing is implementation-defined here.",
+          "enum": ["Coordinator", "Runner", "Other", "coordinator", "runner", "other"]
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    },
+    "ErrorReport": {
+      "allOf": [
+        { "$ref": "#/$defs/CommonMessage" },
+        {
+          "type": "object",
+          "title": "ErrorReport",
+          "description": "Error and diagnostic message. The JSON binding requires simulationRunId to be present and set to an empty string when no simulation run can be linked to the error.",
+          "required": ["simulationRunId", "messageId", "messageType", "senderId", "receiverId", "payload"],
+          "properties": {
+            "simulationRunId": { "$ref": "#/$defs/OptionalSimulationRunId" },
+            "messageType": { "const": "ErrorReport" },
+            "payload": { "$ref": "#/$defs/ErrorReportPayload" }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "ErrorReportPayload": {
+      "type": "object",
+      "description": "ErrorReport payload containing origin, severity, code, and human-readable diagnostic message.",
+      "required": ["originRole", "originId", "severity", "errorCode", "message"],
+      "properties": {
+        "originRole": {
+          "type": "string",
+          "description": "Role of the component that detected or originated the error.",
+          "enum": ["Coordinator", "Runner", "Other"]
+        },
+        "originId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the component that detected the error. Usually equal to senderId, but it may differ when an intermediary reports an error detected elsewhere."
+        },
+        "severity": {
+          "type": "string",
+          "description": "Severity level for the diagnostic condition.",
+          "enum": ["info", "warning", "error", "fatal"]
+        },
+        "errorCode": {
+          "description": "Error category according to an implementation-defined or community-defined registry. Clause 8 allows string or integer; the JSON binding text states integer. This schema accepts both to preserve compatibility with both statements.",
+          "oneOf": [
+            { "type": "integer" },
+            { "type": "string", "minLength": 1 }
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable error message describing the condition."
+        }
+      },
+      "additionalProperties": { "$ref": "#/$defs/PrimitiveValue" }
+    }
+  }
+}

@@ -37,6 +37,7 @@ public final class ObservationFileNameStrategy {
     return normalized + "-" + shortHash(original) + ".jsonl";
   }
 
+  /** Uses the first six SHA-256 bytes to distinguish type names that normalize to the same stem. */
   private String shortHash(String value) {
     try {
       byte[] hash = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));

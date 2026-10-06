@@ -141,6 +141,11 @@ public abstract class AbstractDoubleSimTime extends SimTime {
     return DoubleSimTime.maxValue((DoubleSimTime) this);
   }
   
+  /**
+   * Creates a double-backed zero, independent of this instance's value.
+   *
+   * @return a {@link DoubleSimTime} with value {@code 0.0}
+   */
   @Override
   public SimTime createZeroTime() {
     return DoubleSimTime.create(0.0);

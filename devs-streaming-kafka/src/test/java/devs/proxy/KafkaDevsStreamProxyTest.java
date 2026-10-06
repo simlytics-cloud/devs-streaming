@@ -51,15 +51,14 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.javadsl.Behaviors;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
 /**
  * Unit tests for verifying the functionality of Kafka DEVS (Discrete Event System Specification)
@@ -83,9 +82,14 @@ import org.junit.jupiter.api.Test;
  * Key aspects tested in this class: - Proper setup and cleanup of Kafka topics. - Execution of DEVS
  * simulation steps with expected event transitions and outputs. - Correct relaying of events
  * between Kafka proxies and DEVS actors.
+ * <p>Opt in with {@code -Ddevs.kafka.integration=true}; requires Kafka at {@code localhost:9092}.
  */
-@Disabled("Requires KAFKA instance")
+@EnabledIfSystemProperty(named = "devs.kafka.integration", matches = "true")
 public class KafkaDevsStreamProxyTest {
+  @BeforeAll
+  static void requireBroker() throws Exception {
+    devs.utils.KafkaIntegrationSupport.requireBroker();
+  }
   
   static final String genStoreSystemTopic = "genStoreSystem";
   static final ObjectMapper objectMapper = DevsObjectMapper.buildObjectMapper();
@@ -132,8 +136,8 @@ public class KafkaDevsStreamProxyTest {
     Thread.sleep(5000);
     KafkaUtils.createTopic(genStoreSystemTopic, adminClient, Optional.of(1), Optional.empty());
     String runId = "KafkaDevsStreamProxyTest";
-    KafkaProducer<String, String> producer =
-        KafkaUtils.createStringKeyProducer(ConfigUtils.copyProperties(kafkaClusterProperties));
+    KafkaMessagePublisher producer = new KafkaMessagePublisher(generatorName, runId,
+        generatorName, genStoreSystemTopic, kafkaClusterConfig);
 
     ActorTestKit testKit = ActorTestKit.create();
 
@@ -162,7 +166,8 @@ public class KafkaDevsStreamProxyTest {
         .build();
     String initSimString = objectMapper.writeValueAsString(simulationInit);
     final Long start = System.currentTimeMillis();
-    producer.send(new ProducerRecord<>(genStoreSystemTopic, runId, initSimString));
+    producer.publish(0, initSimString);
+    producer.close();
     DevsMessage devsMessageFromKafka = toSimulatorProbe.receiveMessage(Duration.ofSeconds(10));
     assert (devsMessageFromKafka instanceof SimulationInitMessage<?>);
     SimulationInitMessage<LongSimTime> initSimFromKafka =
@@ -187,6 +192,7 @@ public class KafkaDevsStreamProxyTest {
     Thread.sleep(5000);
     KafkaUtils.deleteTopics(Arrays.asList(genStoreSystemTopic), adminClient);
     testKit.shutdownTestKit();
+    adminClient.close();
   }
 
 

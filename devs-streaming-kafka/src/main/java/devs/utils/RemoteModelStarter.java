@@ -55,6 +55,7 @@ public class RemoteModelStarter {
     return new KafkaLocalProxy.KafkaProxySimulatorProvider<>(proxyProperties);
   }
 
+  /** Prepares the topic using the requested reset mode and closes the temporary admin client. */
   private void prepareKafkaTopic(RemoteModelStartRequest request) {
     try (AdminClient adminClient = KafkaUtils.createAdminClient(request.kafkaConfig())) {
       KafkaUtils.ensureTopic(request.kafkaTopic(), adminClient, request.topicResetMode());
@@ -63,6 +64,7 @@ public class RemoteModelStarter {
     }
   }
 
+  /** Sends the remote run request over HTTP and waits for a validated acceptance response. */
   private void startRemoteModelRun(RemoteModelStartRequest request, String runId) {
     SimulationContextDto simulationContextDto = new SimulationContextDto(
         runId, request.modelInstanceId(), request.coordinatorIdentifier(), request.timeMode());
@@ -97,6 +99,7 @@ public class RemoteModelStarter {
     }
   }
 
+  /** Serializes the HTTP request payload, wrapping JSON failures with operation context. */
   private String serializeRequest(StartModelRunRequest startModelRunRequest) {
     try {
       return objectMapper.writeValueAsString(startModelRunRequest);
@@ -105,6 +108,7 @@ public class RemoteModelStarter {
     }
   }
 
+  /** Requires HTTP 202 and the textual fields of an accepted remote run response. */
   private void validateResponse(HttpResponse response, String responseBody)
       throws JsonProcessingException {
     if (!response.status().equals(StatusCodes.ACCEPTED)) {

@@ -52,8 +52,23 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractDevsStreamP
    */
   public static Behavior<DevsMessage> create(String componentName, String runId,
       String producerTopic, Config kafkaConfig) {
+    return create(componentName, runId, producerTopic, kafkaConfig, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Creates an outbound Kafka proxy with an explicit time endpoint policy.
+   *
+   * @param componentName represented component and outbound receiver identifier
+   * @param runId simulation run used for record keys and run headers
+   * @param producerTopic topic receiving DEVS messages
+   * @param kafkaConfig shared Kafka client configuration
+   * @param policy time representation policy at the proxy boundary
+   * @return configured proxy behavior
+   */
+  public static Behavior<DevsMessage> create(String componentName, String runId,
+      String producerTopic, Config kafkaConfig, TimeEndpointPolicy policy) {
     return Behaviors.setup(context -> new KafkaDevsStreamProxy<>(context, componentName, runId,
-       producerTopic, kafkaConfig));
+       producerTopic, kafkaConfig, policy));
   }
 
   /**
@@ -70,8 +85,23 @@ public class KafkaDevsStreamProxy<T extends SimTime> extends AbstractDevsStreamP
    */
   public KafkaDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
       String runId, String producerTopic, Config kafkaConfig) {
+    this(context, componentName, runId, producerTopic, kafkaConfig, TimeEndpointPolicy.legacy());
+  }
+
+  /**
+   * Constructs the Kafka publisher and delegates time handling to the proxy base class.
+   *
+   * @param context proxy actor context
+   * @param componentName represented component and outbound receiver identifier
+   * @param runId simulation run used for record keys and run headers
+   * @param producerTopic topic receiving DEVS messages
+   * @param kafkaConfig shared Kafka client configuration
+   * @param policy time representation policy at the proxy boundary
+   */
+  public KafkaDevsStreamProxy(ActorContext<DevsMessage> context, String componentName,
+      String runId, String producerTopic, Config kafkaConfig, TimeEndpointPolicy policy) {
     super(context, componentName,
         new KafkaMessagePublisher(componentName, runId, componentName, producerTopic,
-           kafkaConfig));
+           kafkaConfig), policy);
   }
 }
