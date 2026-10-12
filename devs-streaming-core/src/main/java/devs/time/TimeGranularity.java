@@ -1,18 +1,14 @@
 package devs.time;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
-/**
- * Additional supplier restriction: finite timestamps are integer multiples of positive exact
- * spacing in native units, anchored at native local zero. Not a minimum advance or tolerance.
- */
-public record TimeGranularity(Rational spacing) {
+/** Positive decimal native-unit grid spacing, anchored at local zero. */
+public record TimeGranularity(BigDecimal spacing) {
   public TimeGranularity {
-    Objects.requireNonNull(spacing);
-    Rational.requirePositive(spacing);
+    spacing = Objects.requireNonNull(spacing).stripTrailingZeros();
+    if (spacing.signum() <= 0) throw new IllegalArgumentException("spacing must be positive");
   }
-
-  public static TimeGranularity of(Rational spacing) {
-    return new TimeGranularity(spacing);
-  }
+  public static TimeGranularity of(BigDecimal spacing) { return new TimeGranularity(spacing); }
+  /** Compatibility overload; nonterminating values are rejected. */
 }

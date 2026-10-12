@@ -14,6 +14,9 @@ import devs.couplings.SourceMappingResolver;
 import devs.iso.DevsMessage;
 import devs.iso.SimulationInit;
 import devs.iso.time.LongSimTime;
+import devs.iso.time.DoubleSimTime;
+import devs.iso.time.DecimalSimTime;
+import java.math.BigDecimal;
 import devs.iso.time.SimTime;
 import devs.msg.Branch;
 import devs.msg.Run;
@@ -234,14 +237,26 @@ public class MongoObservationTest {
                 new Document("_id", type)).size());
     }
 
+
+    private static List<SimTime> exactTimes() {
+        return List.of(LongSimTime.create(9007199254740993L), DoubleSimTime.create(0.25),
+                DecimalSimTime.of(new BigDecimal("0.12345678901234567890123456789")),
+                DecimalSimTime.of(new BigDecimal("1E+1000")), DecimalSimTime.infinity());
+    }
+
+    private static Observation<SimTime, String> exactObservation(SimTime time, String id) {
+        return Observation.<SimTime, String>builder()._id(id).runId("run").branchId("branch")
+                .time(time).producerModel("producer").observationType("ExactTime").payload("unchanged").build();
+    }
+
     @Test
     public void historicalAndExactTimesCoexistAfterRestartAndShutdown() throws Exception {
         String databaseName = "test_db_" + UUID.randomUUID().toString().replace("-", "");
         MongoDatabase testDatabase = mongoClient.getDatabase(databaseName);
         ObjectMapper mapper = DevsObjectMapper.buildObjectMapper();
         List<Observation<SimTime, String>> observations = new ArrayList<>();
-        for (SimTime time : MongoObservationSerializationTest.times()) {
-            observations.add(MongoObservationSerializationTest.observation(time, UUID.randomUUID().toString()));
+        for (SimTime time : exactTimes()) {
+            observations.add(exactObservation(time, UUID.randomUUID().toString()));
         }
         try {
             ActorRef<DevsObservationMessage> legacyActor = testKit.spawn(MongoObservationActor.create(MONGO_CONN, databaseName));

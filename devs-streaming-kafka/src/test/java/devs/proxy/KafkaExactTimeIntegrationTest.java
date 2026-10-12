@@ -8,9 +8,8 @@ import devs.PDEVSModel;
 import devs.PDevsSimulator;
 import devs.iso.*;
 import devs.iso.time.DecimalSimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
-import devs.time.Rational;
 import devs.utils.ConfigUtils;
 import devs.utils.DevsObjectMapper;
 import devs.utils.KafkaIntegrationSupport;
@@ -120,11 +119,11 @@ class KafkaExactTimeIntegrationTest {
 
   @Test
   void rationalRecorderPreservesOneThirdAndInfinityAndIsolatesRuns() throws Exception {
-    TimeEndpointPolicy policy = TimeEndpointPolicy.recorder(Set.of(QuantizedSimTime.class));
-    QuantizedSimTime zero = QuantizedSimTime.of(Rational.ZERO);
-    QuantizedSimTime third = QuantizedSimTime.of(Rational.of(1, 3));
+    TimeEndpointPolicy policy = TimeEndpointPolicy.recorder(Set.of(DecimalSimTime.class));
+    DecimalSimTime zero = DecimalSimTime.of(BigDecimal.ZERO);
+    DecimalSimTime third = DecimalSimTime.of(new BigDecimal("0.3"));
     var parent = kit.<DevsMessage>createTestProbe();
-    var recorder = new RationalRecorder();
+    var recorder = new DecimalRecorder();
     var simulator = kit.spawn(PDevsSimulator.create(recorder, zero));
     var proxy = connect("recorder", simulator, parent, policy);
     var otherRun = kit.<DevsMessage>createTestProbe();
@@ -136,10 +135,10 @@ class KafkaExactTimeIntegrationTest {
     proxy.tell(new SimulationInitMessage<>(init, parent.getRef()));
     var initialized = parent.expectMessageClass(NextInternalTimeReport.class, WAIT);
     assertEquals(zero, initialized.getEventTime());
-    assertEquals(QuantizedSimTime.infinity(), initialized.getNextInternalTime());
+    assertEquals(DecimalSimTime.infinity(), initialized.getNextInternalTime());
 
-    var crossRun = ExecuteTransition.<QuantizedSimTime>builder()
-        .eventTime(QuantizedSimTime.of(Rational.of(1, 7)))
+    var crossRun = ExecuteTransition.<DecimalSimTime>builder()
+        .eventTime(DecimalSimTime.of(new BigDecimal("0.1")))
         .payload(ExecuteTransitionPayload.builder().addInputs(
             PortValue.builder().value(-1).portName("IN").build()).build())
         .simulationRunId(runB).messageId("cross-run").senderId("parent").receiverId("recorder").build();
@@ -154,7 +153,7 @@ class KafkaExactTimeIntegrationTest {
       proxy.tell(execute);
       var complete = parent.expectMessageClass(TransitionComplete.class, WAIT);
       assertEquals(third, complete.getEventTime());
-      assertEquals(QuantizedSimTime.infinity(), complete.getNextInternalTime());
+      assertEquals(DecimalSimTime.infinity(), complete.getNextInternalTime());
       assertEquals(new Recording(third, inputs), recorder.recorded.poll(20, TimeUnit.SECONDS));
       assertNull(recorder.recorded.poll(1, TimeUnit.SECONDS), "Recorder must receive only its own run");
       otherRun.expectNoMessage(Duration.ofMillis(500));
@@ -164,7 +163,7 @@ class KafkaExactTimeIntegrationTest {
       var terminated = parent.expectMessageClass(ModelTerminated.class, WAIT);
       parent.expectNoMessage(Duration.ofMillis(500));
 
-      var stopB = SimulationTerminate.<QuantizedSimTime>builder().eventTime(third)
+      var stopB = SimulationTerminate.<DecimalSimTime>builder().eventTime(third)
           .simulationRunId(runB).messageId("stop-B").senderId("parent").receiverId("recorder").build();
       publisherB.publish(1, new DevsJsonBinding(policy).encode(stopB));
       otherRun.expectMessage(WAIT, stopB);
@@ -293,21 +292,21 @@ class KafkaExactTimeIntegrationTest {
     }
   }
 
-  private record Recording(QuantizedSimTime elapsed, List<PortValue<?>> inputs) {}
+  private record Recording(DecimalSimTime elapsed, List<PortValue<?>> inputs) {}
 
-  private static class RationalRecorder extends PDEVSModel<QuantizedSimTime, Void> {
+  private static class DecimalRecorder extends PDEVSModel<DecimalSimTime, Void> {
     final LinkedBlockingQueue<Recording> recorded = new LinkedBlockingQueue<>();
-    RationalRecorder() { super(null, "recorder"); }
+    DecimalRecorder() { super(null, "recorder"); }
     public void internalStateTransitionFunction() {
       throw new AssertionError("A passive recorder must not execute internal transitions");
     }
-    public void externalStateTransitionFunction(QuantizedSimTime elapsed, List<PortValue<?>> inputs) {
+    public void externalStateTransitionFunction(DecimalSimTime elapsed, List<PortValue<?>> inputs) {
       recorded.add(new Recording(elapsed, List.copyOf(inputs)));
     }
     public void confluentStateTransitionFunction(List<PortValue<?>> inputs) {
       throw new AssertionError("A passive recorder must not execute confluent transitions");
     }
-    public QuantizedSimTime timeAdvanceFunction() { return QuantizedSimTime.infinity(); }
+    public DecimalSimTime timeAdvanceFunction() { return DecimalSimTime.infinity(); }
     public List<PortValue<?>> outputFunction() { return List.of(); }
   }
 }

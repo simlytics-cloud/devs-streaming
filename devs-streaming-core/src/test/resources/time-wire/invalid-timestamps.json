@@ -1,59 +1,134 @@
 [
-  null, true, [], "0.1",
+  null,
+  true,
+  [],
+  "0.1",
   {},
-  {"value":"0.1"},
-  {"timeType":"decimal"},
-  {"timeType":"decimal","value":0.1},
-  {"timeType":"decimal","value":null},
-  {"timeType":"decimal","value":""},
-  {"timeType":"decimal","value":"+1"},
-  {"timeType":"decimal","value":"01"},
-  {"timeType":"decimal","value":"-01"},
-  {"timeType":"decimal","value":".1"},
-  {"timeType":"decimal","value":"1."},
-  {"timeType":"decimal","value":"1,2"},
-  {"timeType":"decimal","value":"0x1"},
-  {"timeType":"decimal","value":" 1"},
-  {"timeType":"decimal","value":"1 "},
-  {"timeType":"decimal","value":"1\n"},
-  {"timeType":"decimal","value":"1e"},
-  {"timeType":"decimal","value":"1e+"},
-  {"timeType":"decimal","value":"NaN"},
-  {"timeType":"decimal","value":"Infinity"},
-  {"timeType":"decimal","value":"١"},
-  {"timeType":"decimal","value":"1","infinity":"positive"},
-  {"timeType":"decimal","value":"1","extra":true},
-  {"timeType":"decimal","value":"1","t":"1"},
-  {"timeType":"decimal","infinity":"negative"},
-  {"timeType":"decimal","infinity":true},
-  {"timeType":"decimal","infinity":null},
-  {"timeType":"decimal","infinity":"positive","extra":0},
-  {"timeType":"decimal","numerator":"1","denominator":"2"},
-  {"timeType":"rational"},
-  {"timeType":"rational","numerator":"1"},
-  {"timeType":"rational","denominator":"1"},
-  {"timeType":"rational","numerator":1,"denominator":"3"},
-  {"timeType":"rational","numerator":"1","denominator":3},
-  {"timeType":"rational","numerator":null,"denominator":"3"},
-  {"timeType":"rational","numerator":"1","denominator":"0"},
-  {"timeType":"rational","numerator":"1","denominator":"-3"},
-  {"timeType":"rational","numerator":"1","denominator":"+3"},
-  {"timeType":"rational","numerator":"1","denominator":"03"},
-  {"timeType":"rational","numerator":"1","denominator":"3.0"},
-  {"timeType":"rational","numerator":"1","denominator":"3\n"},
-  {"timeType":"rational","numerator":"01","denominator":"3"},
-  {"timeType":"rational","numerator":"+1","denominator":"3"},
-  {"timeType":"rational","numerator":"-01","denominator":"3"},
-  {"timeType":"rational","numerator":"1.0","denominator":"3"},
-  {"timeType":"rational","numerator":"1e0","denominator":"3"},
-  {"timeType":"rational","numerator":"1 ","denominator":"3"},
-  {"timeType":"rational","numerator":"1\n","denominator":"3"},
-  {"timeType":"rational","numerator":"1","denominator":"3","infinity":"positive"},
-  {"timeType":"rational","numerator":"1","denominator":"3","extra":true},
-  {"timeType":"rational","value":"0.1"},
-  {"timeType":"rational","infinity":"negative"},
-  {"timeType":"rational","infinity":"positive","extra":true},
-  {"timeType":"unknown","value":"1"},
-  {"timeType":"devs.iso.time.DecimalSimTime","value":"1"},
-  {"timeType":"long","value":"1"}
+  {
+    "value": "0.1"
+  },
+  {
+    "timeType": "decimal"
+  },
+  {
+    "timeType": "decimal",
+    "value": 0.1
+  },
+  {
+    "timeType": "decimal",
+    "value": null
+  },
+  {
+    "timeType": "decimal",
+    "value": ""
+  },
+  {
+    "timeType": "decimal",
+    "value": "+1"
+  },
+  {
+    "timeType": "decimal",
+    "value": "01"
+  },
+  {
+    "timeType": "decimal",
+    "value": "-01"
+  },
+  {
+    "timeType": "decimal",
+    "value": ".1"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1."
+  },
+  {
+    "timeType": "decimal",
+    "value": "1,2"
+  },
+  {
+    "timeType": "decimal",
+    "value": "0x1"
+  },
+  {
+    "timeType": "decimal",
+    "value": " 1"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1 "
+  },
+  {
+    "timeType": "decimal",
+    "value": "1\n"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1e"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1e+"
+  },
+  {
+    "timeType": "decimal",
+    "value": "NaN"
+  },
+  {
+    "timeType": "decimal",
+    "value": "Infinity"
+  },
+  {
+    "timeType": "decimal",
+    "value": "\u0661"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1",
+    "infinity": "positive"
+  },
+  {
+    "timeType": "decimal",
+    "value": "1",
+    "extra": true
+  },
+  {
+    "timeType": "decimal",
+    "value": "1",
+    "t": "1"
+  },
+  {
+    "timeType": "decimal",
+    "infinity": "negative"
+  },
+  {
+    "timeType": "decimal",
+    "infinity": true
+  },
+  {
+    "timeType": "decimal",
+    "infinity": null
+  },
+  {
+    "timeType": "decimal",
+    "infinity": "positive",
+    "extra": 0
+  },
+  {
+    "timeType": "decimal",
+    "numerator": "1",
+    "denominator": "2"
+  },
+  {
+    "timeType": "unknown",
+    "value": "1"
+  },
+  {
+    "timeType": "devs.iso.time.DecimalSimTime",
+    "value": "1"
+  },
+  {
+    "timeType": "long",
+    "value": "1"
+  }
 ]

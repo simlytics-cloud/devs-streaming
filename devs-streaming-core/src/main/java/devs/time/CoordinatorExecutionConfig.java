@@ -1,6 +1,6 @@
 package devs.time;
 
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,8 +29,8 @@ public record CoordinatorExecutionConfig(EnhancedClockContext clock,
   }
 
   /** Observes a route only when an optional monitor was explicitly supplied. */
-  public void observe(InteractionKey interaction, QuantizedSimTime source,
-      QuantizedSimTime effective) {
+  public void observe(InteractionKey interaction, DecimalSimTime source,
+      DecimalSimTime effective) {
     TimingErrorBudget budget = timingErrorBudgets.get(interaction);
     if (budget != null) {
       budget.observe(interaction, source, effective);

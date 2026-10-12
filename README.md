@@ -24,7 +24,7 @@ See [DEVS-SF Overview](docs/import/DEVS%20Streaming%20Framework%20Introduction.m
 The Java core supports locally configured mixed native clocks through
 `CoupledModelFactory.enhanced()`, `PDevsCoordinator.enhanced()`, and
 `RootCoordinator.enhanced()`. Typed child bindings map native long/double/decimal
-timestamps to exact rational `QuantizedSimTime` seconds with
+timestamps to exact decimal `DecimalSimTime` seconds with
 distinguished infinity; there is no common coordinator tick lattice. Developers
 supply clock alignment, codecs, and optional per-route `TimingErrorBudget` monitors.
 `CoordinatorExecutionConfig(clock)` defaults to no monitors;
@@ -60,7 +60,7 @@ initialization, reports, exact encoding/decoding, serialization, and transport d
 Supplier-native `TimeSemantics.timeGranularity()` is an `Optional<TimeGranularity>`:
 use `TimeSemantics.of(scale, origin)` for no additional grid, or
 `TimeSemantics.of(scale, origin, Optional.of(TimeGranularity.of(spacing)))` for a
-positive rational spacing anchored at native zero. Absence does not remove codec
+positive decimal spacing anchored at native zero. Absence does not remove codec
 constraints. Declare a grid when off-grid timestamps are unsupported, including
 models that throw, silently round, or behave incorrectly; it is not a minimum
 advance, tolerance, or common coordinator tick.
@@ -70,7 +70,7 @@ legacy coordinators. Deprecated legacy entry points remain available for separat
 common-time simulations. Pacing is model-owned, not a coordinator wall-clock
 deadline or lag-recovery mechanism. Transport defaults remain legacy numeric
 long/double; explicitly configured exact-v1 endpoints also support decimal-native
-communication and rational-compatible recording. Every profile rejects enhanced
+communication and decimal-compatible recording. Every profile rejects enhanced
 initialization context before publishing: exact JSON does not establish a remote
 enhanced clock hierarchy.
 
@@ -79,7 +79,7 @@ example, initialization requirements, delivery behavior, and tested limits.
 
 ## Exact JSON and opt-in transport
 
-The default `DevsObjectMapper` now supports standalone decimal/rational values and
+The default `DevsObjectMapper` now supports standalone decimal/decimal values and
 observations using language-neutral tagged string components and typed positive
 infinity. Historical long/double objects and legacy message scalar decoding remain
 readable without archive rewrites. Exact transport requires explicit matching
@@ -96,20 +96,20 @@ Observation JSON/JSONL, BSON string components and PostgreSQL JSONB preserve exa
 values without numeric casts or database schema migration. Object/text ordering,
 including Mongo's existing `time` index, is not exact chronological ordering.
 Native mapping, representation and any declared grid constraints remain mandatory;
-rational serialization does not make `1/3` representable as a finite native decimal.
+decimal serialization does not make `1/3` representable as a finite native decimal.
 
 The delivery API migration is breaking: remove `DeliveryRule` maps, use
 `CoordinatorExecutionConfig(clock, budgets)` with a `Map<InteractionKey, TimingErrorBudget>`,
 or the clock-only constructor without monitors,
 and call `ChildBinding.adapt(source)` without a rule. Native codecs add `encodeCeiling`
 with one-argument and grid overloads; the existing grid-search `nextRepresentable`,
-`TimeMapping.nextRepresentable`, and exact `encode`/`decode` remain available without
+`DecimalTimeMapping.nextRepresentable`, and exact `encode`/`decode` remain available without
 a codec-method rename. Revalidate former exact-only/custom-policy
 compositions and recompile consumers; see the time-semantics guide for details.
 
 The Java removal of `quantum()`, nullable granularity arguments, and `discrete()` is
 breaking: migrate construction and recompile downstream consumers. Supplier metadata
-OpenAPI version `2.0.0` uses an optional direct rational `timeGranularity` object
+OpenAPI version `2.0.0` uses an optional direct decimal `timeGranularity` object
 `{"numerator":1,"denominator":1000}`; omit it when absent, never send null.
 Obsolete `quantum` is rejected, with no alias. Timestamp, message, profile, and
 persistence formats are unchanged; this metadata migration does not bump exact-v1.

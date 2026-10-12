@@ -1,13 +1,14 @@
 package devs.time;
 
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /** An explicitly chosen metric and action; not a wall-clock execution deadline. */
-public record TimingErrorBudget(Rational maximum,
-    BiFunction<QuantizedSimTime, QuantizedSimTime, Rational> metric,
+public record TimingErrorBudget(BigDecimal maximum,
+    BiFunction<DecimalSimTime, DecimalSimTime, BigDecimal> metric,
     Consumer<Observation> observer, Consumer<Observation> violationAction) {
   /**
    * Result of evaluating a delivery's explicitly configured error metric.
@@ -17,8 +18,8 @@ public record TimingErrorBudget(Rational maximum,
    * @param effectiveTime accepted delivery timestamp in canonical seconds
    * @param error metric result, in the metric's units rather than necessarily seconds
    */
-  public record Observation(InteractionKey interaction, QuantizedSimTime sourceTime,
-                            QuantizedSimTime effectiveTime, Rational error) {}
+  public record Observation(InteractionKey interaction, DecimalSimTime sourceTime,
+                            DecimalSimTime effectiveTime, BigDecimal error) {}
 
   /**
    * Creates an error budget with explicit callbacks and metric-defined units.
@@ -31,7 +32,7 @@ public record TimingErrorBudget(Rational maximum,
    */
   public TimingErrorBudget {
     Objects.requireNonNull(maximum);
-    if (maximum.compareTo(Rational.ZERO) < 0) {
+    if (maximum.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException("Negative error budget");
     }
     Objects.requireNonNull(metric);
@@ -46,10 +47,10 @@ public record TimingErrorBudget(Rational maximum,
    * @throws NullPointerException if the metric returns null
    * @throws IllegalArgumentException if the metric returns a negative error
    */
-  public void observe(InteractionKey interaction, QuantizedSimTime source,
-      QuantizedSimTime effective) {
-    Rational error = Objects.requireNonNull(metric.apply(source, effective));
-    if (error.compareTo(Rational.ZERO) < 0) {
+  public void observe(InteractionKey interaction, DecimalSimTime source,
+      DecimalSimTime effective) {
+    BigDecimal error = Objects.requireNonNull(metric.apply(source, effective));
+    if (error.compareTo(BigDecimal.ZERO) < 0) {
       throw new IllegalArgumentException("Error metric must be nonnegative");
     }
     Observation observation = new Observation(interaction, source, effective, error);

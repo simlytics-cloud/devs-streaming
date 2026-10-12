@@ -1,29 +1,23 @@
 package devs.time;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Supplier-native facts. Origin is the native epoch offset in seconds; optional granularity
- * restricts timestamps to a native-zero grid independently of codec representation.
- * Alignment and delivery adaptation belong to the composition, not this declaration.
- */
-public record TimeSemantics(Rational secondsPerUnit, Rational origin,
+/** Decimal supplier-native time facts used by enhanced coordination. */
+public record TimeSemantics(BigDecimal secondsPerUnit, BigDecimal origin,
                             Optional<TimeGranularity> timeGranularity) {
   public TimeSemantics {
-    Objects.requireNonNull(secondsPerUnit);
-    Objects.requireNonNull(origin);
+    secondsPerUnit = normalize(Objects.requireNonNull(secondsPerUnit));
+    origin = normalize(Objects.requireNonNull(origin));
     Objects.requireNonNull(timeGranularity);
-    Rational.requirePositive(secondsPerUnit);
+    if (secondsPerUnit.signum() <= 0) throw new IllegalArgumentException("secondsPerUnit must be positive");
   }
-
-  /** No additional supplier-imposed grid; codec constraints still apply. */
-  public static TimeSemantics of(Rational secondsPerUnit, Rational origin) {
+  private static BigDecimal normalize(BigDecimal value) { return value.stripTrailingZeros(); }
+  public static TimeSemantics of(BigDecimal secondsPerUnit, BigDecimal origin) {
     return new TimeSemantics(secondsPerUnit, origin, Optional.empty());
   }
+  public static TimeSemantics of(BigDecimal secondsPerUnit, BigDecimal origin,
+      Optional<TimeGranularity> timeGranularity) { return new TimeSemantics(secondsPerUnit, origin, timeGranularity); }
 
-  public static TimeSemantics of(Rational secondsPerUnit, Rational origin,
-                                 Optional<TimeGranularity> timeGranularity) {
-    return new TimeSemantics(secondsPerUnit, origin, timeGranularity);
-  }
 }

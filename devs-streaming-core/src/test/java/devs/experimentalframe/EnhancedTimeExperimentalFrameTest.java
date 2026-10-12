@@ -16,12 +16,13 @@
 
 package devs.experimentalframe;
 
+import devs.time.DecimalTestValues;
 import devs.*;
 import devs.iso.DevsMessage;
 import devs.iso.SimulationInit;
 import devs.iso.time.DecimalSimTime;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.time.*;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
@@ -47,9 +48,9 @@ public class EnhancedTimeExperimentalFrameTest {
    * logic for initializing and connecting models, as well as defining their couplings, inputs, and
    * outputs to form a complete coupled model simulation.
    */
-  protected final CoupledModelFactory<QuantizedSimTime> coupledModelFactory;
+  protected final CoupledModelFactory<DecimalSimTime> coupledModelFactory;
   private final EnhancedClockContext clock =
-      new EnhancedClockContext("experimental-frame", Rational.ZERO);
+      new EnhancedClockContext("experimental-frame", BigDecimal.ZERO);
 
 
   /**
@@ -79,7 +80,7 @@ public class EnhancedTimeExperimentalFrameTest {
     LogBaseTwoDecimalCalculatorModel logCalculator = new LogBaseTwoDecimalCalculatorModel(start);
     TestAcceptor testAcceptor = new TestAcceptor();
     ChildBinding<LongSimTime> generatorBinding = ChildBinding.nativeProvider(new DevsSimulatorProvider<>(generator), LongSimTime.class,
-            new TimeMapping<>(new LongTimeCodec(), TimeSemantics.of(Rational.ONE, Rational.ZERO)
+            new DecimalTimeMapping<>(new LongTimeCodec(), TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO)
             ));
     ChildBinding<DecimalSimTime> calculatorBinding = ChildBinding
             .defaultDecimalProvider(new DevsSimulatorProvider<>(logCalculator), 1.0);
@@ -131,13 +132,13 @@ public class EnhancedTimeExperimentalFrameTest {
   protected void executeExperimentalFrame(LongSimTime startTime, LongSimTime endTime)
       throws InterruptedException {
     ActorTestKit testKit = ActorTestKit.create();
-    QuantizedSimTime canonicalStart = QuantizedSimTime.of(Rational.of(startTime.getT()));
-    QuantizedSimTime canonicalEnd = QuantizedSimTime.of(Rational.of(endTime.getT()));
+    DecimalSimTime canonicalStart = DecimalSimTime.of(DecimalTestValues.of(startTime.getT()));
+    DecimalSimTime canonicalEnd = DecimalSimTime.of(DecimalTestValues.of(endTime.getT()));
     ActorRef<DevsMessage> testFrame =
         testKit.spawn(coupledModelFactory.create(canonicalStart), "experimentalFrameTest");
     ActorRef<DevsMessage> rootCoordinator =
         testKit.spawn(RootCoordinator.enhanced(canonicalEnd, testFrame, "experimentalFrameTest", clock), "root");
-    rootCoordinator.tell(SimulationInit.<QuantizedSimTime>builder()
+    rootCoordinator.tell(SimulationInit.<DecimalSimTime>builder()
         .eventTime(canonicalStart)
         .simulationRunId("ExperimentalFrameTest")
         .messageId("SimulationInit")

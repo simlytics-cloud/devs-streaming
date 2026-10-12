@@ -129,7 +129,7 @@ public class DevsObjectMapper {
     }
   }
 
-  /** Tracks root observation time objects and checks decimal/rational fragment size as tokens advance. */
+  /** Tracks root observation time objects and checks decimal fragment size as tokens advance. */
   private static final class ObservationTimeParser extends JsonParserDelegate {
     private int depth;
     private int timeDepth = -1;
@@ -160,7 +160,7 @@ public class DevsObjectMapper {
       } else if (token == JsonToken.VALUE_STRING && depth == timeDepth
           && "timeType".equals(delegate.currentName())) {
         String tag = delegate.getText();
-        exact = "decimal".equals(tag) || "rational".equals(tag);
+        exact = "decimal".equals(tag);
       }
       check();
       if (token == JsonToken.END_OBJECT || token == JsonToken.END_ARRAY) {

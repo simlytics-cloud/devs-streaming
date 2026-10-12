@@ -9,6 +9,9 @@ import devs.observation.Observation;
 import devs.observation.ObservationSinkKeys;
 import devs.observation.StopLogger;
 import devs.iso.time.LongSimTime;
+import devs.iso.time.DoubleSimTime;
+import devs.iso.time.DecimalSimTime;
+import java.math.BigDecimal;
 import devs.iso.time.SimTime;
 import devs.utils.DevsObjectMapper;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
@@ -150,12 +153,23 @@ class PostgresObservationModelTest {
     Assertions.assertEquals(1, countRows(archiveName));
   }
 
+  private static List<SimTime> exactTimes() {
+    return List.of(LongSimTime.create(9007199254740993L), DoubleSimTime.create(0.25),
+        DecimalSimTime.of(new BigDecimal("0.12345678901234567890123456789")),
+        DecimalSimTime.of(new BigDecimal("1E+1000")), DecimalSimTime.infinity());
+  }
+
+  private static Observation<SimTime, String> exactObservation(SimTime time, String id) {
+    return Observation.<SimTime, String>builder()._id(id).runId("run").branchId("branch")
+        .time(time).producerModel("producer").observationType("ExactTime").payload("unchanged").build();
+  }
+
   @Test
   void historicalAndExactTimesCoexistAfterRestartAndShutdown() throws Exception {
     ObjectMapper mapper = DevsObjectMapper.buildObjectMapper();
     List<Observation<SimTime, String>> observations = new ArrayList<>();
-    for (SimTime time : PostgresObservationSerializationTest.times()) {
-      observations.add(PostgresObservationSerializationTest.observation(time, UUID.randomUUID().toString()));
+    for (SimTime time : exactTimes()) {
+      observations.add(exactObservation(time, UUID.randomUUID().toString()));
     }
     ActorRef<DevsObservationMessage> legacyActor = TEST_KIT.spawn(PostgresObservationActor.create(config));
     legacyActor.tell(observations.get(0));

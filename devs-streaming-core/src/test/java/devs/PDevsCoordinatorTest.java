@@ -16,6 +16,7 @@
 
 package devs;
 
+import devs.time.DecimalTestValues;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -39,15 +40,15 @@ import devs.iso.SimulationTerminate;
 import devs.iso.SimulationTerminatePayload;
 import devs.iso.TransitionComplete;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
 import devs.time.ChildBinding;
 import devs.time.CoordinatorExecutionConfig;
 import devs.time.EnhancedClockContext;
 import devs.time.LongTimeCodec;
-import devs.time.Rational;
-import devs.time.TimeMapping;
+import devs.time.DecimalTimeMapping;
 import devs.time.TimeSemantics;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -342,7 +343,7 @@ public class PDevsCoordinatorTest {
     final BehaviorTestKit<DevsMessage> kit;
     final boolean enhanced;
     final int variant;
-    final EnhancedClockContext clock = new EnhancedClockContext("ordering", Rational.ZERO);
+    final EnhancedClockContext clock = new EnhancedClockContext("ordering", BigDecimal.ZERO);
 
     OrderingFixture(boolean enhanced, int variant, boolean unknownRecipient) {
       this.enhanced = enhanced;
@@ -356,7 +357,7 @@ public class PDevsCoordinatorTest {
       }
       for (String child : shuffled(order, 200 + variant)) {
         bindings.put(child, ChildBinding.nativeActor(child, children.getRef(), LongSimTime.class,
-            new TimeMapping<>(new LongTimeCodec(), TimeSemantics.of(Rational.ONE, Rational.ZERO))));
+            new DecimalTimeMapping<>(new LongTimeCodec(), TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO))));
       }
       String recipient = unknownRecipient ? "unknown-child" : order.get(1);
       CouplingResolver outputResolver = new CouplingResolver() {
@@ -411,7 +412,7 @@ public class PDevsCoordinatorTest {
     }
 
     SimTime parentTime(long time) {
-      return enhanced ? QuantizedSimTime.of(Rational.of(time)) : LongSimTime.create(time);
+      return enhanced ? DecimalSimTime.of(DecimalTestValues.of(time)) : LongSimTime.create(time);
     }
 
     void initialize(List<String> imminent, long time) {

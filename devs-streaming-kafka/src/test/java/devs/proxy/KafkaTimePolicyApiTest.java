@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import devs.iso.time.DecimalSimTime;
-import devs.iso.time.QuantizedSimTime;
 import devs.iso.time.SimTime;
 import java.util.List;
 import java.util.Set;
@@ -22,7 +21,7 @@ class KafkaTimePolicyApiTest {
   @Test
   void oldProviderConstructorsKeepLegacyPolicyEvenWithExactGenericTime() {
     var stream = new KafkaDevsStreamProxyProvider<DecimalSimTime>("model", "run", "requests", config);
-    var local = new KafkaLocalProxy.KafkaProxySimulatorProvider<QuantizedSimTime>(props);
+    var local = new KafkaLocalProxy.KafkaProxySimulatorProvider<DecimalSimTime>(props);
     for (TimeEndpointPolicy policy : List.of(stream.getTimeEndpointPolicy(), local.getTimeEndpointPolicy())) {
       assertEquals(TimeWireProfile.LEGACY_NUMERIC_V1, policy.profile());
       assertEquals(TimeEndpointPolicy.Role.LEGACY, policy.role());
@@ -35,7 +34,7 @@ class KafkaTimePolicyApiTest {
   @Test
   void providersRetainExplicitPolicyWithoutInferringItFromGenericTime() {
     for (TimeEndpointPolicy policy : List.of(TimeEndpointPolicy.decimalNative(),
-        TimeEndpointPolicy.rationalCompatible(), TimeEndpointPolicy.recorder(Set.of(QuantizedSimTime.class)))) {
+        TimeEndpointPolicy.decimalNative(), TimeEndpointPolicy.recorder(Set.of(DecimalSimTime.class)))) {
       var stream = new KafkaDevsStreamProxyProvider<SimTime>("model", "run", "requests", config, policy);
       var local = new KafkaLocalProxy.KafkaProxySimulatorProvider<SimTime>(props, policy);
       assertSame(policy, stream.getTimeEndpointPolicy());
@@ -53,7 +52,7 @@ class KafkaTimePolicyApiTest {
     assertNotNull(KafkaDevsStreamProxy.create("model", "run", "requests", config,
         TimeEndpointPolicy.decimalNative()));
     assertNotNull(KafkaLocalProxy.create(props));
-    assertNotNull(KafkaLocalProxy.create(props, TimeEndpointPolicy.rationalCompatible()));
+    assertNotNull(KafkaLocalProxy.create(props, TimeEndpointPolicy.decimalNative()));
     assertNotNull(KafkaReceiver.create(null, null, "model", "run", config, "requests"));
     assertNotNull(KafkaReceiver.create(null, null, "model", "run", config, "requests",
         TimeEndpointPolicy.decimalNative()));

@@ -8,11 +8,11 @@ import java.math.BigInteger;
  *
  * <p>These checks bound numeric text and JSON fragments before expensive arbitrary-precision
  * operations. They apply to wire representations, not to local {@link DecimalSimTime} or
- * {@link QuantizedSimTime} construction. Readers and writers share the limits so accepted exact
+ * construction. Readers and writers share the limits so accepted exact
  * values can be serialized within the same resource envelope.
  */
 public final class TimeWireLimits {
-  /** Maximum decimal coefficient digits or rational numerator/denominator digits. */
+  /** Maximum decimal coefficient digits. */
   public static final int MAX_DIGITS = 4096;
   /** Maximum absolute decimal scale and magnitude of an exponent in accepted decimal text. */
   public static final int MAX_SCALE = 10000;
@@ -151,7 +151,7 @@ public final class TimeWireLimits {
   }
 
   /**
-   * Parses bounded rational-component text without redundant leading zeros or a plus sign.
+   * Parses bounded integer text without redundant leading zeros or a plus sign.
    *
    * @param value the non-null integer spelling
    * @param denominator true to require a strictly positive denominator; false to allow a signed
@@ -197,9 +197,9 @@ public final class TimeWireLimits {
 
   /**
    * Checks an integer's decimal digit count, ignoring its sign. This does not check denominator
-   * positivity; rational construction and {@link #integer(String, boolean)} enforce that rule.
+   * positivity; {@link #integer(String, boolean)} enforce that rule.
    *
-   * @param value the non-null rational numerator or denominator
+   * @param value the non-null integer
    * @throws IllegalArgumentException if the integer exceeds {@link #MAX_DIGITS}
    */
   public static void validateInteger(BigInteger value) {

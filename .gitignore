@@ -1,5 +1,6 @@
 *.class
-.idea
+.idea/
+.junie/
 target/
 .bsp
 lib/
@@ -10,4 +11,6 @@ project/target/
 .settings/
 .metals/
 .vscode/
+*.txt
+*.log
 .settings/org.eclipse.jdt.core.prefs

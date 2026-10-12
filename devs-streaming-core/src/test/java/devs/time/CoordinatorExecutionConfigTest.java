@@ -2,7 +2,8 @@ package devs.time;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,7 +11,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class CoordinatorExecutionConfigTest {
-  private final EnhancedClockContext clock = new EnhancedClockContext("test", Rational.ZERO);
+  private final EnhancedClockContext clock = new EnhancedClockContext("test", BigDecimal.ZERO);
   private final InteractionKey route = new InteractionKey("a", "out", "b", "in");
 
   @Test
@@ -19,14 +20,14 @@ class CoordinatorExecutionConfigTest {
     assertSame(clock, config.clock());
     assertTrue(config.timingErrorBudgets().isEmpty());
     assertDoesNotThrow(() -> config.observe(route,
-        QuantizedSimTime.of(Rational.ZERO), QuantizedSimTime.of(Rational.ONE)));
+        DecimalSimTime.of(BigDecimal.ZERO), DecimalSimTime.of(BigDecimal.ONE)));
   }
 
   @Test
   void snapshotsBudgetsAndObservesOnlyConfiguredInteractions() {
     List<TimingErrorBudget.Observation> observed = new ArrayList<>();
     List<TimingErrorBudget.Observation> violations = new ArrayList<>();
-    TimingErrorBudget budget = new TimingErrorBudget(Rational.ZERO,
+    TimingErrorBudget budget = new TimingErrorBudget(BigDecimal.ZERO,
         (source, effective) -> effective.value().subtract(source.value()),
         observed::add, violations::add);
     Map<InteractionKey, TimingErrorBudget> budgets = new HashMap<>();
@@ -36,12 +37,12 @@ class CoordinatorExecutionConfigTest {
     assertSame(clock, config.clock());
     assertEquals(Map.of(route, budget), config.timingErrorBudgets());
     assertThrows(UnsupportedOperationException.class, () -> config.timingErrorBudgets().clear());
-    QuantizedSimTime source = QuantizedSimTime.of(Rational.ZERO);
-    QuantizedSimTime effective = QuantizedSimTime.of(Rational.ONE);
+    DecimalSimTime source = DecimalSimTime.of(BigDecimal.ZERO);
+    DecimalSimTime effective = DecimalSimTime.of(BigDecimal.ONE);
     config.observe(new InteractionKey("a", "other", "b", "in"), source, effective);
     assertTrue(observed.isEmpty());
     config.observe(route, source, effective);
-    assertEquals(List.of(new TimingErrorBudget.Observation(route, source, effective, Rational.ONE)),
+    assertEquals(List.of(new TimingErrorBudget.Observation(route, source, effective, BigDecimal.ONE)),
         observed);
     assertEquals(observed, violations);
   }
@@ -53,8 +54,8 @@ class CoordinatorExecutionConfigTest {
         () -> new CoordinatorExecutionConfig(null, Map.of()));
     assertThrows(NullPointerException.class,
         () -> new CoordinatorExecutionConfig(clock, null));
-    TimingErrorBudget budget = new TimingErrorBudget(Rational.ZERO,
-        (source, effective) -> Rational.ZERO, observation -> {}, observation -> {});
+    TimingErrorBudget budget = new TimingErrorBudget(BigDecimal.ZERO,
+        (source, effective) -> BigDecimal.ZERO, observation -> {}, observation -> {});
     Map<InteractionKey, TimingErrorBudget> budgets = new HashMap<>();
     budgets.put(null, budget);
     assertThrows(NullPointerException.class,

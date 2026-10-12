@@ -20,7 +20,7 @@
  * <p>Use {@link devs.iso.time.LongSimTime} for integer ticks and
  * {@link devs.iso.time.DoubleSimTime} for binary floating-point native time. Choose
  * {@link devs.iso.time.DecimalSimTime} when finite decimal timestamps and intervals must remain
- * exact, or {@link devs.iso.time.QuantizedSimTime} for rational canonical scheduling across models
+ * exact decimal canonical scheduling across models
  * with different units and time quanta. Time mappings, not the value classes, enforce unit
  * conversion and lattice constraints.
  *

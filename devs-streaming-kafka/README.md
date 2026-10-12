@@ -115,7 +115,7 @@ explicit.
 ## Exact-time endpoints (explicit opt-in)
 
 Existing constructors and factories retain the legacy numeric profile. Upgrade and explicitly
-configure **both ends** before sending tagged decimal or rational timestamps:
+configure **both ends** before sending tagged decimal or decimal timestamps:
 
 ```java
 TimeEndpointPolicy policy = TimeEndpointPolicy.decimalNative();
@@ -126,8 +126,8 @@ SimulatorProvider<DecimalSimTime> provider =
 
 `KafkaDevsStreamProxy.create`, `KafkaReceiver.create`, their constructors, and both proxy
 providers also have additive policy-last overloads. Use `nativeEndpoint(type, mapping)` to
-enforce existing representability/lattice rules without adaptation; `rationalCompatible()` or
-`recorder(Set.of(...))` explicitly authorize canonical rational recording/compatible transport.
+enforce existing representability/lattice rules without adaptation; `decimalCompatible()` or
+`recorder(Set.of(...))` explicitly authorize canonical decimal recording/compatible transport.
 The generic time parameter never selects the profile.
 
 Exact messages require `wireProfile: "devs-exact-time-v1"`, including numeric or timestamp-free
@@ -143,7 +143,7 @@ components using exact arithmetic. `RemoteModelStarter` remains legacy: its exte
 DTOs have no negotiated exact capability. Configure the additive adapters directly with a
 compatible remote endpoint; do not add undeclared startup fields.
 
-All enhanced-clock initialization wrappers remain blocked under every profile. Rational JSON
+All enhanced-clock initialization wrappers remain blocked under every profile. decimal JSON
 support does **not** enable distributed enhanced coordinators or clock-context export.
 
 ### Kafka integration tests

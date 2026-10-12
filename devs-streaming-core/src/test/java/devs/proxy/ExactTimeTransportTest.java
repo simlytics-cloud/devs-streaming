@@ -1,10 +1,10 @@
 package devs.proxy;
 
+import devs.time.DecimalTestValues;
 import static org.junit.jupiter.api.Assertions.*;
 
 import devs.iso.*;
 import devs.iso.time.*;
-import devs.time.Rational;
 import devs.utils.DevsObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -84,28 +84,28 @@ class ExactTimeTransportTest {
   }
 
   static List<TimeEndpointPolicy> exactPolicies() {
-    return List.of(TimeEndpointPolicy.decimalNative(), TimeEndpointPolicy.rationalCompatible());
+    return List.of(TimeEndpointPolicy.decimalNative(), TimeEndpointPolicy.decimalNative());
   }
 
   static SimTime finite(TimeEndpointPolicy policy) {
     return policy.acceptedTypes().contains(DecimalSimTime.class)
-        ? DecimalSimTime.of(new BigDecimal("0.1")) : QuantizedSimTime.of(Rational.of(1, 3));
+        ? DecimalSimTime.of(new BigDecimal("0.1")) : DecimalSimTime.of(new BigDecimal("0.3"));
   }
 
   static SimTime infinity(TimeEndpointPolicy policy) {
     return policy.acceptedTypes().contains(DecimalSimTime.class)
-        ? DecimalSimTime.infinity() : QuantizedSimTime.infinity();
+        ? DecimalSimTime.infinity() : DecimalSimTime.infinity();
   }
 
   static SimTime overLimit(TimeEndpointPolicy policy) {
     return policy.acceptedTypes().contains(DecimalSimTime.class)
         ? DecimalSimTime.of(new BigDecimal("1e-10001"))
-        : QuantizedSimTime.of(Rational.of(java.math.BigInteger.TEN.pow(TimeWireLimits.MAX_DIGITS),
+        : DecimalSimTime.of(DecimalTestValues.of(java.math.BigInteger.TEN.pow(TimeWireLimits.MAX_DIGITS),
             java.math.BigInteger.ONE));
   }
 
   @Test
-  void exactDecimalAndRationalExchangePreservesEveryMessageAndTimestamp() throws Exception {
+  void exactDecimalExchangePreservesEveryMessageAndTimestamp() throws Exception {
     for (TimeEndpointPolicy policy : exactPolicies()) {
       for (DevsSimMessage message : messages(finite(policy), infinity(policy))) {
         Publisher publisher = new Publisher();

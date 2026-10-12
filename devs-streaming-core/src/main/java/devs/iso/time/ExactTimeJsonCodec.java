@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import devs.time.Rational;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Shared JSON binding for {@link DecimalSimTime} and {@link QuantizedSimTime} using the
+ * Shared JSON binding for {@link DecimalSimTime} using the
  * {@code devs-exact-time-v1} timestamp format.
  *
- * <p>Decimal values and rational numerators and denominators are encoded as strings, avoiding
+ * <p>Decimal values are encoded as strings, avoiding
  * floating-point intermediates. Positive infinity is encoded with {@code infinity: "positive"}.
  * Reads and writes enforce {@link TimeWireLimits}; they neither adapt native time units nor grant
  * endpoint permission. Use {@link ExactTimeJsonModule} for standalone mapper registration.
  */
 public final class ExactTimeJsonCodec {
-  private static final Set<String> FIELDS = Set.of("timeType", "value", "numerator", "denominator", "infinity");
+  private static final Set<String> FIELDS = Set.of("timeType", "value", "infinity");
 
   private ExactTimeJsonCodec() {}
 
@@ -129,7 +127,7 @@ public final class ExactTimeJsonCodec {
       return type.endsWith("LongSimTime") ? LongSimTime.create(Long.parseLong(t))
           : DoubleSimTime.create(Double.parseDouble(t));
     }
-    if (!"decimal".equals(type) && !"rational".equals(type)) {
+    if (!"decimal".equals(type)) {
       throw new IllegalArgumentException("unsupported-time-type: unknown exact timestamp discriminator");
     }
     if (fields.containsKey("infinity")) {
@@ -137,20 +135,12 @@ public final class ExactTimeJsonCodec {
           || !"positive".equals(fields.get("infinity"))) {
         throw TimeWireLimits.malformed();
       }
-      return type.equals("decimal") ? DecimalSimTime.infinity() : QuantizedSimTime.infinity();
+      return DecimalSimTime.infinity();
     }
-    if (type.equals("decimal")) {
-      if (!fields.keySet().equals(Set.of("timeType", "value"))) {
-        throw TimeWireLimits.malformed();
-      }
-      return DecimalSimTime.of(TimeWireLimits.decimal(fields.get("value")));
-    }
-    if (!fields.keySet().equals(Set.of("timeType", "numerator", "denominator"))) {
+    if (!fields.keySet().equals(Set.of("timeType", "value"))) {
       throw TimeWireLimits.malformed();
     }
-    BigInteger numerator = TimeWireLimits.integer(fields.get("numerator"), false);
-    BigInteger denominator = TimeWireLimits.integer(fields.get("denominator"), true);
-    return QuantizedSimTime.of(Rational.of(numerator, denominator));
+    return DecimalSimTime.of(TimeWireLimits.decimal(fields.get("value")));
   }
 
   private static boolean isLegacy(String type) {
@@ -160,7 +150,7 @@ public final class ExactTimeJsonCodec {
   /**
    * Checks that an exact time and its compact JSON representation fit the wire resource limits.
    *
-   * @param value a decimal or rational time, including positive infinity
+   * @param value a decimal time, including positive infinity
    * @throws IllegalArgumentException if the type is unsupported or the representation exceeds
    *     {@link TimeWireLimits}
    */
@@ -179,7 +169,7 @@ public final class ExactTimeJsonCodec {
    * Writes a validated exact-v1 timestamp object, using compact output even with a pretty printer
    * so added whitespace cannot exceed the fragment limit.
    *
-   * @param value a decimal or rational time, including positive infinity
+   * @param value a decimal time, including positive infinity
    * @param generator the destination JSON generator
    * @throws IOException if output fails, the type is unsupported, or wire limits are exceeded
    */
@@ -223,18 +213,9 @@ public final class ExactTimeJsonCodec {
         TimeWireLimits.decimal(text);
         fields.put("value", text);
       }
-    } else if (value instanceof QuantizedSimTime rational) {
-      fields.put("timeType", "rational");
-      if (rational.isInfinite()) {
-        fields.put("infinity", "positive");
-      } else {
-        TimeWireLimits.validateInteger(rational.value().numerator());
-        TimeWireLimits.validateInteger(rational.value().denominator());
-        fields.put("numerator", rational.value().numerator().toString());
-        fields.put("denominator", rational.value().denominator().toString());
-      }
+
     } else {
-      throw new IllegalArgumentException("unsupported-time-type: expected decimal or rational timestamp");
+      throw new IllegalArgumentException("unsupported-time-type: expected decimal timestamp");
     }
     return fields;
   }

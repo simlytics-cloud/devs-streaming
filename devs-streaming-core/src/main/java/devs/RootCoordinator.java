@@ -32,7 +32,7 @@ import devs.iso.SimulationTerminate;
 import devs.iso.SimulationTerminatePayload;
 import devs.iso.TransitionComplete;
 import devs.iso.time.SimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.time.EnhancedClockContext;
 import java.util.HashSet;
 import java.util.Set;
@@ -64,8 +64,8 @@ import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
  * does not handle {@link TransitionComplete} in legacy mode.
  *
  * <h2>Enhanced canonical execution</h2>
- * {@link #enhanced(QuantizedSimTime, ActorRef, String, EnhancedClockContext)} uses exact rational
- * seconds represented by {@link QuantizedSimTime}, not a fixed common tick lattice. The start and
+ * {@link #enhanced(DecimalSimTime, ActorRef, String, EnhancedClockContext)} uses exact decimal
+ * seconds represented by {@link DecimalSimTime}, not a fixed common tick lattice. The start and
  * horizon must be finite, with start no later than the horizon. The root forwards the shared
  * {@link EnhancedClockContext} to its enhanced child coordinator; every coordinator in that
  * hierarchy must agree on both clock identity and composition origin. Native conversion and
@@ -90,7 +90,7 @@ import org.apache.pekko.actor.typed.javadsl.ReceiveBuilder;
  * responses synchronizes logical execution, not real-time speed. Enhanced safeguards enforce the
  * protocol; they do not assess native adaptation suitability or establish composition validity.
  *
- * @param <T> common simulation time in legacy mode; {@link QuantizedSimTime} in enhanced mode
+ * @param <T> common simulation time in legacy mode; {@link DecimalSimTime} in enhanced mode
  */
 public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMessage> {
 
@@ -165,7 +165,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
   }
 
   /**
-   * Creates an enhanced root with an inclusive finite horizon in canonical rational seconds.
+   * Creates an enhanced root with an inclusive finite horizon in canonical decimal seconds.
    * Send a {@link SimulationInit} with a finite canonical start at or before {@code endTime},
    * addressed to {@code root}. Initialization passes {@code clock} to the child unchanged; the
    * child must be an enhanced coordinator with the same context, not a native simulator or a
@@ -179,7 +179,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @throws NullPointerException if the horizon or clock is null
    * @throws IllegalArgumentException if the horizon is infinite
    */
-  public static Behavior<DevsMessage> enhanced(QuantizedSimTime endTime,
+  public static Behavior<DevsMessage> enhanced(DecimalSimTime endTime,
       ActorRef<DevsMessage> child, String childModelId, EnhancedClockContext clock) {
     java.util.Objects.requireNonNull(clock);
     if (java.util.Objects.requireNonNull(endTime).isInfinite()) {
@@ -231,7 +231,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
       if (enhancedPhase != EnhancedPhase.NEW) {
         throw new IllegalStateException("Enhanced root is already initialized");
       }
-      if (!(simulationInit.getEventTime() instanceof QuantizedSimTime start)
+      if (!(simulationInit.getEventTime() instanceof DecimalSimTime start)
           || start.isInfinite() || start.compareTo(endTime) > 0) {
         throw new IllegalArgumentException("Enhanced root requires finite canonical start <= horizon");
       }
@@ -368,7 +368,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
 
   /** Requires a finite canonical event time equal to the start or active time being acknowledged. */
   private void validateEventTime(SimTime eventTime, T expectedTime) {
-    if (!(eventTime instanceof QuantizedSimTime canonical) || canonical.isInfinite()
+    if (!(eventTime instanceof DecimalSimTime canonical) || canonical.isInfinite()
         || canonical.compareTo(expectedTime) != 0) {
       throw new IllegalArgumentException("Enhanced root response does not match the active time");
     }
@@ -376,7 +376,7 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
 
   /** Allows canonical infinity or an equal/later finite candidate, never a native time or rollback. */
   private void validateNextTime(SimTime nextTime, T currentTime) {
-    if (!(nextTime instanceof QuantizedSimTime canonical)
+    if (!(nextTime instanceof DecimalSimTime canonical)
         || canonical.compareTo(currentTime) < 0) {
       throw new IllegalArgumentException("Enhanced root requires canonical next time without rollback");
     }
@@ -390,11 +390,11 @@ public class RootCoordinator<T extends SimTime> extends AbstractBehavior<DevsMes
    * @param candidate canonical next time, including pending effective deliveries in the child
    */
   private void selectCandidate(T candidate) {
-    if (((QuantizedSimTime) candidate).isInfinite() || candidate.compareTo(endTime) > 0) {
+    if (((DecimalSimTime) candidate).isInfinite() || candidate.compareTo(endTime) > 0) {
       enhancedPhase = EnhancedPhase.TERMINATING;
       // Infinity is a scheduling sentinel, not a timestamp to send as a termination event.
       child.tell(SimulationTerminate.<T>builder()
-          .eventTime(((QuantizedSimTime) candidate).isInfinite() ? time : endTime)
+          .eventTime(((DecimalSimTime) candidate).isInfinite() ? time : endTime)
           .simulationRunId(simulationRunId)
           .messageId(generateMessageId())
           .senderId("root")

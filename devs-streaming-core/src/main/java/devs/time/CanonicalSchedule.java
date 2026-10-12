@@ -1,7 +1,7 @@
 package devs.time;
 
 import devs.iso.PortValue;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -16,7 +16,7 @@ public final class CanonicalSchedule {
   private final CoordinatorExecutionConfig config;
   private final Map<String, ChildBinding<?>> bindings;
   private final List<String> resolvedChildOrder;
-  private final Map<String, QuantizedSimTime> candidates = new HashMap<>();
+  private final Map<String, DecimalSimTime> candidates = new HashMap<>();
   private final PriorityQueue<PendingDelivery> pending = new PriorityQueue<>(
       Comparator.comparing(PendingDelivery::effectiveTime)
           .thenComparingLong(PendingDelivery::sequence));
@@ -54,7 +54,7 @@ public final class CanonicalSchedule {
    * @throws ClassCastException if the timestamp has the wrong native type
    * @throws ArithmeticException if the child's mapping rejects the timestamp
    */
-  public QuantizedSimTime decode(String child, SimTime nativeTime) {
+  public DecimalSimTime decode(String child, SimTime nativeTime) {
     ChildBinding<?> binding = bindings.get(child);
     if (binding == null) {
       throw new IllegalArgumentException("Unknown child " + child);
@@ -68,8 +68,8 @@ public final class CanonicalSchedule {
    * @param completed last completed logical time in canonical seconds
    * @throws IllegalArgumentException if completed is infinite or the candidate precedes it
    */
-  public void update(String child, SimTime next, QuantizedSimTime completed) {
-    QuantizedSimTime candidate = decode(child, next);
+  public void update(String child, SimTime next, DecimalSimTime completed) {
+    DecimalSimTime candidate = decode(child, next);
     if (completed.isInfinite() || candidate.compareTo(completed) < 0) {
       throw new IllegalArgumentException("Child next event rolls back logical time");
     }
@@ -81,12 +81,12 @@ public final class CanonicalSchedule {
    * or infinity when neither provides a finite next time.
    * @throws IllegalStateException if any child candidate is missing
    */
-  public QuantizedSimTime next() {
+  public DecimalSimTime next() {
     if (!initialized()) {
       throw new IllegalStateException("Missing child next times");
     }
-    QuantizedSimTime next = candidates.values().stream()
-        .min(QuantizedSimTime::compareTo).orElse(QuantizedSimTime.infinity());
+    DecimalSimTime next = candidates.values().stream()
+        .min(DecimalSimTime::compareTo).orElse(DecimalSimTime.infinity());
     return pending.isEmpty() || next.compareTo(pending.peek().effectiveTime()) <= 0
         ? next : pending.peek().effectiveTime();
   }
@@ -95,7 +95,7 @@ public final class CanonicalSchedule {
    * Returns children whose stored candidates equal the canonical-second time, in the
    * supplied resolved order. Children with no candidate do not match.
    */
-  public List<String> imminent(QuantizedSimTime time) {
+  public List<String> imminent(DecimalSimTime time) {
     return resolvedChildOrder.stream().filter(id -> time.equals(candidates.get(id))).toList();
   }
 
@@ -103,25 +103,26 @@ public final class CanonicalSchedule {
    * Returns the child's stored candidate in canonical seconds, possibly infinity.
    * @throws NullPointerException if no candidate is stored for the identifier
    */
-  public QuantizedSimTime candidate(String child) {
+  public DecimalSimTime candidate(String child) {
     return Objects.requireNonNull(candidates.get(child), "Missing child candidate");
   }
 
   /**
-   * Adapts a finite canonical-second source time upward using the target's codec,
-   * observes any error budget, then queues the delivery by effective time and insertion order.
-   * Budget callback failures propagate before an entry is queued.
-   * @throws IllegalArgumentException if the target is missing, or adaptation violates causality
-   * @throws ArithmeticException if adaptation fails or the insertion sequence overflows
+   * Converts a finite canonical-second source time exactly for the target, observes any
+   * configured error budget, then queues the delivery by effective time and insertion order.
+   * Off-grid or unrepresentable deliveries fail rather than being rounded. Budget callback
+   * failures propagate before an entry is queued.
+   * @throws IllegalArgumentException if the target is missing, or conversion violates causality
+   * @throws ArithmeticException if conversion fails or the insertion sequence overflows
    */
   public PendingDelivery enqueue(InteractionKey interaction, PortValue<?> value,
-      QuantizedSimTime source) {
+      DecimalSimTime source) {
     ChildBinding<?> target = bindings.get(interaction.targetModel());
     if (target == null) {
       throw new IllegalArgumentException("Unknown delivery target " + interaction.targetModel());
     }
     SimTime local = target.adapt(source);
-    QuantizedSimTime effective = target.toCanonical(local);
+    DecimalSimTime effective = target.toCanonical(local);
     config.observe(interaction, source, effective);
     PendingDelivery delivery = new PendingDelivery(interaction, value, source, effective,
         local, sequence);
@@ -135,7 +136,7 @@ public final class CanonicalSchedule {
    * order, as an immutable list. Later deliveries remain queued.
    * @throws IllegalStateException if an earlier effective delivery time was missed
    */
-  public List<PendingDelivery> drain(QuantizedSimTime time) {
+  public List<PendingDelivery> drain(DecimalSimTime time) {
     if (!pending.isEmpty() && pending.peek().effectiveTime().compareTo(time) < 0) {
       throw new IllegalStateException("Missed effective delivery time");
     }

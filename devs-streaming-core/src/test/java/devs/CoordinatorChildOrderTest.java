@@ -4,19 +4,19 @@ import devs.iso.DevsMessage;
 import devs.iso.SimulationInit;
 import devs.iso.SimulationInitMessage;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.time.ChildBinding;
 import devs.time.CoordinatorExecutionConfig;
 import devs.time.EnhancedClockContext;
 import devs.time.LongTimeCodec;
-import devs.time.Rational;
-import devs.time.TimeMapping;
+import devs.time.DecimalTimeMapping;
 import devs.time.TimeSemantics;
 import org.apache.pekko.actor.testkit.typed.javadsl.BehaviorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestInbox;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -76,12 +76,12 @@ class CoordinatorChildOrderTest {
     TestInbox<DevsMessage> shared = TestInbox.create();
     var actors = new HashMap<String, ActorRef<DevsMessage>>();
     var bindings = new HashMap<String, ChildBinding<?>>();
-    var clock = new EnhancedClockContext("clock", Rational.ZERO);
+    var clock = new EnhancedClockContext("clock", BigDecimal.ZERO);
     for (String id : List.of("A", "a")) {
       actors.put(id, shared.getRef());
       bindings.put(id, ChildBinding.nativeActor(id, shared.getRef(),
-          LongSimTime.class, new TimeMapping<>(new LongTimeCodec(),
-              TimeSemantics.of(Rational.ONE, Rational.ZERO))));
+          LongSimTime.class, new DecimalTimeMapping<>(new LongTimeCodec(),
+              TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO))));
     }
     List<String> order = new ArrayList<>(List.of("a", "A"));
     var behavior = PDevsCoordinator.enhanced("coupled", actors,
@@ -91,8 +91,8 @@ class CoordinatorChildOrderTest {
     bindings.clear();
     order.clear();
     BehaviorTestKit<DevsMessage> kit = BehaviorTestKit.create(behavior);
-    kit.run(new SimulationInitMessage<>(SimulationInit.<QuantizedSimTime>builder()
-        .eventTime(QuantizedSimTime.of(Rational.ZERO)).simulationRunId("run")
+    kit.run(new SimulationInitMessage<>(SimulationInit.<DecimalSimTime>builder()
+        .eventTime(DecimalSimTime.of(BigDecimal.ZERO)).simulationRunId("run")
         .messageId("init").senderId("parent").receiverId("coupled").build(),
         TestInbox.<DevsMessage>create().getRef(), clock));
     for (String id : List.of("a", "A")) {

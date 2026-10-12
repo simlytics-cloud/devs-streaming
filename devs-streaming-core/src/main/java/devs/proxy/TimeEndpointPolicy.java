@@ -3,9 +3,8 @@ package devs.proxy;
 import devs.iso.time.DecimalSimTime;
 import devs.iso.time.DoubleSimTime;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.QuantizedSimTime;
 import devs.iso.time.SimTime;
-import devs.time.TimeMapping;
+import devs.time.DecimalTimeMapping;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -14,13 +13,13 @@ import java.util.function.Consumer;
 public final class TimeEndpointPolicy {
   /**
    * Declared transport role: {@code LEGACY} uses numeric encoding, {@code NATIVE} accepts the
-   * endpoint's own time type, {@code COMPATIBLE} accepts rational canonical time, and
+   * endpoint's own time type, and
    * {@code RECORDER} accepts an explicitly declared set of types without mapping them.
    */
-  public enum Role { LEGACY, NATIVE, COMPATIBLE, RECORDER }
+  public enum Role { LEGACY, NATIVE, RECORDER }
 
   private static final Set<Class<? extends SimTime>> SUPPORTED = Set.of(
-      LongSimTime.class, DoubleSimTime.class, DecimalSimTime.class, QuantizedSimTime.class);
+      LongSimTime.class, DoubleSimTime.class, DecimalSimTime.class);
   private final TimeWireProfile profile;
   private final Role role;
   private final Set<Class<? extends SimTime>> acceptedTypes;
@@ -57,35 +56,13 @@ public final class TimeEndpointPolicy {
         Set.of(DecimalSimTime.class), ignored -> {});
   }
 
-  /**
-   * Checks codec representation and optional supplier granularity without any adaptation.
-   * Use this mapping-aware policy for a declared grid; convenience policies do not discover
-   * supplier metadata automatically.
-   *
-   * @param <N> the supplier-native time type
-   * @param type the supported concrete native class; rational transport is not a native encoding
-   * @param mapping the non-null mapping used to check canonical representability
-   * @return an exact-time policy accepting only the declared native class
-   * @throws IllegalArgumentException if the class is unsupported or is {@link QuantizedSimTime}
-   */
-  public static <N extends SimTime> TimeEndpointPolicy nativeEndpoint(Class<N> type, TimeMapping<N> mapping) {
+  /** Creates a mapping-aware decimal-native endpoint policy. */
+  public static <N extends SimTime> TimeEndpointPolicy nativeEndpoint(Class<N> type, DecimalTimeMapping<N> mapping) {
     Objects.requireNonNull(mapping);
-    if (type == QuantizedSimTime.class) {
-      throw new IllegalArgumentException("unsupported-time-type: rational transport is not a supplier-native encoding");
-    }
     return new TimeEndpointPolicy(TimeWireProfile.EXACT_TIME_V1, Role.NATIVE, Set.of(type),
         value -> mapping.toCanonical(type.cast(value)));
   }
 
-  /**
-   * Creates an exact-time policy accepting only rational {@link QuantizedSimTime} timestamps.
-   *
-   * @return the rational-compatible endpoint policy
-   */
-  public static TimeEndpointPolicy rationalCompatible() {
-    return new TimeEndpointPolicy(TimeWireProfile.EXACT_TIME_V1, Role.COMPATIBLE,
-        Set.of(QuantizedSimTime.class), ignored -> {});
-  }
 
   /**
    * Creates an exact-time recording policy without native mapping or adaptation.

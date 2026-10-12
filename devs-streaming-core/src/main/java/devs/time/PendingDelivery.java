@@ -1,7 +1,7 @@
 package devs.time;
 
 import devs.iso.PortValue;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
 
 /**
@@ -15,5 +15,5 @@ import devs.iso.time.SimTime;
  * @param sequence insertion sequence used to break equal-effective-time ties
  */
 public record PendingDelivery(InteractionKey interaction, PortValue<?> portValue,
-    QuantizedSimTime sourceTime, QuantizedSimTime effectiveTime, SimTime nativeTime,
+    DecimalSimTime sourceTime, DecimalSimTime effectiveTime, SimTime nativeTime,
     long sequence) {}

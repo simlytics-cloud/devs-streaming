@@ -3,7 +3,6 @@ package devs.proxy;
 import devs.iso.*;
 import devs.iso.time.DecimalSimTime;
 import devs.iso.time.ExactTimeJsonCodec;
-import devs.iso.time.QuantizedSimTime;
 import devs.iso.time.SimTime;
 import java.util.Set;
 
@@ -56,7 +55,7 @@ public final class TimeProfileValidator {
   /** Applies exact-value limits and endpoint permissions, reporting the offending wire field. */
   private static void validateTime(SimTime value, String field, TimeEndpointPolicy policy) {
     try {
-      if (value instanceof DecimalSimTime || value instanceof QuantizedSimTime) {
+      if (value instanceof DecimalSimTime) {
         ExactTimeJsonCodec.validate(value);
       }
       policy.validate(value);

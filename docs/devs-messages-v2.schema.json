@@ -42,9 +42,7 @@
     "ExactTimestamp": {
       "oneOf": [
         { "$ref": "#/$defs/DecimalTimestamp" },
-        { "$ref": "#/$defs/RationalTimestamp" },
-        { "$ref": "#/$defs/DecimalInfinity" },
-        { "$ref": "#/$defs/RationalInfinity" }
+        { "$ref": "#/$defs/DecimalInfinity" }
       ]
     },
     "DecimalString": {
@@ -53,19 +51,6 @@
       "maxLength": 8256,
       "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?([eE][+-]?[0-9]+)?$(?![\\s\\S])",
       "description": "ASCII decimal text; trailing zeros and exponent forms are accepted. Runtime separately checks at most 4096 coefficient digits before normalization, normalized precision, explicit/canonical exponent magnitude, effective scale, and complete fragment length. Output is normalized BigDecimal.toString(), with zero as 0."
-    },
-    "IntegerString": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 4097,
-      "pattern": "^-?(0|[1-9][0-9]{0,4095})$(?![\\s\\S])",
-      "description": "At most 4096 ASCII digits excluding an optional minus sign. Runtime reduces fractions and normalizes negative zero."
-    },
-    "PositiveIntegerString": {
-      "type": "string",
-      "minLength": 1,
-      "maxLength": 4096,
-      "pattern": "^[1-9][0-9]{0,4095}$(?![\\s\\S])"
     },
     "DecimalTimestamp": {
       "type": "object",
@@ -76,30 +61,11 @@
       },
       "additionalProperties": false
     },
-    "RationalTimestamp": {
-      "type": "object",
-      "required": ["timeType", "numerator", "denominator"],
-      "properties": {
-        "timeType": { "const": "rational" },
-        "numerator": { "$ref": "#/$defs/IntegerString" },
-        "denominator": { "$ref": "#/$defs/PositiveIntegerString" }
-      },
-      "additionalProperties": false
-    },
     "DecimalInfinity": {
       "type": "object",
       "required": ["timeType", "infinity"],
       "properties": {
         "timeType": { "const": "decimal" },
-        "infinity": { "const": "positive" }
-      },
-      "additionalProperties": false
-    },
-    "RationalInfinity": {
-      "type": "object",
-      "required": ["timeType", "infinity"],
-      "properties": {
-        "timeType": { "const": "rational" },
         "infinity": { "const": "positive" }
       },
       "additionalProperties": false

@@ -32,7 +32,7 @@ import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.TransitionComplete;
 import devs.iso.time.SimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.time.ChildBinding;
 import devs.time.CoordinatorExecutionConfig;
 import devs.time.CanonicalSchedule;
@@ -92,7 +92,7 @@ import org.slf4j.event.Level;
  *
  * <h2>Enhanced canonical execution</h2>
  * {@link #enhanced} requires approved {@link CoordinatorExecutionConfig} and one typed
- * {@link ChildBinding} per child. Parent-facing times use {@link QuantizedSimTime}: exact rational
+ * {@link ChildBinding} per child. Parent-facing times use {@link DecimalSimTime}: exact decimal
  * seconds plus logical infinity, with no common fixed tick size. Native children retain their own
  * clocks. For finite native local time, each binding applies the developer-supplied affine mapping:
  *
@@ -154,7 +154,7 @@ import org.slf4j.event.Level;
  * neither these barriers nor {@link StepTimingTracker} implement wall-clock pacing, deadlines, or
  * lag recovery. Enhanced context is local actor plumbing, not a distributed clock handshake.
  *
- * @param <T> common simulation time in legacy mode; {@link QuantizedSimTime} in enhanced mode
+ * @param <T> common simulation time in legacy mode; {@link DecimalSimTime} in enhanced mode
  */
 public class PDevsCoordinator<T extends SimTime>
     extends AbstractBehavior<DevsMessage> {
@@ -179,7 +179,7 @@ public class PDevsCoordinator<T extends SimTime>
   /** Protocol phases separating initialization, output collection, transitions, and termination. */
   private enum EnhancedPhase { INITIALIZING, READY, COLLECTING, OUTPUT_READY, TRANSITIONING, TERMINATING }
   private EnhancedPhase enhancedPhase = EnhancedPhase.INITIALIZING;
-  private QuantizedSimTime canonicalActive;
+  private DecimalSimTime canonicalActive;
   private List<RoutedDelivery> routedOutput = List.of();
   private final Map<String, SimTime> dispatchedTimes = new HashMap<>();
   /**
@@ -191,7 +191,7 @@ public class PDevsCoordinator<T extends SimTime>
    */
   private record ResponseKey(String sender, devs.iso.SimMessageType type, String id) {}
   private final java.util.Set<ResponseKey> seenResponseIds = new java.util.HashSet<>();
-  private QuantizedSimTime canonicalLast;
+  private DecimalSimTime canonicalLast;
   private final Map<String, SimTime> nativeLast = new HashMap<>();
   private T timeLast;
   private T timeNext;
@@ -557,7 +557,7 @@ public class PDevsCoordinator<T extends SimTime>
    */
   private Behavior<DevsMessage> initializeEnhanced(SimulationInitMessage<?> message) {
     if (!message.getEnhancedClock().filter(executionConfig.clock()::equals).isPresent()
-        || !(message.getSimulationInit().getEventTime() instanceof QuantizedSimTime start)
+        || !(message.getSimulationInit().getEventTime() instanceof DecimalSimTime start)
         || start.isInfinite() || canonicalLast != null) {
       throw new IllegalArgumentException("Enhanced initialization requires the shared clock and finite time");
     }
@@ -599,7 +599,7 @@ public class PDevsCoordinator<T extends SimTime>
   /**
    * Selects legacy imminent children in resolved order by equality with the minimum common next time.
    * No conversion is applied here; enhanced imminence is determined from
-   * mapped internal candidates by {@link CanonicalSchedule#imminent(QuantizedSimTime)}.
+   * mapped internal candidates by {@link CanonicalSchedule#imminent(DecimalSimTime)}.
    *
    * @return The next simulation time of type {@code T}, representing the earliest scheduled time
    * from {@code nextTimeMap}.
@@ -635,7 +635,7 @@ public class PDevsCoordinator<T extends SimTime>
       initialReports.add(child);
       if (canonicalSchedule.initialized()) {
         enhancedPhase = EnhancedPhase.READY;
-        parent.tell(NextInternalTimeReport.<QuantizedSimTime>builder()
+        parent.tell(NextInternalTimeReport.<DecimalSimTime>builder()
             .eventTime(canonicalLast)
             .simulationRunId(simulationRunId).messageId(generateMessageId("NextTime"))
             .senderId(modelIdentifier).receiverId(parentId)
@@ -1007,7 +1007,7 @@ public class PDevsCoordinator<T extends SimTime>
   Behavior<DevsMessage> onSimulationTerminate(SimulationTerminate<T> simulationTerminate) {
     if (executionConfig != null) {
       checkEnhancedParent(simulationTerminate);
-      QuantizedSimTime end = canonicalTime(simulationTerminate.getEventTime());
+      DecimalSimTime end = canonicalTime(simulationTerminate.getEventTime());
       if (enhancedPhase != EnhancedPhase.READY || end.compareTo(canonicalLast) < 0) {
         throw new IllegalStateException("Termination during an active step or before last time");
       }
@@ -1108,8 +1108,8 @@ public class PDevsCoordinator<T extends SimTime>
   }
 
   /** Requires a finite canonical parent event time; native timestamps and infinity are not steps. */
-  private QuantizedSimTime canonicalTime(SimTime time) {
-    if (!(time instanceof QuantizedSimTime canonical) || canonical.isInfinite()) {
+  private DecimalSimTime canonicalTime(SimTime time) {
+    if (!(time instanceof DecimalSimTime canonical) || canonical.isInfinite()) {
       throw new IllegalArgumentException("Expected finite canonical seconds");
     }
     return canonical;
@@ -1147,7 +1147,7 @@ public class PDevsCoordinator<T extends SimTime>
    */
   private Behavior<DevsMessage> requestEnhancedOutput(RequestOutput<?> request) {
     checkEnhancedParent(request);
-    QuantizedSimTime step = canonicalTime(request.getEventTime());
+    DecimalSimTime step = canonicalTime(request.getEventTime());
     if (enhancedPhase != EnhancedPhase.READY || !step.equals(canonicalSchedule.next())
         || step.compareTo(canonicalLast) < 0) {
       throw new IllegalStateException("Output request out of synchronization");
@@ -1217,7 +1217,7 @@ public class PDevsCoordinator<T extends SimTime>
       }
     }
     enhancedPhase = EnhancedPhase.OUTPUT_READY;
-    parent.tell(OutputReport.<QuantizedSimTime>builder().eventTime(canonicalActive)
+    parent.tell(OutputReport.<DecimalSimTime>builder().eventTime(canonicalActive)
         .payload(OutputReportPayload.builder().addAllOutputs(routed.getExternalOutputMessages()).build())
         .simulationRunId(simulationRunId).messageId(generateMessageId("OutputReport"))
         .senderId(modelIdentifier).receiverId(parentId)
@@ -1266,7 +1266,7 @@ public class PDevsCoordinator<T extends SimTime>
    */
   private Behavior<DevsMessage> executeEnhancedTransition(ExecuteTransition<?> message) {
     checkEnhancedParent(message);
-    QuantizedSimTime step = canonicalTime(message.getEventTime());
+    DecimalSimTime step = canonicalTime(message.getEventTime());
     if (enhancedPhase == EnhancedPhase.READY) {
       if (step.compareTo(canonicalLast) < 0 || step.compareTo(canonicalSchedule.next()) >= 0
           || message.getPayload().getInputs().isEmpty()) {
@@ -1365,7 +1365,7 @@ public class PDevsCoordinator<T extends SimTime>
     dispatchedTimes.clear();
     enhancedPhase = EnhancedPhase.READY;
     stepTimingTracker.stepCompleted();
-    parent.tell(TransitionComplete.<QuantizedSimTime>builder().eventTime(canonicalLast)
+    parent.tell(TransitionComplete.<DecimalSimTime>builder().eventTime(canonicalLast)
         .simulationRunId(simulationRunId).messageId(generateMessageId("TransitionComplete"))
         .senderId(modelIdentifier).receiverId(parentId)
         .nextInternalTime(canonicalSchedule.next()).build());

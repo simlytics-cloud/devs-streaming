@@ -1,14 +1,102 @@
 [
-  {"wireProfile":"devs-exact-time-v1","messageType":"SimulationInit","simulationRunId":"run-1","messageId":"init-1","senderId":"coordinator","receiverId":"model","eventTime":{"timeType":"decimal","value":"0.1"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"SimulationTerminate","simulationRunId":"run-1","messageId":"terminate-1","senderId":"coordinator","receiverId":"model","eventTime":{"timeType":"rational","numerator":"1","denominator":"3"},"payload":{"reason":"complete"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"ModelTerminated","simulationRunId":"run-1","messageId":"terminated-1","senderId":"model","receiverId":"coordinator"},
-  {"wireProfile":"devs-exact-time-v1","messageType":"NextInternalTimeReport","simulationRunId":"run-1","messageId":"report-1","senderId":"model","receiverId":"coordinator","eventTime":{"timeType":"decimal","value":"0.1"},"nextInternalTime":{"timeType":"decimal","infinity":"positive"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"RequestOutput","simulationRunId":"run-1","messageId":"request-1","senderId":"coordinator","receiverId":"model","eventTime":{"timeType":"decimal","value":"1"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"OutputReport","simulationRunId":"run-1","messageId":"output-1","senderId":"model","receiverId":"coordinator","eventTime":{"timeType":"rational","numerator":"1","denominator":"60"},"nextInternalTime":{"timeType":"rational","infinity":"positive"},"payload":{"outputs":[{"portName":"out","value":{"count":1,"structured":{"list":[true,"text",1.25]}}}]}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"ExecuteTransition","simulationRunId":"run-1","messageId":"transition-1","senderId":"coordinator","receiverId":"model","eventTime":{"timeType":"decimal","value":"1.2300"},"payload":{"inputs":[{"portName":"in","value":{"value":42}}]}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"TransitionComplete","simulationRunId":"run-1","messageId":"complete-1","senderId":"model","receiverId":"coordinator","eventTime":{"timeType":"rational","numerator":"2","denominator":"6"},"nextInternalTime":2.5},
-  {"wireProfile":"devs-exact-time-v1","messageType":"MonitoringMessage","simulationRunId":"run-1","messageId":"monitor-1","senderId":"model","receiverId":"coordinator","payload":{"category":"metric","values":{"count":1},"sourceRole":"runner"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"MonitoringMessage","simulationRunId":"run-1","messageId":"monitor-2","senderId":"model","receiverId":"coordinator","eventTime":{"timeType":"decimal","value":"0.1"},"nextInternalTime":{"timeType":"rational","numerator":"1","denominator":"3"},"payload":{"category":"metric","values":{"count":1}}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"ErrorReport","simulationRunId":"","messageId":"error-1","senderId":"model","receiverId":"coordinator","payload":{"originRole":"Runner","originId":"model","severity":"error","errorCode":1,"message":"diagnostic"}},
-  {"wireProfile":"devs-exact-time-v1","messageType":"ErrorReport","simulationRunId":"run-1","messageId":"error-2","senderId":"model","receiverId":"coordinator","eventTime":{"timeType":"rational","numerator":"1","denominator":"3"},"nextInternalTime":{"timeType":"decimal","infinity":"positive"},"payload":{"originRole":"Runner","originId":"model","severity":"warning","errorCode":"TIME","message":"diagnostic"}}
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "SimulationInit",
+    "simulationRunId": "run-1",
+    "messageId": "init-1",
+    "senderId": "coordinator",
+    "receiverId": "model",
+    "eventTime": {
+      "timeType": "decimal",
+      "value": "0.1"
+    }
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "ModelTerminated",
+    "simulationRunId": "run-1",
+    "messageId": "terminated-1",
+    "senderId": "model",
+    "receiverId": "coordinator"
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "NextInternalTimeReport",
+    "simulationRunId": "run-1",
+    "messageId": "report-1",
+    "senderId": "model",
+    "receiverId": "coordinator",
+    "eventTime": {
+      "timeType": "decimal",
+      "value": "0.1"
+    },
+    "nextInternalTime": {
+      "timeType": "decimal",
+      "infinity": "positive"
+    }
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "RequestOutput",
+    "simulationRunId": "run-1",
+    "messageId": "request-1",
+    "senderId": "coordinator",
+    "receiverId": "model",
+    "eventTime": {
+      "timeType": "decimal",
+      "value": "1"
+    }
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "ExecuteTransition",
+    "simulationRunId": "run-1",
+    "messageId": "transition-1",
+    "senderId": "coordinator",
+    "receiverId": "model",
+    "eventTime": {
+      "timeType": "decimal",
+      "value": "1.2300"
+    },
+    "payload": {
+      "inputs": [
+        {
+          "portName": "in",
+          "value": {
+            "value": 42
+          }
+        }
+      ]
+    }
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "MonitoringMessage",
+    "simulationRunId": "run-1",
+    "messageId": "monitor-1",
+    "senderId": "model",
+    "receiverId": "coordinator",
+    "payload": {
+      "category": "metric",
+      "values": {
+        "count": 1
+      },
+      "sourceRole": "runner"
+    }
+  },
+  {
+    "wireProfile": "devs-exact-time-v1",
+    "messageType": "ErrorReport",
+    "simulationRunId": "",
+    "messageId": "error-1",
+    "senderId": "model",
+    "receiverId": "coordinator",
+    "payload": {
+      "originRole": "Runner",
+      "originId": "model",
+      "severity": "error",
+      "errorCode": 1,
+      "message": "diagnostic"
+    }
+  }
 ]

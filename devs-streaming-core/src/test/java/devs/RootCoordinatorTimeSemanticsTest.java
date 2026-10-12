@@ -1,5 +1,6 @@
 package devs;
 
+import devs.time.DecimalTestValues;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -19,17 +20,18 @@ import devs.iso.SimulationInitMessage;
 import devs.iso.SimulationTerminate;
 import devs.iso.TransitionComplete;
 import devs.iso.time.LongSimTime;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
 import devs.time.EnhancedClockContext;
-import devs.time.Rational;
+import java.math.BigDecimal;
+
 import org.apache.pekko.actor.testkit.typed.javadsl.BehaviorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestInbox;
 import org.junit.jupiter.api.Test;
 
 class RootCoordinatorTimeSemanticsTest {
   private static final EnhancedClockContext CLOCK =
-      new EnhancedClockContext("clock", Rational.of(7));
+      new EnhancedClockContext("clock", DecimalTestValues.of(7));
 
   @Test
   void sharesClockAndWaitsForDelayedOutputAndTransitionReplies() {
@@ -79,9 +81,9 @@ class RootCoordinatorTimeSemanticsTest {
 
   @Test
   void checksExactFractionalHorizonOnFirstCandidate() {
-    QuantizedSimTime horizon = QuantizedSimTime.of(Rational.of(1, 3));
+    DecimalSimTime horizon = DecimalSimTime.of(new BigDecimal("0.3"));
     Fixture f = initialized(horizon);
-    f.kit.run(f.next(time(0), QuantizedSimTime.of(Rational.of(334, 1000))));
+    f.kit.run(f.next(time(0), DecimalSimTime.of(DecimalTestValues.of(334, 1000))));
     assertEquals(horizon, f.terminate().getEventTime());
     assertFalse(f.child.hasMessages());
   }
@@ -91,7 +93,7 @@ class RootCoordinatorTimeSemanticsTest {
     Fixture f = new Fixture(time(10));
     f.init(time(4));
     f.child.receiveMessage();
-    f.kit.run(f.next(time(4), QuantizedSimTime.infinity()));
+    f.kit.run(f.next(time(4), DecimalSimTime.infinity()));
     assertEquals(time(4), f.terminate().getEventTime());
     assertFalse(f.child.hasMessages());
   }
@@ -99,7 +101,7 @@ class RootCoordinatorTimeSemanticsTest {
   @Test
   void infinityAfterTransitionTerminatesAtLastCompletedFiniteTime() {
     Fixture f = executing(time(2));
-    f.kit.run(f.complete(time(2), QuantizedSimTime.infinity()));
+    f.kit.run(f.complete(time(2), DecimalSimTime.infinity()));
     assertEquals(time(2), f.terminate().getEventTime());
     assertFalse(f.child.hasMessages());
   }
@@ -142,7 +144,7 @@ class RootCoordinatorTimeSemanticsTest {
   @Test
   void rejectsWrongSenderRunReceiverAndEventTime() {
     Fixture f = initialized(time(10));
-    NextInternalTimeReport<QuantizedSimTime> next = f.next(time(0), time(2));
+    NextInternalTimeReport<DecimalSimTime> next = f.next(time(0), time(2));
     assertThrows(IllegalArgumentException.class, () -> f.kit.run(
         next.withSenderId("stranger")));
     assertThrows(IllegalArgumentException.class, () -> f.kit.run(
@@ -171,17 +173,17 @@ class RootCoordinatorTimeSemanticsTest {
         () -> f.kit.run(f.output(time(0), time(0))));
     assertThrows(IllegalStateException.class,
         () -> f.kit.run(f.complete(time(0), time(0))));
-    NextInternalTimeReport<QuantizedSimTime> next = f.next(time(0), time(0));
+    NextInternalTimeReport<DecimalSimTime> next = f.next(time(0), time(0));
     f.kit.run(next);
     f.request();
     assertThrows(IllegalStateException.class, () -> f.kit.run(next));
     assertThrows(IllegalStateException.class,
         () -> f.kit.run(f.complete(time(0), time(0))));
-    OutputReport<QuantizedSimTime> output = f.output(time(0), time(0));
+    OutputReport<DecimalSimTime> output = f.output(time(0), time(0));
     f.kit.run(output);
     f.execute();
     assertThrows(IllegalStateException.class, () -> f.kit.run(output));
-    TransitionComplete<QuantizedSimTime> complete = f.complete(time(0), time(0));
+    TransitionComplete<DecimalSimTime> complete = f.complete(time(0), time(0));
     f.kit.run(complete);
     f.request();
     assertThrows(IllegalStateException.class, () -> f.kit.run(complete));
@@ -199,11 +201,11 @@ class RootCoordinatorTimeSemanticsTest {
   void validatesFiniteHorizonAndStartAndRejectsRepeatedInitialization() {
     TestInbox<DevsMessage> child = TestInbox.create();
     assertThrows(IllegalArgumentException.class,
-        () -> RootCoordinator.enhanced(QuantizedSimTime.infinity(), child.getRef(), "child", CLOCK));
+        () -> RootCoordinator.enhanced(DecimalSimTime.infinity(), child.getRef(), "child", CLOCK));
     assertThrows(NullPointerException.class,
         () -> RootCoordinator.enhanced(time(10), child.getRef(), "child", null));
     Fixture f = new Fixture(time(10));
-    assertThrows(IllegalArgumentException.class, () -> f.init(QuantizedSimTime.infinity()));
+    assertThrows(IllegalArgumentException.class, () -> f.init(DecimalSimTime.infinity()));
     assertThrows(IllegalArgumentException.class, () -> f.init(time(11)));
     assertThrows(IllegalArgumentException.class, () -> f.init(LongSimTime.create(0)));
     assertFalse(f.child.hasMessages());
@@ -211,7 +213,7 @@ class RootCoordinatorTimeSemanticsTest {
     f.child.receiveMessage();
     assertThrows(IllegalStateException.class, () -> f.init(time(10)));
     assertFalse(f.child.hasMessages());
-    f.kit.run(f.next(time(10), QuantizedSimTime.infinity()));
+    f.kit.run(f.next(time(10), DecimalSimTime.infinity()));
     assertEquals(time(10), f.terminate().getEventTime());
   }
 
@@ -220,7 +222,7 @@ class RootCoordinatorTimeSemanticsTest {
     Fixture f = initialized(time(10));
     assertThrows(IllegalStateException.class,
         () -> f.kit.run(f.terminated("child", "run")));
-    f.kit.run(f.next(time(0), QuantizedSimTime.infinity()));
+    f.kit.run(f.next(time(0), DecimalSimTime.infinity()));
     f.terminate();
     assertThrows(IllegalArgumentException.class,
         () -> f.kit.run(f.terminated("other", "run")));
@@ -262,18 +264,18 @@ class RootCoordinatorTimeSemanticsTest {
     assertFalse(child.hasMessages());
   }
 
-  private static QuantizedSimTime time(long value) {
-    return QuantizedSimTime.of(Rational.of(value));
+  private static DecimalSimTime time(long value) {
+    return DecimalSimTime.of(DecimalTestValues.of(value));
   }
 
-  private static Fixture initialized(QuantizedSimTime end) {
+  private static Fixture initialized(DecimalSimTime end) {
     Fixture f = new Fixture(end);
     f.init(time(0));
     f.child.receiveMessage();
     return f;
   }
 
-  private static Fixture executing(QuantizedSimTime event) {
+  private static Fixture executing(DecimalSimTime event) {
     Fixture f = initialized(time(10));
     f.kit.run(f.next(time(0), event));
     f.request();
@@ -287,7 +289,7 @@ class RootCoordinatorTimeSemanticsTest {
     final BehaviorTestKit<DevsMessage> kit;
     private int messageId;
 
-    Fixture(QuantizedSimTime end) {
+    Fixture(DecimalSimTime end) {
       kit = BehaviorTestKit.create(RootCoordinator.enhanced(end, child.getRef(), "child", CLOCK));
     }
 
@@ -296,27 +298,27 @@ class RootCoordinatorTimeSemanticsTest {
           .messageId("init").senderId("test").receiverId("root").build());
     }
 
-    NextInternalTimeReport<QuantizedSimTime> next(QuantizedSimTime event, QuantizedSimTime next) {
-      return NextInternalTimeReport.<QuantizedSimTime>builder().eventTime(event)
+    NextInternalTimeReport<DecimalSimTime> next(DecimalSimTime event, DecimalSimTime next) {
+      return NextInternalTimeReport.<DecimalSimTime>builder().eventTime(event)
           .simulationRunId("run").messageId("next" + messageId++)
           .senderId("child").receiverId("root").nextInternalTime(next).build();
     }
 
-    OutputReport<QuantizedSimTime> output(QuantizedSimTime event, QuantizedSimTime next) {
-      return OutputReport.<QuantizedSimTime>builder().eventTime(event)
+    OutputReport<DecimalSimTime> output(DecimalSimTime event, DecimalSimTime next) {
+      return OutputReport.<DecimalSimTime>builder().eventTime(event)
           .payload(OutputReportPayload.builder().build())
           .simulationRunId("run").messageId("output" + messageId++)
           .senderId("child").receiverId("root").nextInternalTime(next).build();
     }
 
-    TransitionComplete<QuantizedSimTime> complete(QuantizedSimTime event, QuantizedSimTime next) {
-      return TransitionComplete.<QuantizedSimTime>builder().eventTime(event)
+    TransitionComplete<DecimalSimTime> complete(DecimalSimTime event, DecimalSimTime next) {
+      return TransitionComplete.<DecimalSimTime>builder().eventTime(event)
           .simulationRunId("run").messageId("complete" + messageId++)
           .senderId("child").receiverId("root").nextInternalTime(next).build();
     }
 
-    ModelTerminated<QuantizedSimTime> terminated(String sender, String run) {
-      return ModelTerminated.<QuantizedSimTime>builder().simulationRunId(run)
+    ModelTerminated<DecimalSimTime> terminated(String sender, String run) {
+      return ModelTerminated.<DecimalSimTime>builder().simulationRunId(run)
           .messageId("terminated" + messageId++).senderId(sender).receiverId("root").build();
     }
 

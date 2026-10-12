@@ -6,6 +6,7 @@ import devs.SimulatorProvider;
 import devs.iso.DevsMessage;
 import devs.iso.time.*;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 import org.apache.pekko.actor.typed.ActorRef;
 import org.apache.pekko.actor.typed.javadsl.ActorContext;
@@ -17,11 +18,11 @@ public final class ChildBinding<N extends SimTime> {
   private final SimulatorProvider<N> provider;
   private final ActorRef<DevsMessage> actor;
   private final Class<N> nativeType;
-  private final TimeMapping<N> mapping;
+  private final DecimalTimeMapping<N> mapping;
   private final EnhancedClockContext clock;
 
   private ChildBinding(String modelIdentifier, SimulatorProvider<N> provider,
-      ActorRef<DevsMessage> actor, Class<N> nativeType, TimeMapping<N> mapping,
+      ActorRef<DevsMessage> actor, Class<N> nativeType, DecimalTimeMapping<N> mapping,
       EnhancedClockContext clock) {
     this.modelIdentifier = Objects.requireNonNull(modelIdentifier);
     if (modelIdentifier.isBlank()) {
@@ -39,8 +40,10 @@ public final class ChildBinding<N extends SimTime> {
    * @throws IllegalArgumentException if the provider is a coupled factory or its identifier is blank
    * @throws NullPointerException if the provider, its identifier, type, or mapping is null
    */
+
+
   public static <N extends SimTime> ChildBinding<N> nativeProvider(
-      SimulatorProvider<N> provider, Class<N> nativeType, TimeMapping<N> mapping) {
+      SimulatorProvider<N> provider, Class<N> nativeType, DecimalTimeMapping<N> mapping) {
     Objects.requireNonNull(provider);
     if (provider instanceof CoupledModelFactory<?>) {
       throw new IllegalArgumentException("Coupled factories require an enhanced coordinator binding");
@@ -56,8 +59,8 @@ public final class ChildBinding<N extends SimTime> {
    */
   public static ChildBinding<LongSimTime> defaultLongProvider(SimulatorProvider<LongSimTime> provider, 
                                                               double secondsPerModelTimeUnit) {
-    return nativeProvider(provider, LongSimTime.class, new TimeMapping<>(new LongTimeCodec(), 
-            TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+    return nativeProvider(provider, LongSimTime.class, new DecimalTimeMapping<>(new LongTimeCodec(),
+            TimeSemantics.of(BigDecimal.valueOf(secondsPerModelTimeUnit), BigDecimal.ZERO)));
   }
 
   /**
@@ -68,8 +71,17 @@ public final class ChildBinding<N extends SimTime> {
    */
   public static ChildBinding<DoubleSimTime> defaultDoubleProvider(SimulatorProvider<DoubleSimTime> provider,
                                                               double secondsPerModelTimeUnit) {
-    return nativeProvider(provider, DoubleSimTime.class, new TimeMapping<>(new DoubleTimeCodec(),
-            TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+    return defaultDoubleProvider(provider, BigDecimal.valueOf(secondsPerModelTimeUnit));
+  }
+
+  /**
+   * Binds a continuous double-native provider with an explicitly declared decimal approximation
+   * of its seconds-per-unit scale. No native granularity is implied.
+   */
+  public static ChildBinding<DoubleSimTime> defaultDoubleProvider(
+      SimulatorProvider<DoubleSimTime> provider, BigDecimal secondsPerModelTimeUnit) {
+    return nativeProvider(provider, DoubleSimTime.class, DecimalTimeMapping.approximateDouble(
+        TimeSemantics.of(secondsPerModelTimeUnit, BigDecimal.ZERO), BigDecimal.ZERO));
   }
 
   /**
@@ -80,8 +92,8 @@ public final class ChildBinding<N extends SimTime> {
    */
   public static ChildBinding<DecimalSimTime> defaultDecimalProvider(SimulatorProvider<DecimalSimTime> provider,
                                                                   double secondsPerModelTimeUnit) {
-    return nativeProvider(provider, DecimalSimTime.class, new TimeMapping<>(new DecimalTimeCodec(),
-            TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+    return nativeProvider(provider, DecimalSimTime.class, new DecimalTimeMapping<>(new DecimalTimeCodec(),
+            TimeSemantics.of(BigDecimal.valueOf(secondsPerModelTimeUnit), BigDecimal.ZERO)));
   }
   
 
@@ -90,8 +102,10 @@ public final class ChildBinding<N extends SimTime> {
    * @throws IllegalArgumentException if the model identifier is blank
    * @throws NullPointerException if any argument is null
    */
+
+
   public static <N extends SimTime> ChildBinding<N> nativeActor(String modelIdentifier,
-      ActorRef<DevsMessage> actor, Class<N> nativeType, TimeMapping<N> mapping) {
+      ActorRef<DevsMessage> actor, Class<N> nativeType, DecimalTimeMapping<N> mapping) {
     return new ChildBinding<>(modelIdentifier, null, Objects.requireNonNull(actor), nativeType,
         mapping, null);
   }
@@ -106,7 +120,8 @@ public final class ChildBinding<N extends SimTime> {
   public static ChildBinding<LongSimTime> defaultLongBinding(String modelIdentifier, ActorRef<DevsMessage> actor, 
                                                              double secondsPerModelTimeUnit) {
     return  ChildBinding.nativeActor(modelIdentifier, Objects.requireNonNull(actor), LongSimTime.class,
-            new TimeMapping<>(new LongTimeCodec(), TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+            new DecimalTimeMapping<>(new LongTimeCodec(),
+                TimeSemantics.of(BigDecimal.valueOf(secondsPerModelTimeUnit), BigDecimal.ZERO)));
   }
 
 
@@ -119,8 +134,18 @@ public final class ChildBinding<N extends SimTime> {
    */  
   public static ChildBinding<DoubleSimTime> defaultDoubleBinding(String modelIdentifier, ActorRef<DevsMessage> actor, 
                                                                  double secondsPerModelTimeUnit) {
+    return defaultDoubleBinding(modelIdentifier, actor, BigDecimal.valueOf(secondsPerModelTimeUnit));
+  }
+
+  /**
+   * Binds a continuous double-native actor with an explicitly declared decimal approximation of
+   * its seconds-per-unit scale. No native granularity is implied.
+   */
+  public static ChildBinding<DoubleSimTime> defaultDoubleBinding(String modelIdentifier,
+      ActorRef<DevsMessage> actor, BigDecimal secondsPerModelTimeUnit) {
     return ChildBinding.nativeActor(modelIdentifier, Objects.requireNonNull(actor), DoubleSimTime.class,
-            new TimeMapping<>(new DoubleTimeCodec(), TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+        DecimalTimeMapping.approximateDouble(
+            TimeSemantics.of(secondsPerModelTimeUnit, BigDecimal.ZERO), BigDecimal.ZERO));
   }
 
   /**
@@ -133,7 +158,8 @@ public final class ChildBinding<N extends SimTime> {
   public static ChildBinding<DecimalSimTime> defaultDecimalBinding(String modelIdentifier, ActorRef<DevsMessage> actor,
                                                                    double secondsPerModelTimeUnit) {
     return ChildBinding.nativeActor(modelIdentifier, Objects.requireNonNull(actor), DecimalSimTime.class,
-            new TimeMapping<>(new DecimalTimeCodec(), TimeSemantics.of(Rational.of(secondsPerModelTimeUnit), Rational.ZERO)));
+            new DecimalTimeMapping<>(new DecimalTimeCodec(),
+                TimeSemantics.of(BigDecimal.valueOf(secondsPerModelTimeUnit), BigDecimal.ZERO)));
   }
 
   /**
@@ -141,13 +167,13 @@ public final class ChildBinding<N extends SimTime> {
    * Its clock must later match the enclosing hierarchy's clock.
    * @throws IllegalArgumentException if the factory is legacy or its identifier is blank
    */
-  public static ChildBinding<QuantizedSimTime> coordinator(
-      CoupledModelFactory<QuantizedSimTime> provider) {
+  public static ChildBinding<DecimalSimTime> coordinator(
+      CoupledModelFactory<DecimalSimTime> provider) {
     Objects.requireNonNull(provider);
     if (!provider.isEnhanced()) {
       throw new IllegalArgumentException("Legacy coordinator children are not supported");
     }
-    return new ChildBinding<>(provider.getModelIdentifier(), provider, null, QuantizedSimTime.class,
+    return new ChildBinding<>(provider.getModelIdentifier(), provider, null, DecimalSimTime.class,
         canonicalMapping(), provider.executionConfig().clock());
   }
 
@@ -156,35 +182,16 @@ public final class ChildBinding<N extends SimTime> {
    * @throws IllegalArgumentException if the model identifier is blank
    * @throws NullPointerException if any argument is null
    */
-  public static ChildBinding<QuantizedSimTime> coordinatorActor(String modelIdentifier,
+  public static ChildBinding<DecimalSimTime> coordinatorActor(String modelIdentifier,
       ActorRef<DevsMessage> actor, EnhancedClockContext clock) {
     return new ChildBinding<>(modelIdentifier, null, Objects.requireNonNull(actor),
-        QuantizedSimTime.class, canonicalMapping(), Objects.requireNonNull(clock));
+        DecimalSimTime.class, canonicalMapping(), Objects.requireNonNull(clock));
   }
 
-  /** Returns the identity boundary for enhanced children already using exact canonical seconds. */
-  private static TimeMapping<QuantizedSimTime> canonicalMapping() {
-    NativeTimeCodec<QuantizedSimTime> codec = new NativeTimeCodec<>() {
-      /** Returns the canonical timestamp unchanged, including infinity. */
-      @Override
-      public QuantizedSimTime decode(QuantizedSimTime value) {
-        return value;
-      }
-
-      /** Returns the canonical timestamp unchanged, including infinity. */
-      @Override
-      public QuantizedSimTime encode(QuantizedSimTime value) {
-        return value;
-      }
-
-      /** Returns lower unchanged; this private identity boundary has no declared lattice. */
-      @Override
-      public QuantizedSimTime nextRepresentable(QuantizedSimTime lower, Rational origin,
-          Rational quantum) {
-        return lower;
-      }
-    };
-    return new TimeMapping<>(codec, TimeSemantics.of(Rational.ONE, Rational.ZERO));
+  /** Returns the identity boundary for decimal canonical children. */
+  private static DecimalTimeMapping<DecimalSimTime> canonicalMapping() {
+    NativeTimeCodec<DecimalSimTime> codec = new DecimalTimeCodec();
+    return new DecimalTimeMapping<>(codec, TimeSemantics.of(java.math.BigDecimal.ONE, java.math.BigDecimal.ZERO));
   }
 
   /** Returns the nonblank child model identifier. */
@@ -220,7 +227,7 @@ public final class ChildBinding<N extends SimTime> {
    * @throws ArithmeticException if the initial timestamp cannot be mapped exactly
    */
   public ActorRef<DevsMessage> spawn(ActorContext<DevsMessage> context,
-      QuantizedSimTime initialTime) {
+      DecimalSimTime initialTime) {
     N nativeInitialTime = exact(initialTime);
     return actor != null ? actor : provider.provideSimulator(context, nativeInitialTime);
   }
@@ -239,29 +246,30 @@ public final class ChildBinding<N extends SimTime> {
    * @throws ClassCastException if value does not have the declared native timestamp type
    * @throws ArithmeticException if lattice or round-trip validation fails
    */
-  public QuantizedSimTime toCanonical(SimTime value) {
+  public DecimalSimTime toCanonical(SimTime value) {
     return mapping.toCanonical(nativeType.cast(value));
   }
 
   /**
-   * Maps canonical seconds to the native timestamp exactly, preserving infinity.
-   * @throws ArithmeticException if exact encoding or lattice validation fails
+   * Maps canonical seconds to the native timestamp, preserving infinity. Exact mappings require
+   * equality; explicitly approximate double mappings require the configured bounded error.
+   * @throws ArithmeticException if encoding, error-bound, or lattice validation fails
    */
-  public N exact(QuantizedSimTime value) {
+  public N exact(DecimalSimTime value) {
     return mapping.exact(value);
   }
 
   /**
-   * Automatically adapts a canonical-second source time upward at the native boundary.
-   * Returns a finite native timestamp whose canonical value is not earlier than source;
-   * error-budget observation is the schedule's responsibility.
+   * Converts a canonical-second delivery time at the native boundary. Exact mappings reject an
+   * unrepresentable source. An explicitly approximate continuous-double mapping may advance to
+   * the next finite double to keep the effective delivery from preceding the source.
    */
-  public N adapt(QuantizedSimTime source) {
+  public N adapt(DecimalSimTime source) {
     if (source.isInfinite()) {
       throw new IllegalArgumentException("Cannot deliver at logical infinity");
     }
     N nativeTime = isCoordinator() ? mapping.exact(source) : mapping.nextRepresentable(source);
-    QuantizedSimTime effective = mapping.toCanonical(nativeTime);
+    DecimalSimTime effective = mapping.toCanonical(nativeTime);
     if (effective.isInfinite() || effective.compareTo(source) < 0) {
       throw new IllegalArgumentException("Delivery violates causality or finite range");
     }

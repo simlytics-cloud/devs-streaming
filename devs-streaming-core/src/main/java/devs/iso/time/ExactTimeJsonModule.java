@@ -13,10 +13,9 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.IOException;
 
 /**
- * Jackson module for standalone {@link SimTime} values, including exact decimal and rational time.
+ * Jackson module for standalone {@link SimTime} values, including exact decimal time.
  *
- * <p>Register an instance with an {@code ObjectMapper} to round-trip {@link DecimalSimTime} and
- * {@link QuantizedSimTime} using exact-v1 string-valued timestamps. Legacy {@link LongSimTime} and
+ * <p>Register an instance with an {@code ObjectMapper} to round-trip {@link DecimalSimTime} using exact-v1 string-valued timestamps. Legacy {@link LongSimTime} and
  * {@link DoubleSimTime} retain their numeric {@code t} field and class-name discriminator.
  *
  * <p>The module's type-information override is local to that mapper. Registration does not select
@@ -33,7 +32,6 @@ public final class ExactTimeJsonModule extends SimpleModule {
     addSerializer(SimTime.class, new StandaloneTimeSerializer());
     addDeserializer(SimTime.class, new StandaloneTimeDeserializer<>(SimTime.class));
     addDeserializer(DecimalSimTime.class, new StandaloneTimeDeserializer<>(DecimalSimTime.class));
-    addDeserializer(QuantizedSimTime.class, new StandaloneTimeDeserializer<>(QuantizedSimTime.class));
     addDeserializer(LongSimTime.class, new StandaloneTimeDeserializer<>(LongSimTime.class));
     addDeserializer(DoubleSimTime.class, new StandaloneTimeDeserializer<>(DoubleSimTime.class));
   }
@@ -120,11 +118,11 @@ public final class ExactTimeJsonModule extends SimpleModule {
      *
      * @param context the deserialization context
      * @return null for targets other than the concrete exact-time classes
-     * @throws JsonMappingException if the target is decimal or rational time
+     * @throws JsonMappingException if the target is decimal time
      */
     @Override
     public T getNullValue(DeserializationContext context) throws JsonMappingException {
-      if (target == DecimalSimTime.class || target == QuantizedSimTime.class) {
+      if (target == DecimalSimTime.class) {
         throw JsonMappingException.from(context, "malformed-time: exact timestamp cannot be null");
       }
       return null;

@@ -359,7 +359,7 @@ components:
 
     TimeValueEncoding:
       type: string
-      description: Supplier-native value encoding, not canonical coordinator transport. Exact message profiles are documented separately in ../devs-messages-v2.schema.json and require independently configured endpoint agreement; rational wire timestamps do not introduce a supplier-native encoding.
+      description: Supplier-native value encoding, not canonical coordinator transport. Exact message profiles are documented separately in ../devs-messages-v2.schema.json and require independently configured endpoint agreement; decimal wire timestamps do not introduce a supplier-native encoding.
       enum: [int64, decimal-string, float64]
 
     TimeInfinityPolicy:
@@ -367,27 +367,15 @@ components:
       description: Native logical infinity representation. Supplier-documented sentinel details must be decoded explicitly, not used as finite arithmetic operands.
       enum: [max-finite, string-sentinel]
 
-    RationalTime:
-      type: object
-      required:
-        - numerator
-        - denominator
-      properties:
-        numerator:
-          type: integer
-          format: int64
-          example: 1
-        denominator:
-          type: integer
-          format: int64
-          minimum: 1
-          example: 1
+    DecimalString:
+      type: string
+      description: Exact finite decimal string. JSON numbers are not accepted.
+      pattern: '^-?(0|[1-9][0-9]*)(\.[0-9]+)?$'
+      example: '0.001'
 
     TimeGranularity:
-      $ref: '#/components/schemas/RationalTime'
-      properties:
-        numerator:
-          exclusiveMinimum: 0
+      type: string
+      pattern: '^[1-9][0-9]*(\.[0-9]+)?$'
       description: |
         Additional supplier-declared positive exact timestamp grid spacing in native units.
         Finite timestamps must be integer multiples from native local zero, including zero
@@ -416,17 +404,15 @@ components:
         valueEncoding:
           $ref: '#/components/schemas/TimeValueEncoding'
         unitSeconds:
-          $ref: '#/components/schemas/RationalTime'
-          properties:
-            numerator:
-              exclusiveMinimum: 0
-          description: Positive rational number of SI seconds represented by one local model time unit.
+          type: string
+          pattern: '^[1-9][0-9]*(\.[0-9]+)?$'
+          description: Positive decimal number of SI seconds represented by one local model time unit.
         timeGranularity:
           $ref: '#/components/schemas/TimeGranularity'
           description: Optional additional native timestamp restriction for any domain or encoding. Omission means no supplier-imposed grid, not unknown semantics or unrestricted representability. Explicit null is invalid. Does not authorize adaptation or initialization rounding.
         originOffset:
-          $ref: '#/components/schemas/RationalTime'
-          description: Native epoch offset in rational seconds from a supplier-documented reference to local model time zero; may be zero or negative. Not composition-specific alignment to a coordinator clock.
+          $ref: '#/components/schemas/DecimalString'
+          description: Native epoch offset in decimal seconds from a supplier-documented reference to local model time zero; may be zero or negative. Not composition-specific alignment to a coordinator clock.
         infinityPolicy:
           $ref: '#/components/schemas/TimeInfinityPolicy'
       not:
@@ -552,7 +538,7 @@ components:
 
     CurrentSimulationTime:
       type: object
-      description: Supplier-native status value, not a tagged timestamp object or canonical scheduling time. Rational exact-profile messages and observations are separate from this native status contract. Message profiles require independent endpoint agreement; these status identifiers do not negotiate startup capabilities.
+      description: Supplier-native status value, not a tagged timestamp object or canonical scheduling time. decimal exact-profile messages and observations are separate from this native status contract. Message profiles require independent endpoint agreement; these status identifiers do not negotiate startup capabilities.
       required:
         - value
         - sourceMessageType

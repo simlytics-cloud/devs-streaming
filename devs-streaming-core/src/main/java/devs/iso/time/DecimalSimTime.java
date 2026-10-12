@@ -13,10 +13,10 @@ import java.util.Objects;
  * from a {@code double} to preserve the intended decimal value. Trailing zeros are removed, so
  * {@code 1.0} and {@code 1.00} represent the same time; decimal scale is not retained.
  *
- * <p>The model's time semantics determine the unit. For canonical scheduling across models with
- * different units or for nonterminating fractions such as one third of a second, use
- * {@link QuantizedSimTime} instead. Arithmetic and comparison require another
- * {@code DecimalSimTime}; they do not convert other {@link SimTime} implementations.
+ * <p>The model's time semantics determine the unit. Enhanced coordination uses this type as its
+ * canonical decimal-second clock and rejects mappings that would require a nonterminating decimal
+ * result. Arithmetic and comparison require another {@code DecimalSimTime}; they do not convert
+ * other {@link SimTime} implementations.
  *
  * <p>Register {@link ExactTimeJsonModule} for standalone JSON binding. JSON support alone does not
  * grant permission for remote execution; message transport requires an appropriate wire profile
@@ -40,6 +40,8 @@ public final class DecimalSimTime extends SimTime {
   public static DecimalSimTime of(BigDecimal value) {
     return new DecimalSimTime(Objects.requireNonNull(value));
   }
+
+
 
   /**
    * Creates a finite time using the same rules as {@link #of(BigDecimal)}.

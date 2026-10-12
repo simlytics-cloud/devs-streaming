@@ -17,7 +17,7 @@
 package devs;
 
 import devs.iso.DevsMessage;
-import devs.iso.time.QuantizedSimTime;
+import devs.iso.time.DecimalSimTime;
 import devs.iso.time.SimTime;
 import devs.pekko.Actors;
 import devs.time.ChildBinding;
@@ -43,7 +43,7 @@ import org.apache.pekko.actor.typed.javadsl.Behaviors;
  * blank, duplicate, missing, and unknown entries. The resolved order governs spawning and is
  * forwarded unchanged to the coordinator; it does not serialize child actor execution.
  *
- * @param <T> common simulation time in legacy mode; {@link QuantizedSimTime} in enhanced mode
+ * @param <T> common simulation time in legacy mode; {@link DecimalSimTime} in enhanced mode
  */
 public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider<T> {
 
@@ -163,10 +163,10 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
    * @param bindings native-time providers or already bound actors for the children
    * @param couplings routing between children and the coupled model
    * @param executionConfig canonical clock and optional timing-error monitors
-   * @return a factory accepting canonical {@link QuantizedSimTime} initialization times
+   * @return a factory accepting canonical {@link DecimalSimTime} initialization times
    * @throws IllegalArgumentException if child identifiers, order, or clocks are inconsistent
    */
-  public static CoupledModelFactory<QuantizedSimTime> enhanced(String modelIdentifier,
+  public static CoupledModelFactory<DecimalSimTime> enhanced(String modelIdentifier,
       List<ChildBinding<?>> bindings, PDevsCouplings couplings,
       CoordinatorExecutionConfig executionConfig) {
     return enhanced(modelIdentifier, bindings, couplings, executionConfig, StepTimingTracker::disabled);
@@ -182,24 +182,24 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
    * @param couplings routing between children and the coupled model
    * @param executionConfig canonical clock and optional timing-error monitors
    * @param stepTimingTrackerSupplier supplies a tracker when the coordinator is created
-   * @return a factory accepting canonical {@link QuantizedSimTime} initialization times
+   * @return a factory accepting canonical {@link DecimalSimTime} initialization times
    * @throws IllegalArgumentException if child identifiers, order, or clocks are inconsistent
    */
-  public static CoupledModelFactory<QuantizedSimTime> enhanced(String modelIdentifier,
+  public static CoupledModelFactory<DecimalSimTime> enhanced(String modelIdentifier,
       List<ChildBinding<?>> bindings, PDevsCouplings couplings,
       CoordinatorExecutionConfig executionConfig, Supplier<StepTimingTracker> stepTimingTrackerSupplier) {
     return new CoupledModelFactory<>(modelIdentifier, bindings, couplings, executionConfig,
         stepTimingTrackerSupplier, null, false);
   }
 
-  public static CoupledModelFactory<QuantizedSimTime> enhanced(String modelIdentifier,
+  public static CoupledModelFactory<DecimalSimTime> enhanced(String modelIdentifier,
       List<ChildBinding<?>> bindings, PDevsCouplings couplings,
       CoordinatorExecutionConfig executionConfig, List<String> childOrder) {
     return enhanced(modelIdentifier, bindings, couplings, executionConfig, childOrder,
         StepTimingTracker::disabled);
   }
 
-  public static CoupledModelFactory<QuantizedSimTime> enhanced(String modelIdentifier,
+  public static CoupledModelFactory<DecimalSimTime> enhanced(String modelIdentifier,
       List<ChildBinding<?>> bindings, PDevsCouplings couplings,
       CoordinatorExecutionConfig executionConfig, List<String> childOrder,
       Supplier<StepTimingTracker> stepTimingTrackerSupplier) {
@@ -236,7 +236,7 @@ public class CoupledModelFactory<T extends SimTime> implements SimulatorProvider
    */
   public Behavior<DevsMessage> create(T initialTime) {
     if (isEnhanced()) {
-      if (!(initialTime instanceof QuantizedSimTime canonicalTime)) {
+      if (!(initialTime instanceof DecimalSimTime canonicalTime)) {
         throw new IllegalArgumentException("Enhanced factories require canonical initial time");
       }
       for (ChildBinding<?> binding : childBindings.values()) {

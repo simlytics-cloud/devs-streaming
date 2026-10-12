@@ -9,8 +9,8 @@ import java.io.IOException;
 /**
  * Serializes simulation schedule-map keys as JSON field names.
  *
- * <p>Long and double keys use their numeric spelling. Decimal and rational keys use tagged
- * {@code exact-v1:decimal:} and {@code exact-v1:rational:} spellings and require the
+ * <p>Long and double keys use their numeric spelling. Decimal keys use the tagged
+ * {@code exact-v1:decimal:} spelling and require the
  * {@link TimeWireProfile#EXACT_TIME_V1} provider attribute. Exact keys are checked against
  * {@link TimeWireLimits} and can be read by {@link SimTimeKeyDeserializer}.
  */
@@ -41,9 +41,7 @@ public class SimTimeKeySerializer extends JsonSerializer<SimTime> {
       String key;
       if (value instanceof DecimalSimTime decimal) {
         key = "exact-v1:decimal:" + (decimal.isInfinite() ? "+infinity" : decimal.value().toString());
-      } else if (value instanceof QuantizedSimTime rational) {
-        key = "exact-v1:rational:" + (rational.isInfinite() ? "+infinity"
-            : rational.value().numerator() + "/" + rational.value().denominator());
+
       } else {
         throw new IllegalArgumentException("unsupported-time-type: invalid exact schedule key");
       }

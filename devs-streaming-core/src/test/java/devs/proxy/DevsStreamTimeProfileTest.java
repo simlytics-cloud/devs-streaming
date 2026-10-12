@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import devs.iso.*;
 import devs.iso.time.*;
 import devs.time.EnhancedClockContext;
-import devs.time.Rational;
 import devs.utils.DevsObjectMapper;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -85,8 +84,8 @@ class DevsStreamTimeProfileTest {
   @Test
   void rejectsAllUnsupportedEventAndNextTimestampFieldsBeforePublishing() {
     SimTime nativeTime = LongSimTime.create(0);
-    for (SimTime unsupported : List.of(QuantizedSimTime.of(Rational.of(1, 3)),
-        QuantizedSimTime.infinity(), DecimalSimTime.of(new BigDecimal("0.1")), DecimalSimTime.infinity())) {
+    for (SimTime unsupported : List.of(DecimalSimTime.of(new BigDecimal("0.3")),
+        DecimalSimTime.infinity(), DecimalSimTime.of(new BigDecimal("0.1")), DecimalSimTime.infinity())) {
       List<DevsMessage> messages = List.of(
           init(unsupported), next(unsupported, nativeTime), next(nativeTime, unsupported),
           output(unsupported, nativeTime), output(nativeTime, unsupported),
@@ -114,7 +113,7 @@ class DevsStreamTimeProfileTest {
   void enhancedContextCannotBeSilentlyDroppedEvenWithNativeInitializationTime() {
     Publisher publisher = new Publisher();
     SimulationInitMessage<SimTime> message = new SimulationInitMessage<>(init(LongSimTime.create(0)),
-        TestInbox.<DevsMessage>create().getRef(), new EnhancedClockContext("shared", Rational.ZERO));
+        TestInbox.<DevsMessage>create().getRef(), new EnhancedClockContext("shared", BigDecimal.ZERO));
     assertThrows(IllegalArgumentException.class, () -> proxy(publisher).run(message));
     assertTrue(publisher.payloads.isEmpty());
   }
@@ -129,7 +128,7 @@ class DevsStreamTimeProfileTest {
           output(accepted, wrong), complete(accepted, wrong), init(huge), next(accepted, huge),
           output(accepted, huge), complete(accepted, huge), new DevsMessage() {},
           new SimulationInitMessage<>(init(accepted), TestInbox.<DevsMessage>create().getRef(),
-              new EnhancedClockContext("shared", Rational.ZERO)))) {
+              new EnhancedClockContext("shared", BigDecimal.ZERO)))) {
         Publisher publisher = new Publisher();
         var proxy = BehaviorTestKit.<DevsMessage>create(Behaviors.setup(context -> new Proxy(context, publisher, policy)));
         assertThrows(IllegalArgumentException.class, () -> proxy.run(message));
