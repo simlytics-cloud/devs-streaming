@@ -8,6 +8,8 @@ import devs.iso.time.SimTime;
 import org.apache.pekko.actor.testkit.typed.javadsl.ActorTestKit;
 import org.apache.pekko.actor.testkit.typed.javadsl.TestProbe;
 import org.apache.pekko.actor.typed.ActorRef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -15,6 +17,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class DevsModelTest<T extends SimTime> {
+
+    private static final Logger log = LoggerFactory.getLogger(DevsModelTest.class);
 
     protected final String testFrameModelId;
 
@@ -91,6 +95,9 @@ public abstract class DevsModelTest<T extends SimTime> {
                 if (failure instanceof AssertionError ae) throw ae;
                 throw new AssertionError("Failure occurred inside actor thread", failure);
             }
+        } catch (Throwable failure) {
+            log.error("Experimental frame failed for simulation run " + simulationRunId, failure);
+            throw failure;
         } finally {
             testKit.shutdownTestKit();
         }
