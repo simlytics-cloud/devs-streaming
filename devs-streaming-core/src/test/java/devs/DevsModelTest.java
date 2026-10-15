@@ -99,7 +99,14 @@ public abstract class DevsModelTest<T extends SimTime> {
             log.error("Experimental frame failed for simulation run " + simulationRunId, failure);
             throw failure;
         } finally {
-            testKit.shutdownTestKit();
+            log.info("Starting testkit shutdown for simulation run " + simulationRunId);
+            try {
+                testKit.shutdownTestKit();
+                log.info("Testkit shutdown completed for simulation run " + simulationRunId);
+            } catch (Throwable shutdownFailure) {
+                log.error("Testkit shutdown failed for simulation run " + simulationRunId, shutdownFailure);
+                throw shutdownFailure;
+            }
         }
     }
 }
