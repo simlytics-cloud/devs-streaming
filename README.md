@@ -17,7 +17,7 @@ non-modular simulation architectures, such as High Level Architecture
 (HLA) of the US Army's [Bifrost server](https://www.peostri.army.mil/onesaf), so they may execute as models
 in a DEVS simulation. 
 
-See [DEVS-SF Overview](docs/readme/DEVS%20Streamin%20Framework%20Introduction.md) for more information.
+See [DEVS-SF Overview](docs/readme/DEVS%20Streaming%20Framework%20Introduction.md) for more information.
 
 
 
