@@ -14,6 +14,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class DevsModelTest<T extends SimTime> {
@@ -41,6 +43,13 @@ public abstract class DevsModelTest<T extends SimTime> {
      */
     protected void spawnAdditionalActors(ActorTestKit testKit) {
         
+    }
+
+    /**
+     * Override this method for cleanup of additional actors spawned in spawnAdditoinalActors()
+     */
+    protected CompletionStage<Void> stopAdditionalActors(ActorTestKit testKit, Duration timeout) {
+        return CompletableFuture.completedFuture(null);
     }
 
     protected void executeExperimentalFrame(T startTime, T endTime, String simulationRunId,
@@ -79,8 +88,15 @@ public abstract class DevsModelTest<T extends SimTime> {
                     .build());
 
             TestProbe<DevsMessage> testProbe = testKit.createTestProbe();
+            Duration timeout = Duration.ofSeconds(timeoutSeconds);
+            
             try {
-                testProbe.expectTerminated(rootCoordinator, Duration.ofSeconds(timeoutSeconds));
+                // Wait for the DEVS simulation itself to finish.
+                testProbe.expectTerminated(rootCoordinator, timeout);
+
+                // Give subclasses a chance to flush and stop resources they spawned.
+                // This must happen before shutdownTestKit() terminates the actor system.
+                stopAdditionalActors(testKit, timeout);
             } catch (AssertionError timeoutOrOther) {
                 Throwable failure = failureRef.get();
                 if (failure != null) {
