@@ -260,9 +260,11 @@ public final class ChildBinding<N extends SimTime> {
   }
 
   /**
-   * Converts a canonical-second delivery time at the native boundary. Exact mappings reject an
-   * unrepresentable source. An explicitly approximate continuous-double mapping may advance to
-   * the next finite double to keep the effective delivery from preceding the source.
+   * Converts a canonical-second delivery time at the native boundary. Native long mappings advance
+   * finite deliveries to the next integer timestamp on the declared grid when needed; enhanced
+   * coordinator children continue to require exact conversion. An explicitly approximate continuous-
+   * double mapping may advance to the next finite double to keep the effective delivery from
+   * preceding the source.
    */
   public N adapt(DecimalSimTime source) {
     if (source.isInfinite()) {

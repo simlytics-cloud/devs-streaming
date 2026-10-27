@@ -31,6 +31,70 @@ class DecimalTimeMappingTest {
   }
 
   @Test
+  void adaptsLongDeliveriesUpwardWithoutWeakeningExactConversion() {
+    var mapping = new DecimalTimeMapping<>(new LongTimeCodec(),
+        TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO));
+
+    assertEquals(10001, mapping.nextRepresentable(
+        DecimalSimTime.of(new BigDecimal("10000.0131"))).getT());
+    assertEquals(10001, mapping.nextRepresentable(
+        DecimalSimTime.of(new BigDecimal("10001"))).getT());
+    assertEquals(-1, mapping.nextRepresentable(
+        DecimalSimTime.of(new BigDecimal("-1.2"))).getT());
+    assertThrows(ArithmeticException.class,
+        () -> mapping.exact(DecimalSimTime.of(new BigDecimal("10000.0131"))));
+  }
+
+  @Test
+  void adaptsLongDeliveriesWithNonterminatingInverse() {
+    var mapping = new DecimalTimeMapping<>(new LongTimeCodec(),
+        TimeSemantics.of(BigDecimal.valueOf(3), BigDecimal.ZERO));
+
+    LongSimTime adapted = mapping.nextRepresentable(DecimalSimTime.of(BigDecimal.ONE));
+    assertEquals(1, adapted.getT());
+    assertEquals(1, mapping.toCanonical(adapted).compareTo(DecimalSimTime.of(BigDecimal.ONE)));
+    assertThrows(ArithmeticException.class,
+        () -> mapping.exact(DecimalSimTime.of(BigDecimal.ONE)));
+  }
+
+  @Test
+  void adaptsToIntegerIntersectionOfDeclaredGrid() {
+    var mapping = new DecimalTimeMapping<>(new LongTimeCodec(),
+        TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO,
+            Optional.of(TimeGranularity.of(new BigDecimal("1.5")))));
+
+    assertEquals(6, mapping.nextRepresentable(
+        DecimalSimTime.of(new BigDecimal("3.1"))).getT());
+    assertEquals(-3, mapping.nextRepresentable(
+        DecimalSimTime.of(new BigDecimal("-3.1"))).getT());
+  }
+
+  @Test
+  void adaptsUsingScaleOriginAndAlignment() {
+    var mapping = new DecimalTimeMapping<>(new LongTimeCodec(),
+        TimeSemantics.of(new BigDecimal("0.5"), new BigDecimal("2.25")),
+        new BigDecimal("0.25"));
+
+    LongSimTime adapted = mapping.nextRepresentable(DecimalSimTime.of(new BigDecimal("7.1")));
+    assertEquals(10, adapted.getT());
+    assertEquals(0, mapping.toCanonical(adapted).compareTo(DecimalSimTime.of(new BigDecimal("7.5"))));
+  }
+
+  @Test
+  void rejectsLongDeliveryCeilingsOutsideFiniteRange() {
+    var mapping = new DecimalTimeMapping<>(new LongTimeCodec(),
+        TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO));
+
+    BigDecimal maximum = BigDecimal.valueOf(Long.MAX_VALUE);
+    assertThrows(ArithmeticException.class, () -> mapping.nextRepresentable(
+        DecimalSimTime.of(maximum.subtract(new BigDecimal("0.5")))));
+    assertThrows(ArithmeticException.class, () -> mapping.nextRepresentable(
+        DecimalSimTime.of(maximum.add(BigDecimal.ONE))));
+    assertThrows(ArithmeticException.class, () -> mapping.nextRepresentable(
+        DecimalSimTime.of(BigDecimal.valueOf(Long.MIN_VALUE).subtract(BigDecimal.valueOf(2)))));
+  }
+
+  @Test
   void rejectsDoubleEnhancedClock() {
     assertThrows(IllegalArgumentException.class, () -> new DecimalTimeMapping<>(new DoubleTimeCodec(),
         TimeSemantics.of(BigDecimal.ONE, BigDecimal.ZERO)));

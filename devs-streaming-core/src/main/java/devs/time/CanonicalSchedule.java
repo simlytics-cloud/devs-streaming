@@ -108,10 +108,11 @@ public final class CanonicalSchedule {
   }
 
   /**
-   * Converts a finite canonical-second source time exactly for the target, observes any
-   * configured error budget, then queues the delivery by effective time and insertion order.
-   * Off-grid or unrepresentable deliveries fail rather than being rounded. Budget callback
-   * failures propagate before an entry is queued.
+   * Converts a finite canonical-second source time for the target, observes any configured error
+   * budget, then queues the delivery by effective time and insertion order. Long-backed native
+   * targets may advance the delivery to the next integer timestamp on the declared grid; the source
+   * time remains unchanged. Other exact mappings reject off-grid or unrepresentable deliveries.
+   * Budget callback failures propagate before an entry is queued.
    * @throws IllegalArgumentException if the target is missing, or conversion violates causality
    * @throws ArithmeticException if conversion fails or the insertion sequence overflows
    */

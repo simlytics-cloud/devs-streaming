@@ -4,7 +4,9 @@ import devs.iso.time.DecimalSimTime;
 import devs.iso.time.DoubleSimTime;
 import devs.iso.time.SimTime;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.Objects;
 
 /**
@@ -122,6 +124,33 @@ public final class DecimalTimeMapping<N extends SimTime> {
     return codec.encode(local);
   }
 
+  private BigInteger integerGridStep() {
+    if (semantics.timeGranularity().isEmpty()) return BigInteger.ONE;
+    BigDecimal spacing = semantics.timeGranularity().orElseThrow().spacing();
+    BigInteger numerator = spacing.unscaledValue();
+    int scale = spacing.scale();
+    if (scale < 0) {
+      return numerator.multiply(BigInteger.TEN.pow(Math.negateExact(scale)));
+    }
+    BigInteger denominator = BigInteger.TEN.pow(scale);
+    return numerator.divide(numerator.gcd(denominator));
+  }
+
+  private N nextLongRepresentable(DecimalSimTime canonical) {
+    BigInteger step = integerGridStep();
+    BigDecimal nativeStep = new BigDecimal(step);
+    BigDecimal numerator = canonical.value().subtract(alignment).subtract(semantics.origin());
+    BigDecimal divisor = semantics.secondsPerUnit().multiply(nativeStep);
+    BigInteger stepCount = numerator.divide(divisor, 0, RoundingMode.CEILING).toBigIntegerExact();
+    DecimalSimTime local = DecimalSimTime.of(new BigDecimal(step.multiply(stepCount)));
+    N encoded = encode(local);
+    DecimalSimTime effective = toCanonical(encoded);
+    if (effective.compareTo(canonical) < 0) {
+      throw new ArithmeticException("Long time adaptation did not preserve causality");
+    }
+    return encoded;
+  }
+
   public N exact(DecimalSimTime canonical) {
     DecimalSimTime local = toNative(canonical);
     if (local.isInfinite()) return encode(DecimalSimTime.infinity());
@@ -136,10 +165,14 @@ public final class DecimalTimeMapping<N extends SimTime> {
   }
 
   /**
-   * Converts a canonical delivery time. Exact mappings reject unrepresentable values; approximate
-   * double mappings move at most to the next finite native double when needed to preserve causality.
+   * Converts a canonical delivery time. Long-backed mappings ceil finite deliveries to the next
+   * integer time on the declared grid; approximate double mappings move at most to the next finite
+   * native double when needed to preserve causality.
    */
   public N nextRepresentable(DecimalSimTime canonical) {
+    if (codec instanceof LongTimeCodec && !canonical.isInfinite()) {
+      return nextLongRepresentable(canonical);
+    }
     N encoded = exact(canonical);
     if (!isApproximate() || canonical.isInfinite()) {
       return encoded;
