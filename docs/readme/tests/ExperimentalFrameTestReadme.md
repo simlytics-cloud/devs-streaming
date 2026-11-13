@@ -123,4 +123,43 @@ coupledModelFactory = new CoupledModelFactory<>(
 );
 ```
 
+## Enhanced test harness
+
+`devs.EnhancedDevsModelTest` is an independent base class for tests that need an enhanced,
+canonical-time experimental frame. It does not extend or change the legacy `DevsModelTest` API.
+Subclasses implement only the four model-building methods:
+
+```java
+abstract class MyModelTest extends EnhancedDevsModelTest {
+  MyModelTest() {
+    super("myExperimentalFrame");
+  }
+
+  @Override protected abstract Generator<DecimalSimTime> buildGenerator();
+
+  @Override protected abstract Acceptor<DecimalSimTime, ?> buildAcceptor(
+      AtomicReference<Throwable> failureRef);
+
+  @Override protected abstract CoupledModelFactory<DecimalSimTime> buildCoupledModel(
+      String simulationRunId, EnhancedClockContext clock);
+
+  @Override protected abstract PDevsCouplings buildCouplings();
+}
+```
+
+The concrete model implementations should record actor-thread assertion failures through
+`failureRef`, construct the nested factory with `CoupledModelFactory.enhanced(...)` and
+`new CoordinatorExecutionConfig(clock)`, and define the frame's couplings.
+
+Run a test with `executeExperimentalFrame(start, end, runId, timeoutSeconds)`. The generator and
+acceptor are bound as native decimal-second children with identity mappings. The coupled factory
+must be enhanced and use the exact clock supplied to `buildCoupledModel`; the harness creates a
+run-specific clock whose origin is the canonical start and passes that same start and clock through
+the nested coordinator, frame, and root. Initialization is validated before spawning the frame.
+
+`spawnAdditionalActors(ActorTestKit)` and `stopAdditionalActors(ActorTestKit, Duration)` are optional
+lifecycle hooks. The stop stage is awaited with the run timeout before testkit shutdown, including
+when setup or simulation fails. Override `verifyExpectedOutputs()` to fail when expected output was
+not observed; it runs after successful simulation and acceptor-failure checks, before cleanup.
+
 
